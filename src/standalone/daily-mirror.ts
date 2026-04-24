@@ -419,7 +419,7 @@ export class DailyMirror {
     engineId: StandaloneEngineId,
     output: SelemeneEngineOutput | undefined,
     state: DecoderState,
-  ): Layer2_WitnessQuestion | Promise<Layer2_WitnessQuestion> {
+  ): Promise<Layer2_WitnessQuestion> {
     const witnessPrompt = output?.witness_prompt || '';
     const result = (output?.result || {}) as Record<string, unknown>;
     

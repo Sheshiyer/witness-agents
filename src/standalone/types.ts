@@ -111,7 +111,7 @@ export interface DailyReading {
   // ─── Metadata ──────────────────────────────────
   engines_called: StandaloneEngineId[];
   total_latency_ms: number;
-  cache_stats?: { hits: number; misses: number; size: number };
+  cache_stats?: import('./engine-cache.js').CacheStats;
   engine_health?: Record<string, import('./circuit-breaker.js').EngineHealth>;
   standalone_version: string;
 }

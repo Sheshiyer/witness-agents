@@ -12,7 +12,7 @@ import type {
   HttpMentalState,
   Kosha,
 } from '../types/interpretation.js';
-import type { SelemeneEngineId } from '../types/engine.js';
+import type { SelemeneEngineId, BirthData } from '../types/engine.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // API TYPES
@@ -240,9 +240,20 @@ export function createApiHandlers(deps: ApiDependencies) {
     async interpret(req: InterpretRequest): Promise<{ status: number; body: MobileInterpretation }> {
       const userState = await deps.getUserState(req.user_id);
 
+      const birthData: BirthData = req.birth_data
+        ? {
+            date: req.birth_data.date,
+            time: req.birth_data.time,
+            latitude: req.birth_data.latitude ?? 0,
+            longitude: req.birth_data.longitude ?? 0,
+            timezone: req.birth_data.timezone ?? 'UTC',
+          }
+        : { date: '1990-01-01', latitude: 0, longitude: 0, timezone: 'UTC' };
+
       const pipelineQuery: PipelineQuery = {
         query: req.query,
         user_state: userState,
+        birth_data: birthData,
         engine_hints: req.engine_hints as SelemeneEngineId[] | undefined,
         workflow_hint: req.workflow_hint,
         session_id: req.session_id,
