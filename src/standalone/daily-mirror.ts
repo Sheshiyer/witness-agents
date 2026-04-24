@@ -27,8 +27,8 @@ import type { EngineHealth } from './circuit-breaker.js';
 import type { WitnessObserver } from './observability.js';
 import {
   hashBirthData,
-  getDecoderState,
-  recordVisit,
+  getDecoderStateAsync,
+  recordVisitAsync,
   computeMaxLayer,
   shouldShowFindersGate,
   shouldShowGraduation,
@@ -117,14 +117,14 @@ export class DailyMirror {
     const rotationOrder = getRotationOrder(birthData.date, today);
     
     // ─── Step 2: Check decoder state (before recording this visit) ──
-    const preVisitState = getDecoderState(userHash);
+    const preVisitState = await getDecoderStateAsync(userHash);
     const isFirstEncounter = isFoolsGate(preVisitState);
     
     // ─── Step 3: Call Selemene API for all 4 engines ────────────
     const engineOutputs = await this.callEngines(birthData, rotationOrder);
     
     // ─── Step 4: Record visit (updates decoder state) ───────────
-    const decoderState = recordVisit(userHash, primaryEngine, today);
+    const decoderState = await recordVisitAsync(userHash, primaryEngine, today);
     const maxLayer = computeMaxLayer(decoderState, this.config.tier);
     
     // ─── Step 5: Build Layer 1 readings (always) ────────────────
@@ -234,7 +234,7 @@ export class DailyMirror {
     
     // Call single engine
     const output = await this.callSingleEngine(birthData, engineId);
-    const decoderState = recordVisit(userHash, engineId, today);
+    const decoderState = await recordVisitAsync(userHash, engineId, today);
     const maxLayer = computeMaxLayer(decoderState, this.config.tier);
     
     const layer1 = this.buildLayer1(engineId, output, today);
