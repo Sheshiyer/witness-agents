@@ -1,0 +1,169 @@
+# Engine-Knowledge Map
+# Maps each Selemene Engine to the knowledge domains it draws upon
+# This is the routing table that makes interpretation context-aware
+
+engine_domain_map:
+
+  # --- ALETHEIOS PRIMARY ---
+  
+  chronofield:
+    description: "Vimshottari Dasha — planetary period timing"
+    primary_domains:
+      - lorenz-kundli  # Vimshottari-Markov + Ashtakavarga + Bhava
+    secondary_domains:
+      - endocrine-muse  # Which hormone/muse activates in this planetary period
+      - consciousness-states  # Gebser structure active in this life stage
+    interpretation_template: >
+      Current Dasha/Antardasha → Lorenz-Kundli state transition probability
+      → which hormones/muses are activated → temporal pattern recognition
+    variables_needed: [user_birth_data, current_date, dasha_period]
+
+  energetic-authority:
+    description: "Human Design authority type"
+    primary_domains:
+      - lorenz-kundli  # Shadbala tensor for strength assessment
+    secondary_domains:
+      - endocrine-muse  # Authority type connects to hormonal center
+      - bioelectric  # Nadi activation patterns map to HD channels
+    interpretation_template: >
+      HD Authority → which decision-making center is reliable
+      → cross-reference with endocrine center (heart/head/gut)
+      → check bioelectric activation for current state
+    variables_needed: [user_hd_type, user_authority, user_profile]
+
+  nine-point-architecture:
+    description: "Enneagram topology"
+    primary_domains:
+      - endocrine-muse  # Direct 9-point → hormone → muse mapping
+      - social-programming  # Leviathan analysis for social type patterns
+    secondary_domains:
+      - consciousness-states  # Enneagram stress/growth lines as state transitions
+    interpretation_template: >
+      Enneagram type → primary hormone/muse → stress/growth line dynamics
+      → current hormonal balance → which Muse is calling
+    variables_needed: [user_enneagram_type, user_wing, user_instinct_stack]
+
+  hexagram-navigation:
+    description: "I Ching state transitions"
+    primary_domains:
+      - lorenz-kundli  # State transition parallels
+      - consciousness-states  # Hexagram change as consciousness state change
+    interpretation_template: >
+      Current hexagram → changing lines → future hexagram
+      → map to Lorenz attractor trajectory (where in phase space?)
+    variables_needed: [query_context, hexagram_cast]
+
+  numeric-architecture:
+    description: "Archetypal number patterns"
+    primary_domains:
+      - sacred-geometry  # Numbers as geometric relationships
+    secondary_domains:
+      - lorenz-kundli  # Numerical patterns in Dasha timing
+      - consciousness-states  # Number symbolism in Young's sevenfold
+    variables_needed: [user_birth_numbers, current_year_number]
+
+  # --- PICHET PRIMARY ---
+
+  three-wave-cycle:
+    description: "Biorhythm — physical, emotional, intellectual cycles"
+    primary_domains:
+      - endocrine-muse  # Biorhythm peaks → hormone activation patterns
+      - bioelectric  # Three-wave maps to three vortex coherence
+    secondary_domains:
+      - pain-architecture  # Low physical cycle + pain = high overwhelm risk
+    interpretation_template: >
+      Current P/E/I percentages → which hormones are amplified/suppressed
+      → cross-reference with vortex coherence → timing recommendations
+    variables_needed: [user_birth_date, current_date]
+
+  circadian-cartography:
+    description: "Vedic/TCM organ clock"
+    primary_domains:
+      - bioelectric  # Organ clock maps to Nadi activation patterns
+      - endocrine-muse  # Time-of-day → dominant hormone
+    interpretation_template: >
+      Current hour → active organ/Nadi → dominant hormone → what the body
+      needs RIGHT NOW, not in general
+    variables_needed: [current_time, user_timezone, user_chronotype]
+
+  bioelectric-field:
+    description: "Chakra/energy center mapping"
+    primary_domains:
+      - bioelectric  # Nadi impedance tables, vortex model
+      - endocrine-muse  # Chakras → endocrine glands → hormones → muses
+    interpretation_template: >
+      Active chakra → corresponding Nadi → impedance assessment
+      → linked hormone/muse → balanced/blocked indicators
+    variables_needed: [user_reported_symptoms, user_energy_state]
+
+  physiognomic-mapping:
+    description: "Face/body reading"
+    primary_domains:
+      - bioelectric  # Body tension patterns → Nadi blockage indicators
+      - pain-architecture  # Facial tension → held pain information
+    interpretation_template: >
+      Facial/body pattern → tissue/organ correspondence → Nadi state
+      → what the body is holding that the mind hasn't processed
+    variables_needed: [user_description, user_symptoms]
+
+  resonance-architecture:
+    description: "Nadabrahman — sound as consciousness"
+    primary_domains:
+      - bioelectric  # Sound frequencies → vortex resonance
+      - sacred-geometry  # Sound → geometry (cymatics, Meru projections)
+    secondary_domains:
+      - endocrine-muse  # Euterpe (music/healing) → endorphins
+    interpretation_template: >
+      Frequency prescription → which vortex it resonates with
+      → cymatics pattern → Meru projection → embodied effect
+    variables_needed: [user_state, active_chakra, query_context]
+
+  # --- DYAD SYNTHESIS ---
+
+  temporal-grammar:
+    description: "Panchanga — five-fold calendar"
+    primary_domains:
+      - lorenz-kundli  # Nakshatra-Fibonacci integration
+      - endocrine-muse  # Tithi/Vara → hormone activation patterns
+    agent: dyad
+    interpretation_template: >
+      Five limbs (Tithi, Vara, Nakshatra, Yoga, Karana) →
+      Aletheios reads temporal pattern, Pichet feels if body is aligned
+
+  gift-shadow-spectrum:
+    description: "Gene Keys — shadow/gift/siddhi progression"
+    primary_domains:
+      - endocrine-muse  # Gene Key activation → hormonal shift
+      - consciousness-states  # Shadow → Gift → Siddhi as consciousness evolution
+    agent: dyad
+
+  archetypal-mirror:
+    description: "Tarot reflection"
+    primary_domains:
+      - consciousness-states  # Gebser mythical structure — narrative consciousness
+      - endocrine-muse  # Major arcana → archetypal hormonal states
+    agent: dyad
+
+  geometric-resonance:
+    description: "Sacred geometry"
+    primary_domains:
+      - sacred-geometry  # Meru projections, torus ontology
+    secondary_domains:
+      - bioelectric  # Geometry → vortex patterns
+    agent: dyad
+
+  sigil-forge:
+    description: "Symbol creation"
+    primary_domains:
+      - sacred-geometry
+      - endocrine-muse  # Erato (creation/beauty) → estrogen
+    agent: dyad
+
+  active-planetary-weather:
+    description: "Transit astrology"
+    primary_domains:
+      - lorenz-kundli  # All six parallels active for transit interpretation
+    secondary_domains:
+      - endocrine-muse  # Planetary transits → hormonal weather
+      - bioelectric  # Geomagnetic context affects transit sensitivity
+    agent: dyad

@@ -1,0 +1,52 @@
+# Hormone Interaction Rules
+# Source: Endocrine-Muse Pattern Analysis (Post 9)
+# These rules determine how multi-engine synthesis handles conflicting signals
+
+interaction_rules:
+  cortisol_suppresses_oxytocin:
+    trigger: "Cortisol elevated (stress response active)"
+    effect: "Oxytocin suppressed (bonding/trust reduced)"
+    muse_translation: "Melpomene disrupts Clio — tragedy overrides memory/bonding"
+    agent_response: >
+      When Selemene detects high cortisol indicators (5th position active)
+      AND oxytocin-dependent engines are queried (2nd position):
+      Aletheios notes the suppression, Pichet checks if user is in
+      acute stress before interpreting bonding/trust themes.
+    engines_affected: [nine-point-architecture, archetypal-mirror]
+
+  dopamine_competes_with_serotonin:
+    trigger: "Dopamine elevated (novelty/reward seeking)"
+    effect: "Serotonin suppressed (systemic order disrupted)"
+    muse_translation: "Thalia disturbs Urania — comedy/pleasure disrupts cosmic order"
+    agent_response: >
+      When user shows novelty-seeking patterns AND orderly-integration
+      engines are queried: flag the tension. The user wants excitement
+      but needs grounding. Pichet offers embodied alternatives to
+      dopamine-chasing.
+    engines_affected: [gift-shadow-spectrum, active-planetary-weather]
+
+  adrenaline_overrides_melatonin:
+    trigger: "Adrenaline elevated (emergency/excitement)"
+    effect: "Melatonin suppressed (circadian rhythm disrupted)"
+    muse_translation: "Terpsichore overrides Polymnia — dance/action overrides sacred rhythm"
+    agent_response: >
+      When user is in high-activation state AND circadian/timing engines
+      are queried: acknowledge the activation first (Pichet), then
+      gently redirect to rhythm awareness (Aletheios timing synthesis).
+    engines_affected: [circadian-cartography, temporal-grammar]
+
+synthesis_principle: >
+  All 9 synchronized = mousike (total art). 9 oscillators in-phase = harmony.
+  Out-of-phase = noise. The agent's job is not to force synchronization but
+  to NAME the current pattern truthfully — "three of your nine are in conflict,
+  here's which ones and why."
+
+three_layer_hierarchy:
+  kernel: "Raw chemistry — hormone levels (what IS)"
+  user_space: "Muse narrative — archetypal expression (what it MEANS)"
+  api_boundary: "Felt experience — what the user actually FEELS"
+  
+  agent_traversal: >
+    Aletheios reads kernel (chemistry) and user_space (archetype).
+    Pichet reads user_space (archetype) and api_boundary (felt experience).
+    Dyad synthesis connects all three: what IS → what it MEANS → what you FEEL.

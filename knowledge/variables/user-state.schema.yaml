@@ -1,0 +1,103 @@
+# User State Schema
+# Dynamic variables that drive context-aware interpretation
+# These are populated at runtime — the shape of the user's current moment
+
+user_state:
+  identity:
+    tier: enum[free, subscriber, enterprise, initiate]
+    enneagram_type: int[1-9]  # nullable
+    enneagram_wing: int[1-9]  # nullable
+    enneagram_instinct_stack: string  # e.g. "sp/so/sx"
+    hd_type: enum[manifestor, generator, manifesting_generator, projector, reflector]  # nullable
+    hd_authority: string  # nullable
+    hd_profile: string  # e.g. "5/1"  # nullable
+    birth_data:
+      date: date
+      time: time  # nullable (reduced accuracy without)
+      location: string  # nullable
+
+  current_state:
+    http_status: enum[200, 301, 404, 500, 503]
+    description: >
+      Assessed by Pichet from query tone, word choice, timing patterns.
+      200=flow, 301=defending, 404=dissociated, 500=anxious, 503=burned out.
+    
+    overwhelm_level: float[0.0-1.0]
+    description: >
+      0.0 = fully resourced. 1.0 = completely overwhelmed.
+      Above 0.7 → reduce Clifford gate. Above 0.9 → Annamaya only.
+    
+    active_kosha: enum[annamaya, pranamaya, manomaya, vijnanamaya, anandamaya]
+    description: >
+      Which kosha the user is currently operating from, as assessed
+      by the dyad. Not the same as their tier — a subscriber CAN
+      touch vijnanamaya in a peak moment.
+    
+    dominant_center: enum[heart, head, gut]
+    description: >
+      Enneagram center currently dominant. Determines which
+      hormone triad is most active and which Muse cluster to invoke.
+
+  temporal_context:
+    current_time: datetime
+    timezone: string
+    circadian_position: string  # e.g. "liver time", "heart time"
+    biorhythm:
+      physical: float[0-100]
+      emotional: float[0-100]
+      intellectual: float[0-100]
+    planetary_weather:
+      current_dasha: string  # nullable
+      current_antardasha: string  # nullable
+      active_transits: list[string]  # nullable
+    day_context:
+      tithi: string  # nullable (Panchanga)
+      vara: string   # nullable
+      nakshatra: string  # nullable
+
+  session_context:
+    query_count: int
+    topics_explored: list[string]
+    engines_used: list[string]
+    recursion_detected: bool
+    description: >
+      True when user asks the same question in different words.
+      Triggers Aletheios recursion monitor — "you've asked this
+      three times. The question isn't the problem."
+    
+    patterns_emerging: list[string]
+    description: >
+      Patterns the dyad has noticed across queries in this session.
+      Accumulated, not reset per query.
+    
+    anti_dependency_score: float[0.0-1.0]
+    description: >
+      0.0 = user shows no self-authorship capacity.
+      1.0 = user is fully self-authoring.
+      Above 0.8 → begin graduation protocol.
+
+# Gate rules: how user state affects interpretation depth
+gate_rules:
+  - condition: "overwhelm_level > 0.7"
+    action: "Reduce Clifford gate by 1 level"
+    reason: "User saturated — simplify, don't deepen"
+    
+  - condition: "http_status == 404"
+    action: "Pichet leads — somatic grounding first"
+    reason: "Dissociation needs body, not analysis"
+    
+  - condition: "http_status == 503"
+    action: "Annamaya only — facts, no interpretation"
+    reason: "Burnout cannot absorb interpretation"
+    
+  - condition: "recursion_detected == true"
+    action: "Aletheios mirrors the pattern back to user"
+    reason: "Repeating the answer won't help — naming the loop might"
+    
+  - condition: "biorhythm.physical < 20 AND query involves action"
+    action: "Pichet flags: body says wait"
+    reason: "Low physical cycle — don't recommend action"
+    
+  - condition: "anti_dependency_score > 0.8"
+    action: "Begin graduation — reduce agent involvement"
+    reason: "User is self-authoring — agents should step back"

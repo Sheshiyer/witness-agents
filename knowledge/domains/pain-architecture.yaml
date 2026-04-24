@@ -1,0 +1,56 @@
+# Pain Architecture Knowledge Domain
+# Source: Post 2 — Pain Information Architecture
+
+core_thesis: >
+  Pain is a structured information packet (frequency, amplitude, duration,
+  addressing metadata), not a malfunction report. Three-layer architecture.
+
+three_layer_stack:
+  binary_signal_system:
+    layer: 1
+    function: "Nociceptors fire (1) or not (0)"
+    mechanism: "Intensity = popcount() — aggregation of parallel binary signals"
+    agent: pichet
+    note: "Purely somatic — the body's binary truth"
+    
+  consciousness_dilation:
+    layer: 2
+    function: "Aperture control — pain forces awareness wide open"
+    mechanism: "Melanin acts as iris regulating exposure"
+    failure_mode: "Chronic pain = aperture stuck open"
+    agent: dyad
+    note: "Pain is one of three gates into hyperbolic territory"
+    cross_reference: consciousness-states.curvature_ladder.three_gates_into_hyperbolic
+    
+  dopamine_casino:
+    layer: 3
+    function: "Learning accelerator via reward prediction"
+    mechanisms:
+      - "Relief-as-reward (removing pain = dopamine hit)"
+      - "Anticipatory processing (fear of pain shapes behavior)"
+      - "Intermittent reinforcement (unpredictable pain = strongest conditioning)"
+      - "Learning acceleration (pain writes to permanent storage)"
+    agent: aletheios
+    note: "Pattern recognition — what is the pain teaching?"
+    cross_reference: endocrine-muse.four.dopamine
+
+information_packet_schema:
+  frequency: "What tissue/system is signaling"
+  amplitude: "How many nociceptors (popcount of parallel binary signals)"
+  dilation: "How wide the consciousness aperture is forced"
+  integration: "What the dopamine system is learning from this"
+
+agent_interpretation_rules:
+  pichet_responds: >
+    When pain information is active, Pichet leads. The body's priority
+    interrupt system has fired — analysis (Aletheios) comes second to
+    somatic acknowledgment (Pichet). Never analyze pain before honoring it.
+  
+  aletheios_responds: >
+    After Pichet has grounded the somatic reality, Aletheios can pattern-match:
+    Is this pain chronic (stuck aperture)? Is there a dopamine casino loop?
+    What is the body trying to learn/teach?
+  
+  overwhelm_gate: >
+    Pain at high amplitude = reduce Clifford gate to Cl(0).
+    The user needs facts and grounding, not multi-engine synthesis.

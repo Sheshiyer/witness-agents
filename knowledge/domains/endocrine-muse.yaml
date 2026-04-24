@@ -1,0 +1,296 @@
+# Endocrine-Muse Correspondence Matrix
+# Source: research blog posts 7, 8, 9
+# The Nine Muses are API documentation for the endocrine system
+
+nine_point_matrix:
+  "1":
+    hormone: melatonin
+    muse: Polymnia
+    constellation: Serpens Caput
+    muse_domain: "Rhetoric & Sacred Hymns"
+    function: "Circadian master clock — rhythm regulation"
+    center: head
+    layer: regulatory
+    archetype: "Sacred Wisdom Keeper"
+    boot_priority: 1  # Initializes first (master clock)
+    
+    selemene_engines:
+      primary: circadian-cartography
+      secondary: [resonance-architecture, temporal-grammar]
+    
+    balanced_state:
+      description: "Deep sleep, vivid dreams, clear circadian rhythm"
+      indicators: ["regular sleep onset", "dream recall", "seasonal adaptation"]
+    
+    imbalanced_state:
+      description: "Insomnia, circadian disruption, spiritual disconnection"
+      indicators: ["irregular sleep", "jet lag sensitivity", "seasonal depression"]
+    
+    invocation_pathways:
+      somatic: "Darkness exposure, pineal-activating breathwork"
+      archetypal: "Sacred hymn recitation, rhythmic chanting"
+      environmental: "Light/dark cycling, cave retreat"
+
+  "2":
+    hormone: oxytocin
+    muse: Clio
+    constellation: Ursa Major
+    muse_domain: "History & Memory"
+    function: "Bonding, trust, social memory"
+    center: gut
+    layer: action
+    archetype: "Memory Keeper"
+    boot_priority: 2
+    
+    selemene_engines:
+      primary: nine-point-architecture
+      secondary: [archetypal-mirror]
+    
+    balanced_state:
+      description: "Healthy bonding, trust, generosity, social warmth"
+      indicators: ["secure attachment", "appropriate trust", "warm social presence"]
+    
+    imbalanced_state:
+      description: "Codependency, isolation, trust wounds"
+      indicators: ["boundary collapse", "social withdrawal", "betrayal fixation"]
+    
+    invocation_pathways:
+      somatic: "Skin-to-skin contact, warm bath, massage"
+      archetypal: "Storytelling, ancestor remembrance, journaling"
+      environmental: "Communal gathering, shared meals"
+
+  "3":
+    hormone: endorphins
+    muse: Euterpe
+    constellation: Hercules
+    muse_domain: "Music & Healing"
+    function: "Pain modulation, euphoria, healing"
+    center: heart
+    layer: hedonic
+    archetype: "The Healer Through Joy"
+    boot_priority: 3
+    
+    selemene_engines:
+      primary: resonance-architecture
+      secondary: [three-wave-cycle, bioelectric-field]
+    
+    balanced_state:
+      description: "Natural pain resilience, spontaneous joy, runner's high"
+      indicators: ["pain tolerance", "laughter ease", "physical pleasure capacity"]
+    
+    imbalanced_state:
+      description: "Pain hypersensitivity, anhedonia, addiction seeking"
+      indicators: ["low pain threshold", "joylessness", "substance seeking"]
+    
+    invocation_pathways:
+      somatic: "Vigorous exercise, laughter, spicy food, cold exposure"
+      archetypal: "Music performance, dance, healing touch"
+      environmental: "Nature immersion, group physical activity"
+
+  "4":
+    hormone: dopamine
+    muse: Thalia
+    constellation: Pegasus
+    muse_domain: "Comedy & Pleasure"
+    function: "Reward prediction, motivation, novelty"
+    center: heart
+    layer: hedonic
+    archetype: "The Comedian"
+    boot_priority: 4
+    
+    selemene_engines:
+      primary: gift-shadow-spectrum
+      secondary: [sigil-forge, archetypal-mirror]
+    
+    balanced_state:
+      description: "Healthy motivation, creative flow, appropriate reward sensitivity"
+      indicators: ["goal pursuit", "creative expression", "delayed gratification"]
+    
+    imbalanced_state:
+      description: "Addiction, mania, motivation collapse"
+      indicators: ["compulsive seeking", "novelty addiction", "apathy"]
+    
+    invocation_pathways:
+      somatic: "Novel experiences, creative projects, micro-wins"
+      archetypal: "Play, comedy, improvisation, trickster invocation"
+      environmental: "New environments, surprise, game-like structure"
+    
+    interaction_rules:
+      competes_with: serotonin  # Thalia disturbs Urania
+
+  "5":
+    hormone: cortisol
+    muse: Melpomene
+    constellation: Ophiuchus
+    muse_domain: "Tragedy & Catharsis"
+    function: "Stress processing, catharsis, transformation"
+    center: head
+    layer: regulatory
+    archetype: "The Transformer Through Suffering"
+    boot_priority: 5
+    
+    selemene_engines:
+      primary: nine-point-architecture
+      secondary: [hexagram-navigation, chronofield]
+    
+    note: >
+      Position 5 holds what culture excludes, what the body fears,
+      and what the spirit requires for transformation. Ophiuchus is
+      the 13th constellation — the one they removed from the zodiac.
+    
+    balanced_state:
+      description: "Appropriate stress response, morning cortisol awakening, cathartic release"
+      indicators: ["healthy stress response", "morning energy", "emotional processing"]
+    
+    imbalanced_state:
+      description: "Chronic stress, adrenal fatigue, unprocessed grief"
+      indicators: ["chronic anxiety", "afternoon crashes", "emotional avoidance"]
+    
+    invocation_pathways:
+      somatic: "Cold exposure, fasting, controlled stressors"
+      archetypal: "Tragedy viewing, grief ritual, controlled confrontation"
+      environmental: "Wilderness challenge, deliberate difficulty"
+    
+    interaction_rules:
+      suppresses: oxytocin  # Melpomene disrupts Clio
+
+  "6":
+    hormone: estrogen
+    muse: Erato
+    constellation: Boötes
+    muse_domain: "Love & Creation"
+    function: "Creation, beauty, receptive desire"
+    center: heart
+    layer: hedonic
+    archetype: "The Lover-Creator"
+    boot_priority: 6
+    
+    selemene_engines:
+      primary: sigil-forge
+      secondary: [geometric-resonance, gift-shadow-spectrum]
+    
+    balanced_state:
+      description: "Creative fertility, beauty sensitivity, healthy desire"
+      indicators: ["creative output", "aesthetic sensitivity", "relational warmth"]
+    
+    imbalanced_state:
+      description: "Creative block, emotional volatility, desire confusion"
+      indicators: ["artistic paralysis", "mood swings", "inappropriate attachment"]
+    
+    invocation_pathways:
+      somatic: "Sensual experience, art creation, beauty cultivation"
+      archetypal: "Love poetry, erotic art, creation ritual"
+      environmental: "Beautiful spaces, art galleries, gardens"
+
+  "7":
+    hormone: testosterone
+    muse: Calliope
+    constellation: Taurus
+    muse_domain: "Epic Poetry & Drive"
+    function: "Drive, ambition, competitive excellence"
+    center: gut
+    layer: action
+    archetype: "The Epic Hero"
+    boot_priority: 7
+    
+    selemene_engines:
+      primary: energetic-authority
+      secondary: [three-wave-cycle, chronofield]
+    
+    balanced_state:
+      description: "Healthy ambition, physical vitality, confident assertion"
+      indicators: ["goal-directed action", "physical strength", "clear boundaries"]
+    
+    imbalanced_state:
+      description: "Aggression, dominance fixation, burnout from overdriving"
+      indicators: ["rage episodes", "compulsive competition", "exhaustion"]
+    
+    invocation_pathways:
+      somatic: "Strength training, martial arts, competitive sport"
+      archetypal: "Hero journey narrative, epic poetry, war dance"
+      environmental: "Physical challenge, arena, competition space"
+
+  "8":
+    hormone: adrenaline
+    muse: Terpsichore
+    constellation: Andromeda
+    muse_domain: "Dance & Movement"
+    function: "Emergency response, kinetic intelligence, embodied action"
+    center: gut
+    layer: action
+    archetype: "The Dancer-Warrior"
+    boot_priority: 8
+    
+    selemene_engines:
+      primary: three-wave-cycle
+      secondary: [bioelectric-field, physiognomic-mapping]
+    
+    balanced_state:
+      description: "Appropriate fight-or-flight, athletic grace, embodied responsiveness"
+      indicators: ["quick reflexes", "movement fluidity", "appropriate alarm response"]
+    
+    imbalanced_state:
+      description: "Chronic anxiety, hypervigilance, freeze response"
+      indicators: ["panic attacks", "startle response", "dissociation under stress"]
+    
+    invocation_pathways:
+      somatic: "Dance, sprint, cold plunge, breathwork (tummo)"
+      archetypal: "Dance performance, movement ritual, chase/escape narrative"
+      environmental: "High-energy space, live music, dancefloor"
+    
+    interaction_rules:
+      overrides: melatonin  # Terpsichore overrides Polymnia
+
+  "9":
+    hormone: serotonin
+    muse: Urania
+    constellation: Virgo
+    muse_domain: "Astronomy & Order"
+    function: "Systemic integration, order, contentment"
+    center: head
+    layer: regulatory
+    archetype: "The Cosmic Orderer"
+    boot_priority: 9  # Last = systemic integration check
+    
+    selemene_engines:
+      primary: active-planetary-weather
+      secondary: [temporal-grammar, numeric-architecture]
+    
+    balanced_state:
+      description: "Contentment, systemic overview, spiritual equanimity"
+      indicators: ["stable mood", "big-picture thinking", "gratitude capacity"]
+    
+    imbalanced_state:
+      description: "Depression, obsessive ordering, rigid thinking"
+      indicators: ["flat affect", "compulsive control", "inflexibility"]
+    
+    invocation_pathways:
+      somatic: "Sunlight exposure, tryptophan foods, rhythmic exercise"
+      archetypal: "Astronomical observation, order-making, cosmological study"
+      environmental: "Open sky, mountaintop, planetarium"
+
+# Triadic organization (Enneagram centers)
+centers:
+  heart:
+    muses: [Euterpe, Thalia, Erato]
+    hormones: [endorphins, dopamine, estrogen]
+    function: "Hedonic — modulate felt quality of experience"
+    agent: pichet  # Somatic, feeling-centered
+  
+  head:
+    muses: [Polymnia, Melpomene, Urania]
+    hormones: [melatonin, cortisol, serotonin]
+    function: "Regulatory — modulate structure of experience"
+    agent: aletheios  # Analytical, ordering
+  
+  gut:
+    muses: [Clio, Calliope, Terpsichore]
+    hormones: [oxytocin, testosterone, adrenaline]
+    function: "Action — translate internal state to external expression"
+    agent: dyad  # Both needed: Aletheios reads the pattern, Pichet drives the action
+
+# Bidirectional access principle
+bidirectional_rule: >
+  Alter chemistry → archetype shifts. Invoke archetype → chemistry follows.
+  The hormone and the archetype are the same event observed from inside
+  and outside the body.

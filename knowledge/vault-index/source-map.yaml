@@ -1,0 +1,127 @@
+# Vault Source Map
+# Maps each knowledge domain to its source files in 03-Resources and blog posts
+# Used for deep retrieval when domain lookup tables aren't sufficient
+
+domain_sources:
+
+  endocrine-muse:
+    blog_posts:
+      - url: "https://18765.tryambakam.space/posts/endocrine-constellation-transcript"
+        title: "Endocrine-Constellation Transcript"
+        content: "THE master 9-point lookup table (hormone → muse → constellation)"
+      - url: "https://18765.tryambakam.space/posts/nine-muses-endocrine-system"
+        title: "Nine Muses and the Endocrine System"
+        content: "Triadic division (heart/head/gut), bidirectional access"
+      - url: "https://18765.tryambakam.space/posts/endocrine-muse-pattern-analysis"
+        title: "Endocrine-Muse Pattern Analysis"
+        content: "Cyclical/hierarchical/field-coherence patterns, interaction rules"
+    vault_files:
+      - "03-Resources/Sacred-Science/Consciousness-Studies/Pattern-Recognition.md"
+      - "03-Resources/Health/Hormonal-Health/"  # 13 files on specific hormones
+
+  bioelectric:
+    blog_posts:
+      - url: "https://18765.tryambakam.space/posts/nadi-bioimpedance-protocol"
+        title: "Nadi-Bioimpedance Protocol"
+        content: "3 Nadi impedance tables, measurement protocol, 3 substrates"
+      - url: "https://18765.tryambakam.space/posts/magnetic-substrate"
+        title: "The Magnetic Substrate"
+        content: "3 vortex model, melanin, deuterium, geomagnetic context"
+    vault_files:
+      - "03-Resources/Health/Biohacking/"  # Energy medicine, bioelectric foundations
+      - "03-Resources/Alternative-Science/Exploration/"  # Ether technology, radionics
+      - "03-Resources/Sacred-Science/Consciousness-Studies/Noetic-Aether.md"
+
+  consciousness-states:
+    blog_posts:
+      - url: "https://18765.tryambakam.space/posts/consciousness-architecture-hub"
+        title: "Consciousness Architecture Hub"
+        content: "HTTP mental states, Unix commands, 4-cluster architecture"
+      - url: "https://18765.tryambakam.space/posts/hyperbolic-consciousness"
+        title: "Hyperbolic Consciousness"
+        content: "Curvature ladder (6 levels), 3 gates, area comparison formula"
+      - url: "https://18765.tryambakam.space/posts/topological-pocket-consciousness"
+        title: "Topological Pocket Consciousness"
+        content: "Noetic field, topological defects, EM interference"
+    vault_files:
+      - "03-Resources/Consciousness-Evolution/TWC-The-Metamorphosis-of-Human-Awareness.md"  # THE synthesis: Young + Whitehead + Gebser + Jaynes
+      - "03-Resources/Consciousness-Studies/"  # 4 TWC originals
+      - "03-Resources/Consciousness/Noetic-Science/TWC-A-World-of-Living-Mirrors.md"
+      - "03-Resources/Consciousness/Perception-Space/TWC-Syntergic-Space-Extension-Explication-Singularity.md"
+      - "03-Resources/Consciousness/Altered-States/"  # 44 files — Bentov, Wilber, Grof, etc.
+
+  lorenz-kundli:
+    blog_posts:
+      - url: "https://18765.tryambakam.space/posts/lorenz-kundli-pattern-hub"
+        title: "Lorenz-Kundli Pattern Recognition Hub"
+        content: "6 parallels: Vimshottari-Markov, Graha-CA, Ashtakavarga-Hypercube, etc."
+      - url: "https://18765.tryambakam.space/posts/lorenz-kundli-system-index"
+        title: "Lorenz-Kundli System Index"
+        content: "Research status table, 3 research vectors"
+    vault_files:
+      - "03-Resources/Sacred-Science/Sacred-Mathematics/"  # Vortex math, sacred geometry
+      - "03-Resources/Sacred-Science/Astrology/"  # Astrolink, planetary hours
+
+  pain-architecture:
+    blog_posts:
+      - url: "https://18765.tryambakam.space/posts/pain-information-architecture"
+        title: "Pain Information Architecture"
+        content: "3-layer stack (binary/dilation/casino), information packet schema"
+    vault_files:
+      - "03-Resources/Health/Biohacking/"  # Energy medicine framework
+
+  morphic-resonance:
+    vault_files:
+      - "03-Resources/Morphic-Resonance/TWC-Morphic-Resonance-The-Theory-of-Formative-Causation.md"
+      - "03-Resources/Morphic-Resonance/TWC-Dialogue-with-Rupert-Sheldrake.md"
+
+  sacred-geometry:
+    vault_files:
+      - "03-Resources/Websites/meru.org/YouTube-Transcripts/_SYNTHESIS.md"
+      - "03-Resources/Websites/meru.org/YouTube-Transcripts/Comprehension/"  # 3 batches
+      - "03-Resources/Sacred-Science/Sacred-Mathematics/"  # 3 files
+      - "03-Resources/Sacred-Science/_reference-map.md"  # Mermaid knowledge graph
+      - "03-Resources/Tetryonics-Integration/"  # Clifford algebra bridge
+
+  noetic-aether:
+    blog_posts:
+      - url: "https://18765.tryambakam.space/posts/noetic-aether-einsteinian-knot"
+        title: "Noetic Aether and the Einsteinian Knot"
+        content: "Physics-metaphysics bridge, one-way speed of light problem"
+    vault_files:
+      - "03-Resources/Sacred-Science/Consciousness-Studies/Noetic-Aether.md"
+      - "03-Resources/Alternative-Science/Exploration/"  # Aether science
+
+  social-programming:
+    blog_posts:
+      - url: "https://18765.tryambakam.space/posts/leviathan-enneagram-analysis"
+        title: "Leviathan Enneagram Analysis"
+        content: "Enneagram Type 4 → Leviathan, sovereignty exploit, color states"
+    vault_files:
+      - "03-Resources/Critical-Theory/"
+      - "03-Resources/Society-Culture/"
+
+  process-cosmology:
+    vault_files:
+      - "03-Resources/Consciousness-Evolution/TWC-The-Metamorphosis-of-Human-Awareness.md"
+      - "03-Resources/Philosophy/Esoteric-Philosophy/"  # 16 files
+      - "03-Resources/Neoplatonic-Philosophy/"
+      - "03-Resources/Process-Philosophy/"  # 2 TWC files
+      - "03-Resources/Philosophy-of-Science/TWC-The-Formscapes-Manifesto.md"
+
+# TWC originals ranked by structural richness (for deep retrieval priority)
+twc_originals_ranked:
+  tier_1:  # Named models, formal frameworks, explicit cross-references
+    - "03-Resources/Consciousness-Evolution/TWC-The-Metamorphosis-of-Human-Awareness.md"
+    - "03-Resources/Consciousness/Noetic-Science/TWC-A-World-of-Living-Mirrors.md"
+    - "03-Resources/Philosophy-of-Science/TWC-The-Formscapes-Manifesto.md"
+    - "03-Resources/Sacred-Science/_reference-map.md"
+  tier_2:  # Good synthesis, moderate structure
+    - "03-Resources/Consciousness/Perception-Space/TWC-Syntergic-Space-Extension-Explication-Singularity.md"
+    - "03-Resources/Morphic-Resonance/TWC-Morphic-Resonance-The-Theory-of-Formative-Causation.md"
+    - "03-Resources/Consciousness-Studies/"  # All 4 TWC files
+    - "03-Resources/Synthesis/Mythic-Journey-HD-Integration-Map.md"
+  tier_3:  # Reference corpus — useful for depth but less structured
+    - "03-Resources/Consciousness/Altered-States/"
+    - "03-Resources/Sacred-Science/Ancient-Wisdom/"
+    - "03-Resources/Philosophy/Esoteric-Philosophy/"

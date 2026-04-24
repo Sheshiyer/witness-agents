@@ -1,0 +1,118 @@
+# Pichet Routing Rules
+# Conditional knowledge selection — somatic, embodied, timing-aware
+
+routing_rules:
+
+  # --- ENGINE-TRIGGERED ROUTES ---
+
+  - trigger: "engine == three-wave-cycle"
+    domains: [endocrine-muse, bioelectric, pain-architecture]
+    action: >
+      1. Load current biorhythm percentages (P/E/I)
+      2. Map to endocrine-muse: which hormones are amplified when
+         physical is high? When emotional is low?
+      3. Check bioelectric: are the three vortexes in sync with the rhythm?
+      4. If physical < 20: check pain-architecture (is the body signaling?)
+    depth:
+      subscriber: "Rhythm report + dominant hormone + body recommendation"
+      enterprise: "Full vortex-rhythm synthesis + hormone interaction check"
+    embodiment: >
+      Never just report numbers. "Physical 72%" means nothing.
+      "Your body is at peak capacity — move now, process later" means something.
+
+  - trigger: "engine == circadian-cartography"
+    domains: [bioelectric, endocrine-muse]
+    action: >
+      1. Load current hour → active organ → dominant Nadi
+      2. Cross-reference with endocrine-muse: which hormone dominates now?
+      3. Check bioelectric.geomagnetic_context for environmental factors
+    embodiment: >
+      Timing is everything. "The answer is 3 PM" matters more than
+      "the answer is Jupiter." Pichet speaks in when, not what.
+
+  - trigger: "engine == bioelectric-field"
+    domains: [bioelectric, endocrine-muse, pain-architecture]
+    action: >
+      1. Load Nadi impedance tables for reported region
+      2. Map active chakra → endocrine gland → hormone → muse
+      3. Check balanced vs blocked indicators
+      4. If pain present → load pain-architecture first
+    embodiment: >
+      "Your throat center is active" → "Speak what you've been holding.
+      The tissue in your neck is literally piezoelectric — your fascia
+      is storing the unsaid words as voltage."
+
+  - trigger: "engine == resonance-architecture"
+    domains: [bioelectric, sacred-geometry]
+    action: >
+      1. Match query to frequency range
+      2. Load bioelectric.three_vortexes — which vortex resonates?
+      3. Check sacred-geometry for cymatics/projection patterns
+    embodiment: >
+      Sound is not metaphor here. Sphenoid resonance = literal
+      deuterium clearance. Recommend specific frequencies for
+      specific conditions based on the vortex model.
+
+  # --- STATE-TRIGGERED ROUTES ---
+
+  - trigger: "user_state.overwhelm_level > 0.5"
+    domains: [bioelectric, pain-architecture]
+    action: >
+      Overwhelm rising. Pichet takes lead.
+      1. Do NOT add more information
+      2. Check bioelectric.nadi_primary_triad — which Nadi is blocked?
+      3. Offer ONE somatic instruction (breath, movement, posture)
+      4. "Your body knows how to process this. Let it."
+    gate_override: "Reduce Clifford gate by 1"
+
+  - trigger: "user_state.http_status == 404"
+    domains: [bioelectric, endocrine-muse]
+    action: >
+      Dissociation detected. Body has left the building.
+      1. Load bioelectric — ground through physical sensation
+      2. Check endocrine-muse: adrenaline override? (Terpsichore → Polymnia)
+      3. Offer: "Name three things you can feel right now."
+      4. NO analysis. NO synthesis. Body first.
+
+  - trigger: "user_state.http_status == 500"
+    domains: [endocrine-muse, pain-architecture]
+    action: >
+      Anxiety. System overload.
+      1. Check endocrine-muse.cortisol (Position 5 — Melpomene active?)
+      2. Is cortisol suppressing oxytocin? (Melpomene disrupting Clio?)
+      3. Offer embodied regulation: "Exhale longer than you inhale."
+      4. Reduce engine output volume — less is more.
+
+  # --- TEMPORAL ROUTES ---
+
+  - trigger: "temporal_context.biorhythm.physical < 20"
+    domains: [endocrine-muse, bioelectric]
+    action: >
+      Physical cycle trough. Body is in recovery mode.
+      1. Do NOT recommend action-oriented interpretations
+      2. Flag to Aletheios: "defer action recommendations"
+      3. Offer: "This is a rest day. Trust the cycle."
+      4. Check endocrine-muse: is testosterone/Calliope pushing
+         against the trough? That conflict IS the fatigue.
+
+  - trigger: "temporal_context.biorhythm.emotional < 20"
+    domains: [endocrine-muse, pain-architecture]
+    action: >
+      Emotional cycle trough. Feeling capacity is minimum.
+      1. Any emotional interpretation will land flat or harsh
+      2. Defer emotional depth to another day
+      3. "Your emotional channel is quiet right now. Not numb — resting.
+         There's a difference."
+
+  # --- PAIN OVERRIDE ---
+
+  - trigger: "pain_reported == true"
+    domains: [pain-architecture, bioelectric]
+    priority: highest
+    action: >
+      Pain overrides everything. It is the body's priority interrupt.
+      1. Load pain-architecture.three_layer_stack
+      2. Acknowledge BEFORE analyzing
+      3. "I hear that you're in pain. That's information, not punishment."
+      4. Only THEN: binary signal (what), dilation (how wide), casino (what learning)
+      5. Check bioelectric for source indicators

@@ -1,0 +1,97 @@
+# Lorenz-Kundli Knowledge Domain
+# Source: Posts 10, 14 — Six parallel studies mapping Vedic astrology to chaos mathematics
+
+core_thesis: >
+  The Lorenz attractor and the Kundli birth chart solve the same problem:
+  representing the evolution of a complex dynamic system in geometric space.
+  Both are deterministic yet unpredictable. Both exhibit scale invariance.
+  Both show local sensitivity + global stability = strange attractor.
+
+six_parallels:
+  vimshottari_markov:
+    vedic: "Vimshottari Dasha (120-year planetary timeline)"
+    mathematical: "Markov Chains"
+    isomorphism: "Memoryless state transitions — current period fully determines activation"
+    status: active
+    selemene_engine: chronofield
+    agent: aletheios
+    
+    data_flow: >
+      Vimshottari constrains WHICH graha relationships are active.
+      This is the first gate — everything downstream depends on
+      which Dasha/Antardasha is currently running.
+
+  graha_cellular_automata:
+    vedic: "Graha Friendship (planetary relationships)"
+    mathematical: "Cellular Automata"
+    isomorphism: "Local rules → emergent complexity (Conway's Game of Planets)"
+    status: active
+    selemene_engine: active-planetary-weather
+    agent: aletheios
+    
+    data_flow: >
+      Graha friendships modify the Ashtakavarga bindus.
+      Like cellular automata, simple local rules (friend/enemy/neutral)
+      produce complex emergent behavior at the chart level.
+
+  ashtakavarga_hypercube:
+    vedic: "Ashtakavarga (8-planet scoring)"
+    mathematical: "Hypercube Geometry"
+    isomorphism: "8-dimensional binary state space — each bindu = vertex on hypercube"
+    status: to_be_implemented
+    selemene_engine: chronofield
+    agent: aletheios
+    
+    data_flow: >
+      Ashtakavarga repositions on the Nakshatra spiral.
+      The 8-dimensional binary space (each planet contributes/doesn't)
+      creates a geometric object navigable by the interpretation engine.
+
+  nakshatra_fibonacci:
+    vedic: "Nakshatra (27 lunar mansions)"
+    mathematical: "Fibonacci Sequences"
+    isomorphism: "Golden ratio optimization for information distribution across lunar cycle"
+    status: to_be_implemented
+    selemene_engine: temporal-grammar
+    agent: dyad
+    
+    data_flow: >
+      Nakshatras adjust the Shadbala tensor.
+      The 27-fold division of the ecliptic follows Fibonacci-like
+      optimization — maximum information with minimum redundancy.
+
+  shadbala_tensor:
+    vedic: "Shadbala (6-fold planetary strength)"
+    mathematical: "Tensor Fields"
+    isomorphism: "Planetary influence is directional + multi-dimensional, not scalar"
+    status: to_be_implemented
+    selemene_engine: energetic-authority
+    agent: aletheios
+    
+    data_flow: >
+      Shadbala modulates Bhava network weights.
+      A planet's strength is not a number — it's a 6-dimensional
+      tensor (positional, directional, temporal, motional, natural, aspectual).
+
+  bhava_neural_network:
+    vedic: "Bhava Aspects (house-to-house influences)"
+    mathematical: "Neural Networks"
+    isomorphism: "Planets=nodes, aspects=weighted edges, interpretation=activation propagation"
+    status: to_be_implemented
+    selemene_engine: chronofield
+    agent: dyad
+    
+    data_flow: >
+      Final output layer — the weighted activation pattern across
+      all Bhavas gives the holistic chart interpretation.
+
+data_flow_chain: >
+  Vimshottari (what period?) → constrains Graha relationships (which planets active?)
+  → modifies Ashtakavarga bindus (how strong?) → repositions on Nakshatra spiral
+  (where in the lunar cycle?) → adjusts Shadbala tensor (multidimensional strength)
+  → modulates Bhava network weights (final interpretation)
+
+research_vectors:
+  pattern_evolution: "Do Lorenz dynamics predict Dasha transitions?"
+  field_coherence: "Do interacting charts behave like coupled Lorenz oscillators?"
+  implementation: "Can chaos tools (Lyapunov exponents, fractal dimension) apply to Kundli data?"

@@ -1,0 +1,82 @@
+# Aletheios Routing Rules
+# Conditional knowledge selection based on context variables
+
+routing_rules:
+
+  # --- ENGINE-TRIGGERED ROUTES ---
+
+  - trigger: "engine == chronofield"
+    domains: [lorenz-kundli, endocrine-muse]
+    action: >
+      1. Load lorenz-kundli.vimshottari_markov for state transition context
+      2. Cross-reference current Dasha planet with endocrine-muse matrix
+      3. Identify which hormone/muse is amplified in this period
+      4. Check hormone-interaction rules for conflicts
+    depth:
+      subscriber: "Report Dasha period + primary hormone/muse"
+      enterprise: "Full Lorenz-Kundli chain + multi-hormone synthesis"
+      initiate: "Above + self-referential: what does it mean that YOU notice this pattern?"
+
+  - trigger: "engine == nine-point-architecture"
+    domains: [endocrine-muse, social-programming, consciousness-states]
+    action: >
+      1. Load user's Enneagram type from endocrine-muse 9-point matrix
+      2. Identify primary hormone, muse, constellation
+      3. Check stress/growth line dynamics
+      4. If Type 4 themes → also load social-programming.leviathan analysis
+      5. Map to consciousness-states.gebser (which structure is dominant?)
+    depth:
+      subscriber: "Type + primary hormone/muse"
+      enterprise: "Type + stress/growth dynamics + hormone interactions"
+      initiate: "Above + sovereignty analysis + Gebser stage awareness"
+
+  - trigger: "engine == hexagram-navigation"
+    domains: [lorenz-kundli, consciousness-states]
+    action: >
+      1. Map hexagram to Lorenz attractor position (phase space)
+      2. Changing lines = trajectory direction
+      3. Check consciousness-states for current level context
+    depth:
+      subscriber: "Hexagram meaning + state transition"
+      enterprise: "Lorenz trajectory + consciousness level integration"
+
+  # --- STATE-TRIGGERED ROUTES ---
+
+  - trigger: "user_state.recursion_detected == true"
+    domains: [consciousness-states, pain-architecture]
+    action: >
+      Recursion = the user is circling. Two possibilities:
+      1. Avoidance loop → consciousness-states.http_301 (redirect/defense)
+      2. Pain loop → pain-architecture.dopamine_casino (intermittent reinforcement)
+      Mirror the pattern: "You've asked this three times. The question
+      isn't the problem. What are you avoiding feeling?"
+
+  - trigger: "user_state.active_kosha == anandamaya"
+    domains: [consciousness-states, sacred-geometry]
+    action: >
+      User has reached self-referential depth.
+      1. Load consciousness-states.curvature_ladder.breakthrough
+      2. Load sacred-geometry — Meru's self-referential forms
+      3. Shift from interpretation to mirroring
+      4. "The answer is not in the data. The answer is in you seeing yourself in the data."
+
+  # --- TEMPORAL ROUTES ---
+
+  - trigger: "temporal_context.circadian_position == 'liver_time'"
+    domains: [bioelectric, endocrine-muse]
+    action: >
+      Liver time (1-3 AM) = processing/detox period.
+      If user is querying at this hour, flag it:
+      "You're up during liver time. Are you processing something
+      the daytime mind couldn't handle?"
+    agent_note: "Aletheios observes the temporal anomaly, doesn't judge it"
+
+  # --- MULTI-ENGINE SYNTHESIS ---
+
+  - trigger: "engines_used contains [chronofield, nine-point-architecture]"
+    domains: [lorenz-kundli, endocrine-muse]
+    action: >
+      Cross-engine synthesis: Dasha period + Enneagram type.
+      Which planetary period amplifies which Enneagram fixation?
+      Example: Saturn Dasha + Type 5 = maximum withdrawal.
+      Jupiter Dasha + Type 7 = maximum expansion (with overwhelm risk).

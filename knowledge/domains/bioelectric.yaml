@@ -1,0 +1,126 @@
+# Bioelectric Knowledge Domain
+# Sources: Nadi-Bioimpedance Protocol (Post 6), Magnetic Substrate (Post 4)
+
+three_vortexes_of_ba:
+  description: >
+    The body runs three primary vortex engines. When magnetic field is coherent,
+    all three spin in sync. When it degrades, consciousness geometry changes.
+  
+  atpase:
+    location: "Mitochondrial membrane"
+    speed: "9,000 RPM"
+    function: "Hydrogen ion rotor — primary energy generation"
+    failure_mode: "Deuterium accumulation slows rotor → fatigue, CFS, ALS"
+    la_principle: "Deuterium IS La — the isotopic inertia"
+    
+  brain_venturi:
+    location: "Sphenoid / ventricular system"
+    function: "CSF fractionation via Aqueduct of Sylvius"
+    target: "Deuterium clearance to 110-120 ppm"
+    key_structure: "Vagal motor trigon sits at exit"
+    mantric_connection: >
+      Om, Gayatri = sphenoid resonance frequencies for mechanical
+      deuterium clearance through trigeminal pathway
+    
+  heart_helix:
+    location: "Cardiac helix"
+    function: "Gravity well for heavy isotopes — Z-axis deuterium clearance"
+
+nadi_primary_triad:
+  description: >
+    The 14 principal Nadis correspond to measurable bioelectric pathways.
+    Three substrates: fascial network (piezoelectricity), autonomic NS
+    (Becker DC currents), and CSF channels.
+
+  sushumna:
+    english: "Central Channel"
+    physical_substrate: "CSF column, spinal cord, raphe nucleus (serotonin)"
+    impedance:
+      balanced:
+        resistance: "500-800Ω @1Hz"
+        capacitance: "0.5-1.0μF"
+        dc_potential: "10-15mV"
+      blocked:
+        resistance: ">1200Ω"
+        capacitance: "<0.3μF"
+        dc_potential: "<5mV"
+    clinical_signs_blocked:
+      - "Chronic fatigue"
+      - "Depression"
+      - "Poor vagal tone"
+    measurement: "Proximal C7, distal L5, frequency sweep 1Hz-1kHz"
+    selemene_engine: bioelectric-field
+
+  ida:
+    english: "Lunar / Left Channel"
+    physical_substrate: "Left vagus, left lateral fascia, parasympathetic"
+    impedance:
+      balanced:
+        resistance: "600-900Ω @10Hz"
+        hrv_coherence: ">70%"
+      blocked:
+        resistance: ">1300Ω"
+        hrv_coherence: "<50%"
+    clinical_signs_blocked:
+      - "Right-brain dysfunction"
+      - "Anxiety"
+      - "Insomnia"
+    selemene_engine: bioelectric-field
+
+  pingala:
+    english: "Solar / Right Channel"
+    physical_substrate: "Right sympathetic chain, right lateral fascia"
+    impedance:
+      balanced:
+        resistance: "550-850Ω @10Hz"
+        skin_conductance: "5-15μS"
+      blocked:
+        resistance: ">1200Ω"
+        skin_conductance: "<3μS"
+    clinical_signs_blocked:
+      - "Left-brain dysfunction"
+      - "Lethargy"
+      - "Hypo-metabolism"
+    selemene_engine: bioelectric-field
+
+key_substances:
+  melanin:
+    role: "Magnetically sensitive regulatory pigment"
+    locations: ["choroid plexus", "ependymal cells", "pineal gland", "skin"]
+    degradation_pathway: "Degraded melanin → dopamine (pigment to neurotransmitter)"
+    magnetic_sensitivity: true
+    
+  deuterium:
+    role: "La principle — isotopic inertia"
+    mechanism: "Accumulates when magnetic exhaust system fails"
+    target_level: "110-120 ppm in CSF"
+    clearance_methods:
+      mechanical: "Mantric vibration (sphenoid resonance)"
+      chemical: "Deuterium-depleted water"
+      thermal: "Infrared/UV exposure (raises dielectric constant)"
+
+  csf:
+    dielectric_constant:
+      normal: 78
+      uv_near_ir_exposed: 160
+    effect: "Higher dielectric → faster ATPase spin"
+
+geomagnetic_context:
+  south_atlantic_anomaly:
+    description: "Region of weakened geomagnetic field"
+    effect: "Consciousness degradation zone — reduced magnetic coherence"
+  
+  degradation_cascade: >
+    Magnetic field weakens → oxygen drops (O2 is paramagnetic) →
+    melanin degrades to dopamine → three vortexes lose coherence →
+    cognitive geometry changes
+
+  ancient_retreat_technology: >
+    Caves, mountaintops, remote forests = technology for escaping EM interference.
+    The geomagnetic field normally constrains the noetic field; when it weakens
+    or when you remove artificial EM, topological pockets form → altered states.
+
+fundamental_principle: >
+  "Field generates matter. The Nadi is the architect; the nerve, fascia,
+  and fluid channel are the building." Layer 0 = bioelectric voltage gradient
+  → directs morphogenesis.

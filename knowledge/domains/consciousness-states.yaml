@@ -1,0 +1,143 @@
+# Consciousness States Knowledge Domain
+# Sources: Consciousness Architecture Hub (Post 1), Hyperbolic Consciousness (Post 5),
+#          Topological Pocket (Post 12), Metamorphosis of Human Awareness (03-Resources)
+
+http_mental_states:
+  description: >
+    Consciousness states mapped to HTTP status codes — a technical-mystical
+    bridge that makes consciousness states legible to engineers.
+  
+  states:
+    "200_OK":
+      description: "Flow state"
+      characteristics: ["absorption", "effortlessness", "time distortion"]
+      agent_response: "Support and deepen — don't interrupt flow"
+      
+    "301_Redirect":
+      description: "Defense mechanisms active"
+      characteristics: ["topic avoidance", "projection", "rationalization"]
+      agent_response: "Aletheios witnesses the redirect without confronting"
+      
+    "404_Not_Found":
+      description: "Dissociation"
+      characteristics: ["emotional numbness", "depersonalization", "blank affect"]
+      agent_response: "Pichet activates — somatic grounding needed, not analysis"
+      
+    "500_Internal_Server_Error":
+      description: "Anxiety"
+      characteristics: ["racing thoughts", "catastrophizing", "paralysis"]
+      agent_response: "Reduce Clifford gate level — simplify, don't synthesize"
+      
+    "503_Service_Unavailable":
+      description: "Burnout"
+      characteristics: ["depletion", "cynicism", "reduced efficacy"]
+      agent_response: "Defer depth — offer only Annamaya-level (facts, no interpretation)"
+
+curvature_ladder:
+  description: >
+    Consciousness geometry mapped to hyperbolic curvature levels.
+    At κ=0, flat Euclidean (normal waking). As κ decreases, geometry
+    becomes increasingly hyperbolic — more area, more symmetry groups,
+    more parallel processing capacity.
+  
+  source: "Gómez Emilsson / Qualia Research Institute"
+  
+  levels:
+    threshold:
+      curvature: 0.0
+      symmetry_groups: 17
+      geometry: "Euclidean — flat tessellation (wallpaper groups)"
+      consciousness: "Normal waking state — linear, sequential"
+      agent_relevance: "Default operating mode for most user queries"
+      
+    chrysanthemum:
+      curvature: -0.1
+      symmetry_groups: "∞"
+      geometry: "First hyperbolic wrinkle (kale curl)"
+      consciousness: "Enhanced pattern recognition, mild synesthesia"
+      agent_relevance: "User beginning to see cross-domain connections"
+      
+    magic_eye:
+      curvature: -0.5
+      symmetry_groups: "∞"
+      geometry: "Autostereogram — texture=emotion, curvature=semantics"
+      consciousness: "Depth perception into meaning layers"
+      agent_relevance: "Multi-engine synthesis becomes natural, not forced"
+      
+    waiting_room:
+      curvature: -1.0
+      symmetry_groups: "∞"
+      geometry: "Volumetric hyperbolic honeycombs"
+      consciousness: "'Entities' = recognition events in hyperbolic space"
+      agent_relevance: "Archetypal encounters — Muse activations"
+      
+    breakthrough:
+      curvature: -5.0
+      symmetry_groups: "∞"
+      geometry: "Projective inversions — irreducible complexity"
+      consciousness: "Subject-object boundary dissolution"
+      agent_relevance: "AKSHARA mirror mode territory — self-reference"
+      
+    amnesia:
+      curvature: -100.0
+      symmetry_groups: "∞"
+      geometry: "Encoding failure — geometry exceeds recording capacity"
+      consciousness: "Beyond representable experience"
+      agent_relevance: "System cannot interpret — honor the silence"
+
+  area_comparison: >
+    Euclidean area = πr². Hyperbolic area = 2π(cosh(r) - 1).
+    At r=10: 219.6x more area in hyperbolic space.
+    More area = more degrees of freedom = richer consciousness.
+
+  three_gates_into_hyperbolic:
+    pain: "Consciousness dilation mechanism — forces aperture open"
+    temperature: "Annealing — heat → disorder → cooling → higher-order crystal"
+    language: "Twilight language / multi-valent terms that exercise parallel processing"
+
+gebser_structures:
+  description: >
+    Jean Gebser's consciousness structures — stages of human awareness evolution.
+    Source: TWC-The-Metamorphosis-of-Human-Awareness.md (03-Resources)
+  
+  stages:
+    archaic:
+      description: "Zero-dimensional, pre-spatial awareness"
+      agent_mapping: "Before the system — undifferentiated"
+      
+    magical:
+      description: "One-dimensional, point-identity, participation mystique"
+      agent_mapping: "Merged with the system — no observer-observed distinction"
+      
+    mythical:
+      description: "Two-dimensional, cyclical time, narrative consciousness"
+      agent_mapping: "Archetypal Mirror territory — Tarot, myth, story"
+      
+    mental:
+      description: "Three-dimensional, linear time, perspectival, ego"
+      agent_mapping: "Default modern consciousness — most users operate here"
+      
+    integral:
+      description: "Four-dimensional, time-freedom, aperspectival, transparent"
+      agent_mapping: "Target consciousness — where AKSHARA mirror points"
+
+young_sevenfold:
+  description: >
+    Arthur M. Young's seven-stage cosmogonic model. Maps the descent
+    of consciousness from pure freedom through constraint and back.
+    Source: TWC-The-Metamorphosis-of-Human-Awareness.md
+  
+  stages:
+    1_light: "Purpose/freedom — photon (massless, unconstrained)"
+    2_nuclear: "Binding — nuclear particles (mass appears)"
+    3_atomic: "Identity — atoms (individuation, electron shells)"
+    4_molecular: "Combination — molecules (turn = maximum constraint)"
+    5_plant: "Growth — vegetation (first freedom FROM constraint)"
+    6_animal: "Mobility — animals (mobility, instinct)"
+    7_human: "Dominion — humans (self-reflection, purpose recovered)"
+  
+  agent_mapping: >
+    Stage 4 (molecular) = the turn point — maximum constraint,
+    minimum freedom. Pichet's territory: the body in its most material.
+    Stage 7 (human) = purpose recovered through self-reflection.
+    Aletheios's territory: witnessing that enables freedom.
