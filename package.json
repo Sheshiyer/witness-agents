@@ -1,0 +1,29 @@
+{
+  "name": "@witness-agents/core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Embodied meaning-authoring dyad — Aletheios & Pichet as inference layer for the Selemene Engine",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "witness-agents",
+    "selemene",
+    "pancha-kosha",
+    "consciousness-architecture"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0"
+  }
+}
