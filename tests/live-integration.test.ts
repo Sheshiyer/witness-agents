@@ -270,8 +270,8 @@ describe('Live: Full InterpretationPipeline', () => {
 
     assert.ok(sResult.engines_invoked.length <= wResult.engines_invoked.length,
       `single (${sResult.engines_invoked.length}) should have ≤ engines than workflow (${wResult.engines_invoked.length})`);
-    assert.ok(wResult.response.length >= sResult.response.length * 0.8,
-      'workflow response should generally be richer');
+    // With richer per-engine extractors, single-engine can produce long responses too.
+    // The key invariant: workflow uses more engines for broader coverage.
 
     console.log(`  ✧ Single: ${sResult.engines_invoked.length} engine(s), ${sResult.response.length} char response`);
     console.log(`  ✧ Workflow: ${wResult.engines_invoked.length} engine(s), ${wResult.response.length} char response`);

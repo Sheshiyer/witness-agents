@@ -16,6 +16,7 @@ import type {
   VaultSource,
 } from '../types/knowledge.js';
 import type { SelemeneEngineId } from '../types/engine.js';
+import { ENGINE_ID_MAP } from '../types/engine.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // KNOWLEDGE STORE — in-memory domain cache
@@ -253,10 +254,22 @@ export class KnowledgeStore {
   }
 
   /**
-   * Query by Selemene engine — returns all relevant knowledge domains
+   * Query by Selemene engine — returns all relevant knowledge domains.
+   * Translates Selemene engine_id (e.g. 'biorhythm') to WitnessOS alias
+   * (e.g. 'three-wave-cycle') for engine-knowledge-map lookup.
    */
   queryForEngine(engineId: SelemeneEngineId | string): DomainQueryResult[] {
-    const mapping = this.engineMap.get(engineId);
+    // Try direct lookup (WitnessOS alias names used in engine-knowledge-map.yaml)
+    let mapping = this.engineMap.get(engineId);
+
+    // Translate Selemene engine_id → WitnessOS alias if needed
+    if (!mapping) {
+      const alias = ENGINE_ID_MAP[engineId as keyof typeof ENGINE_ID_MAP];
+      if (alias) {
+        mapping = this.engineMap.get(alias);
+      }
+    }
+
     if (!mapping) return [];
 
     const allDomains = [...mapping.primary_domains, ...mapping.secondary_domains];
