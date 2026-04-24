@@ -18,16 +18,35 @@ import type {
 } from './types.js';
 import { DECODER_THRESHOLDS, STANDALONE_TIER_FEATURES } from './types.js';
 import { createHash } from 'node:crypto';
+import type { DecoderStateStore } from './decoder-store.js';
+import { InMemoryDecoderStore } from './decoder-store.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // DECODER STATE MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════
 
 /**
- * In-memory decoder state store.
- * For production: replace with Supabase/Redis persistence.
+ * Module-level default store. Overridable via setDecoderStore().
+ * Tests use in-memory (default); production uses Supabase.
  */
-const stateStore = new Map<string, DecoderState>();
+let activeStore: DecoderStateStore = new InMemoryDecoderStore();
+
+/**
+ * Sync in-memory cache — used by the sync API (getDecoderState/recordVisit).
+ * Populated on first access and kept in sync with the async store.
+ */
+const syncCache = new Map<string, DecoderState>();
+
+/** Replace the active store (call once at startup). */
+export function setDecoderStore(store: DecoderStateStore): void {
+  activeStore = store;
+  syncCache.clear();
+}
+
+/** Get the active store (for DailyMirror to use directly). */
+export function getDecoderStore(): DecoderStateStore {
+  return activeStore;
+}
 
 /**
  * Hash birth data to create a privacy-safe user identifier.
@@ -38,14 +57,9 @@ export function hashBirthData(birthDate: string, birthTime?: string, lat?: numbe
   return createHash('sha256').update(input).digest('hex').slice(0, 16);
 }
 
-/**
- * Get or create decoder state for a user.
- */
-export function getDecoderState(userHash: string): DecoderState {
-  const existing = stateStore.get(userHash);
-  if (existing) return existing;
-  
-  const fresh: DecoderState = {
+/** Fresh decoder state for a new user. */
+function freshState(userHash: string): DecoderState {
+  return {
     user_hash: userHash,
     total_visits: 0,
     consecutive_days: 0,
@@ -61,13 +75,40 @@ export function getDecoderState(userHash: string): DecoderState {
       'numerology': 0,
     },
   };
-  stateStore.set(userHash, fresh);
-  return fresh;
 }
 
 /**
- * Record a visit and update decoder state.
- * Returns the updated state with new layer unlocks.
+ * Get or create decoder state for a user (sync — uses local cache).
+ * The cache is hydrated from the async store on first async access.
+ */
+export function getDecoderState(userHash: string): DecoderState {
+  const existing = syncCache.get(userHash);
+  if (existing) return existing;
+
+  const state = freshState(userHash);
+  syncCache.set(userHash, state);
+  return state;
+}
+
+/**
+ * Get decoder state asynchronously (works with any store, including Supabase).
+ * Populates the sync cache for subsequent sync reads.
+ */
+export async function getDecoderStateAsync(userHash: string): Promise<DecoderState> {
+  const existing = await activeStore.get(userHash);
+  if (existing) {
+    syncCache.set(userHash, existing);
+    return existing;
+  }
+  const state = freshState(userHash);
+  syncCache.set(userHash, state);
+  await activeStore.set(userHash, state);
+  return state;
+}
+
+/**
+ * Record a visit and update decoder state (sync).
+ * Persists to async store via fire-and-forget.
  */
 export function recordVisit(
   userHash: string,
@@ -75,6 +116,38 @@ export function recordVisit(
   today?: string,
 ): DecoderState {
   const state = getDecoderState(userHash);
+  const updated = applyVisit(state, engineViewed, today);
+  syncCache.set(userHash, updated);
+  // Fire-and-forget persist to async store
+  activeStore.set(userHash, updated).catch(err => {
+    console.error(`[DecoderRing] Failed to persist state for ${userHash}:`, err);
+  });
+  return updated;
+}
+
+/**
+ * Record a visit asynchronously (works with any store).
+ */
+export async function recordVisitAsync(
+  userHash: string,
+  engineViewed: StandaloneEngineId,
+  today?: string,
+): Promise<DecoderState> {
+  const state = await getDecoderStateAsync(userHash);
+  const updated = applyVisit(state, engineViewed, today);
+  syncCache.set(userHash, updated);
+  await activeStore.set(userHash, updated);
+  return updated;
+}
+
+/**
+ * Pure function: apply a visit to decoder state.
+ */
+function applyVisit(
+  state: DecoderState,
+  engineViewed: StandaloneEngineId,
+  today?: string,
+): DecoderState {
   const todayStr = today || new Date().toISOString().split('T')[0];
   
   // Don't double-count same-day visits for consecutive tracking
@@ -120,7 +193,6 @@ export function recordVisit(
     state.max_layer_reached = maxLayer;
   }
   
-  stateStore.set(userHash, state);
   return state;
 }
 
@@ -190,7 +262,9 @@ export function shouldShowGraduation(state: DecoderState): boolean {
 export function markFindersGateShown(userHash: string): void {
   const state = getDecoderState(userHash);
   state.finder_gate_shown = true;
-  stateStore.set(userHash, state);
+  activeStore.set(userHash, state).catch(err => {
+    console.error(`[DecoderRing] Failed to persist finder gate for ${userHash}:`, err);
+  });
 }
 
 /**
@@ -199,7 +273,9 @@ export function markFindersGateShown(userHash: string): void {
 export function markGraduationShown(userHash: string): void {
   const state = getDecoderState(userHash);
   state.graduation_shown = true;
-  stateStore.set(userHash, state);
+  activeStore.set(userHash, state).catch(err => {
+    console.error(`[DecoderRing] Failed to persist graduation for ${userHash}:`, err);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -242,5 +318,6 @@ export function getDecoderNarrative(state: DecoderState): string | undefined {
  * Reset the state store (for testing).
  */
 export function _resetStateStore(): void {
-  stateStore.clear();
+  activeStore = new InMemoryDecoderStore();
+  syncCache.clear();
 }

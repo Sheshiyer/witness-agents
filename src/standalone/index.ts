@@ -52,12 +52,24 @@ export {
 export {
   hashBirthData,
   getDecoderState,
+  getDecoderStateAsync,
   recordVisit,
+  recordVisitAsync,
+  setDecoderStore,
+  getDecoderStore,
   computeMaxLayer,
   shouldShowFindersGate,
   shouldShowGraduation,
   getDecoderNarrative,
 } from './decoder-ring.js';
+
+// ─── Decoder Store ──────────────────────────────────────────────────
+export type { DecoderStateStore } from './decoder-store.js';
+export {
+  InMemoryDecoderStore,
+  SupabaseDecoderStore,
+  createDecoderStore,
+} from './decoder-store.js';
 
 // ─── Fool's Gate ────────────────────────────────────────────────────
 export {

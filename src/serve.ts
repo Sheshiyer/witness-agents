@@ -3,11 +3,17 @@
 // Reads configuration from environment variables.
 
 import { createStandaloneServer } from './standalone/standalone-api.js';
+import { setDecoderStore } from './standalone/decoder-ring.js';
+import { createDecoderStore } from './standalone/decoder-store.js';
 
 const port = parseInt(process.env.PORT || '3333', 10);
 const selemeneUrl = process.env.SELEMENE_API_URL || 'https://selemene.tryambakam.space';
 const selemeneApiKey = process.env.SELEMENE_API_KEY || '';
 const openrouterKey = process.env.OPENROUTER_API_KEY || '';
+
+// Initialize persistence before starting server
+const store = createDecoderStore();
+setDecoderStore(store);
 
 console.log(`[WitnessAgents] Starting standalone server...`);
 console.log(`[WitnessAgents] Selemene API: ${selemeneUrl}`);
