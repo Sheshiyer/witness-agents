@@ -62,6 +62,9 @@ export interface Layer2_WitnessQuestion {
   prompt_source: 'pichet';    // Always Pichet in standalone (somatic territory)
   context_hint: string;       // Why this question, without explaining the answer
   somatic_nudge?: string;     // Body-awareness micro-prompt (≤140 chars)
+  llm_powered: boolean;       // True if question was LLM-generated, false if template
+  model_used?: string;        // Which model generated it (if llm_powered)
+  inference_latency_ms?: number; // LLM call latency
 }
 
 /** Layer 3: The Meta-Pattern. Cross-engine resonance. The decoder ring opens. */
@@ -108,6 +111,7 @@ export interface DailyReading {
   // ─── Metadata ──────────────────────────────────
   engines_called: StandaloneEngineId[];
   total_latency_ms: number;
+  cache_stats?: { hits: number; misses: number; size: number };
   standalone_version: string;
 }
 

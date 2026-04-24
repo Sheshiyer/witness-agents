@@ -160,6 +160,81 @@ export class OpenRouterProvider {
   }
 
   /**
+   * Streaming chat completion — yields text chunks as they arrive.
+   * OpenRouter supports `stream: true` returning SSE `data: {...}` events.
+   */
+  async *completeStream(request: InferenceRequest): AsyncGenerator<string, void, unknown> {
+    const pref = request.model_override
+      ? { model_id: request.model_override, max_tokens: request.max_tokens_override || 1024, temperature: request.temperature_override || 0.5 }
+      : this.resolveModel(request.tier, request.model_role);
+
+    const body = {
+      model: pref.model_id,
+      messages: request.messages.map(m => ({ role: m.role, content: m.content })),
+      max_tokens: request.max_tokens_override || pref.max_tokens,
+      temperature: request.temperature_override ?? pref.temperature,
+      top_p: pref.top_p,
+      stream: true,
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      const res = await fetch(`${this.config.base_url}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.config.api_key}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': this.siteUrl,
+          'X-Title': this.siteName,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => '');
+        const err: InferenceError = {
+          provider: 'openrouter',
+          model: pref.model_id,
+          status: res.status,
+          message: errBody || res.statusText,
+          retryable: res.status === 429 || res.status >= 500,
+        };
+        throw err;
+      }
+
+      if (!res.body) throw new Error('No response body for streaming');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      for await (const chunk of res.body as any) {
+        buffer += decoder.decode(chunk, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+          if (!trimmed.startsWith('data: ')) continue;
+
+          try {
+            const data = JSON.parse(trimmed.slice(6));
+            const delta = data.choices?.[0]?.delta?.content;
+            if (delta) yield delta;
+          } catch {
+            // Skip malformed SSE chunks
+          }
+        }
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  /**
    * Get the current routing table (for inspection/debugging).
    */
   getRouting(): ModelRoutingTable {

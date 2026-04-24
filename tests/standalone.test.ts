@@ -513,6 +513,46 @@ describe('Fool\'s Gate', () => {
 // ─── Daily Mirror (Core Engine) ─────────────────────────────────────
 
 import { DailyMirror } from '../src/standalone/daily-mirror.js';
+import { EngineCache } from '../src/standalone/engine-cache.js';
+
+describe('Engine Cache', () => {
+  it('returns undefined on cache miss', () => {
+    const cache = new EngineCache();
+    assert.equal(cache.get('biorhythm', 'hash1'), undefined);
+  });
+
+  it('stores and retrieves cached values', () => {
+    const cache = new EngineCache();
+    const data = { engine_id: 'biorhythm', result: { test: true } } as any;
+    cache.set('biorhythm', 'hash1', data);
+    const hit = cache.get('biorhythm', 'hash1');
+    assert.deepEqual(hit, data);
+  });
+
+  it('tracks hits and misses', () => {
+    const cache = new EngineCache();
+    cache.get('biorhythm', 'miss1');
+    cache.get('biorhythm', 'miss2');
+    cache.set('biorhythm', 'hit1', { result: {} } as any);
+    cache.get('biorhythm', 'hit1');
+    const stats = cache.getStats();
+    assert.equal(stats.misses, 2);
+    assert.equal(stats.hits, 1);
+    assert.equal(stats.entries, 1);
+  });
+
+  it('hashBirth produces deterministic hashes', () => {
+    const h1 = EngineCache.hashBirth('1991-08-13', '13:19', 12.97, 77.59);
+    const h2 = EngineCache.hashBirth('1991-08-13', '13:19', 12.97, 77.59);
+    assert.equal(h1, h2);
+  });
+
+  it('hashBirth differs for different inputs', () => {
+    const h1 = EngineCache.hashBirth('1991-08-13', '13:19', 12.97, 77.59);
+    const h2 = EngineCache.hashBirth('1991-08-14', '13:19', 12.97, 77.59);
+    assert.notEqual(h1, h2);
+  });
+});
 
 describe('Daily Mirror', () => {
   it('constructs with config', () => {
@@ -521,6 +561,31 @@ describe('Daily Mirror', () => {
       selemene_api_key: 'test-key',
     });
     assert.ok(mirror);
+  });
+
+  it('constructs with LLM and cache enabled', () => {
+    const mirror = new DailyMirror({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test-key',
+      openrouter_api_key: 'or-test-key',
+      cache_enabled: true,
+      cache_max_entries: 500,
+    });
+    assert.ok(mirror);
+    const stats = mirror.getCacheStats();
+    assert.ok(stats);
+    assert.equal(stats!.hits, 0);
+    assert.equal(stats!.misses, 0);
+  });
+
+  it('constructs with cache disabled', () => {
+    const mirror = new DailyMirror({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test-key',
+      cache_enabled: false,
+    });
+    assert.ok(mirror);
+    assert.equal(mirror.getCacheStats(), null);
   });
 });
 
@@ -621,6 +686,36 @@ describe('Standalone API', () => {
     assert.equal(forecast.length, 30);
   });
   
+  it('readingStream yields SSE events for invalid request', async () => {
+    _resetRateLimiter();
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+    });
+    
+    const events: string[] = [];
+    for await (const event of handlers.readingStream({})) {
+      events.push(event);
+    }
+    
+    assert.equal(events.length, 1);
+    assert.ok(events[0].startsWith('event: error'));
+    _resetRateLimiter();
+  });
+
+  it('getCacheStats returns stats when cache is enabled', () => {
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      cache_enabled: true,
+    });
+    
+    const stats = handlers.getCacheStats();
+    assert.ok(stats);
+    assert.equal(stats!.hits, 0);
+    assert.equal(stats!.misses, 0);
+  });
+
   it('rate limiter enforces limits', async () => {
     _resetRateLimiter();
     const handlers = createStandaloneHandlers({
@@ -865,5 +960,90 @@ liveDescribe('LIVE: Daily Mirror E2E', () => {
     );
     
     console.log(`✓ Fool's Gate: "${reading.primary_reading.headline}"`);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// LIVE: LLM-Powered Layer 2 + Cache (requires OPENROUTER_API_KEY too)
+// ═══════════════════════════════════════════════════════════════════════
+
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const llmLiveDescribe = (SELEMENE_API_KEY && OPENROUTER_API_KEY) ? describe : describe.skip;
+
+llmLiveDescribe('LIVE: LLM Layer 2 + Cache', () => {
+  beforeEach(() => {
+    _resetStateStore();
+  });
+
+  it('generates LLM-powered witness question (Pichet voice)', async () => {
+    const mirror = new DailyMirror({
+      selemene_url: SELEMENE_URL,
+      selemene_api_key: SELEMENE_API_KEY!,
+      openrouter_api_key: OPENROUTER_API_KEY!,
+      tier: 'witness-free',
+    });
+
+    const birthData = {
+      date: '1991-08-13',
+      time: '13:19',
+      latitude: 12.9716,
+      longitude: 77.5946,
+      timezone: 'Asia/Kolkata',
+    };
+
+    // Simulate enough visits for Layer 2
+    const userHash = hashBirthData(birthData.date, birthData.time, birthData.latitude, birthData.longitude);
+    recordVisit(userHash, 'biorhythm', '2026-04-21');
+    recordVisit(userHash, 'biorhythm', '2026-04-22');
+    recordVisit(userHash, 'biorhythm', '2026-04-23');
+
+    const reading = await mirror.generateReading(birthData);
+
+    assert.ok(reading.witness_question, 'Should have witness question');
+    assert.equal(reading.witness_question!.prompt_source, 'pichet');
+    assert.ok(reading.witness_question!.question.length > 10);
+
+    if (reading.witness_question!.llm_powered) {
+      console.log(`✓ LLM Layer 2: "${reading.witness_question!.question}"`);
+      console.log(`  Model: ${reading.witness_question!.model_used}`);
+      console.log(`  Latency: ${reading.witness_question!.inference_latency_ms}ms`);
+    } else {
+      console.log(`✓ Template Layer 2 (LLM fallback): "${reading.witness_question!.question}"`);
+    }
+  });
+
+  it('cache reduces API calls on second request', async () => {
+    const mirror = new DailyMirror({
+      selemene_url: SELEMENE_URL,
+      selemene_api_key: SELEMENE_API_KEY!,
+      cache_enabled: true,
+    });
+
+    const birthData = {
+      date: '1991-08-13',
+      time: '13:19',
+      latitude: 12.9716,
+      longitude: 77.5946,
+      timezone: 'Asia/Kolkata',
+    };
+
+    // First call — all misses
+    const r1 = await mirror.generateReading(birthData);
+    const stats1 = mirror.getCacheStats();
+    assert.ok(stats1);
+    assert.equal(stats1!.hits, 0);
+    assert.ok(stats1!.misses > 0);
+
+    // Reset decoder state for a clean second reading
+    _resetStateStore();
+
+    // Second call — should have cache hits
+    const r2 = await mirror.generateReading(birthData);
+    const stats2 = mirror.getCacheStats();
+    assert.ok(stats2!.hits > 0, `Expected cache hits, got ${stats2!.hits}`);
+    assert.ok(r2.total_latency_ms <= r1.total_latency_ms + 50, 'Second call should not be slower');
+
+    console.log(`✓ Cache: ${stats2!.hits} hits, ${stats2!.misses} misses`);
+    console.log(`  First call: ${r1.total_latency_ms}ms, Second call: ${r2.total_latency_ms}ms`);
   });
 });

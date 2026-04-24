@@ -15,9 +15,13 @@ import type {
   StandaloneTier,
   DecoderState,
 } from './types.js';
-import { ENGINE_WITNESS_ROLE, STANDALONE_ENGINES } from './types.js';
+import { ENGINE_WITNESS_ROLE, STANDALONE_ENGINES, STANDALONE_TO_CORE_TIER } from './types.js';
 import type { BirthData, SelemeneEngineOutput } from '../types/engine.js';
+import type { InferenceMessage, InferenceRequest } from '../inference/types.js';
+import type { Tier } from '../types/interpretation.js';
+import { OpenRouterProvider } from '../inference/openrouter.js';
 import { getPrimaryEngine, getRotationOrder } from './engine-rotation.js';
+import { EngineCache } from './engine-cache.js';
 import {
   hashBirthData,
   getDecoderState,
@@ -43,16 +47,38 @@ import {
 export interface DailyMirrorConfig {
   selemene_url: string;
   selemene_api_key: string;
-  openrouter_api_key?: string;  // Only needed for Layer 2 LLM witness questions
+  openrouter_api_key?: string;  // Enables LLM-powered Layer 2 witness questions
   tier?: StandaloneTier;
+  cache_enabled?: boolean;       // Default: true
+  cache_max_entries?: number;    // Default: 1000
 }
 
 export class DailyMirror {
   private config: DailyMirrorConfig;
+  private llmProvider: OpenRouterProvider | null;
+  private cache: EngineCache | null;
   
   constructor(config: DailyMirrorConfig) {
     this.config = config;
+    
+    // Initialize LLM provider if API key provided
+    this.llmProvider = config.openrouter_api_key
+      ? new OpenRouterProvider({
+          api_key: config.openrouter_api_key,
+          site_url: 'https://tryambakam.space/daily-witness',
+          site_name: 'The Daily Witness',
+          timeout_ms: 15_000,
+        })
+      : null;
+    
+    // Initialize cache (on by default)
+    this.cache = (config.cache_enabled !== false)
+      ? new EngineCache(config.cache_max_entries)
+      : null;
   }
+  
+  /** Get cache statistics (for observability). */
+  getCacheStats() { return this.cache?.getStats() ?? null; }
   
   /**
    * Generate today's daily reading for a user.
@@ -88,7 +114,7 @@ export class DailyMirror {
     // ─── Step 6: Build Layer 2 (if unlocked) ────────────────────
     let witnessQuestion: Layer2_WitnessQuestion | undefined;
     if (maxLayer >= 2 && !isFirstEncounter) {
-      witnessQuestion = this.buildLayer2(
+      witnessQuestion = await this.buildLayer2(
         primaryEngine,
         engineOutputs.get(primaryEngine),
         decoderState,
@@ -126,6 +152,7 @@ export class DailyMirror {
       decoder_state: { ...decoderState },
       engines_called: [...STANDALONE_ENGINES],
       total_latency_ms: Date.now() - startTime,
+      cache_stats: this.cache?.getStats(),
       standalone_version: '0.1.0',
     };
     
@@ -175,7 +202,7 @@ export class DailyMirror {
     
     let witnessQuestion: Layer2_WitnessQuestion | undefined;
     if (maxLayer >= 2) {
-      witnessQuestion = this.buildLayer2(engineId, output, decoderState);
+      witnessQuestion = await this.buildLayer2(engineId, output, decoderState);
     }
     
     return {
@@ -190,6 +217,7 @@ export class DailyMirror {
       decoder_state: { ...decoderState },
       engines_called: [engineId],
       total_latency_ms: Date.now() - startTime,
+      cache_stats: this.cache?.getStats(),
       standalone_version: '0.1.0',
     };
   }
@@ -223,6 +251,16 @@ export class DailyMirror {
     birthData: BirthData,
     engineId: StandaloneEngineId,
   ): Promise<SelemeneEngineOutput | undefined> {
+    // ─── Check cache first ──────────────────────────────────────────
+    const birthHash = EngineCache.hashBirth(
+      birthData.date, birthData.time, birthData.latitude, birthData.longitude,
+    );
+    if (this.cache) {
+      const cached = this.cache.get(engineId, birthHash);
+      if (cached) return cached;
+    }
+    
+    // ─── Cache miss — call Selemene API ─────────────────────────────
     const url = `${this.config.selemene_url}/api/v1/engines/${engineId}/calculate`;
     
     const body = {
@@ -253,7 +291,14 @@ export class DailyMirror {
       throw new Error(`Selemene ${engineId}: ${response.status} ${response.statusText}`);
     }
     
-    return await response.json() as SelemeneEngineOutput;
+    const output = await response.json() as SelemeneEngineOutput;
+    
+    // ─── Store in cache ─────────────────────────────────────────────
+    if (this.cache) {
+      this.cache.set(engineId, birthHash, output);
+    }
+    
+    return output;
   }
   
   // ═════════════════════════════════════════════════════════════════════
@@ -278,15 +323,24 @@ export class DailyMirror {
     };
   }
   
-  private buildLayer2(
+  private async buildLayer2(
     engineId: StandaloneEngineId,
     output: SelemeneEngineOutput | undefined,
     state: DecoderState,
-  ): Layer2_WitnessQuestion {
-    // Use the engine's witness_prompt as seed for the question
+  ): Layer2_WitnessQuestion | Promise<Layer2_WitnessQuestion> {
     const witnessPrompt = output?.witness_prompt || '';
     const result = (output?.result || {}) as Record<string, unknown>;
     
+    // ─── Try LLM-powered question (Pichet voice) ────────────────
+    if (this.llmProvider && output) {
+      try {
+        return await this.buildLayer2WithLLM(engineId, result, witnessPrompt, state);
+      } catch (err) {
+        console.warn(`[DailyWitness] LLM Layer 2 failed, falling back to template:`, (err as Error).message);
+      }
+    }
+    
+    // ─── Fallback: template-based question ───────────────────────
     const question = this.generateWitnessQuestion(engineId, result, witnessPrompt, state);
     
     return {
@@ -295,6 +349,76 @@ export class DailyMirror {
       prompt_source: 'pichet',
       context_hint: this.generateContextHint(engineId, result),
       somatic_nudge: this.generateSomaticNudge(engineId, result),
+      llm_powered: false,
+    };
+  }
+  
+  /**
+   * LLM-powered Layer 2: Pichet generates a somatic witness question
+   * grounded in the actual engine data. Falls back to template on failure.
+   */
+  private async buildLayer2WithLLM(
+    engineId: StandaloneEngineId,
+    result: Record<string, unknown>,
+    witnessPrompt: string,
+    state: DecoderState,
+  ): Promise<Layer2_WitnessQuestion> {
+    const startTime = Date.now();
+    
+    // Map standalone tier → core tier for model routing
+    const tier = this.config.tier || 'witness-free';
+    const coreTier = STANDALONE_TO_CORE_TIER[tier] || 'free';
+    
+    const systemPrompt = [
+      'You are Pichet, the somatic witness. You speak through the body, not about it.',
+      'You ask ONE question that turns the person\'s attention inward.',
+      '',
+      'Rules:',
+      '- Reference the SPECIFIC data provided (numbers, organ names, cycle phases)',
+      '- Point INWARD, not outward. The question creates space, not explanation.',
+      '- 1-2 sentences maximum. No preamble.',
+      '- Never use: journey, path, healing, manifesting, abundance, vibration, authentic self',
+      '- Voice: felt, somatic, body-aware. Like a skilled bodyworker asking one precise question.',
+      '',
+      `Engine: ${engineId} (${ENGINE_WITNESS_ROLE[engineId]})`,
+      `Days of practice: ${state.total_visits}`,
+      `Consecutive days: ${state.consecutive_days}`,
+      witnessPrompt ? `Engine hint: ${witnessPrompt}` : '',
+    ].filter(Boolean).join('\n');
+    
+    const dataSnippet = JSON.stringify(result, null, 0).slice(0, 1200);
+    
+    const messages: InferenceMessage[] = [
+      { role: 'system', content: systemPrompt },
+      {
+        role: 'user',
+        content: `Here is today's ${engineId} reading data:\n\n${dataSnippet}\n\nGenerate one witness question.`,
+      },
+    ];
+    
+    const request: InferenceRequest = {
+      messages,
+      model_role: 'pichet',
+      tier: coreTier as Tier,
+      max_tokens_override: 200,
+      temperature_override: 0.8,
+      metadata: { engine: engineId, source: 'daily-witness-layer2' },
+    };
+    
+    const response = await this.llmProvider!.complete(request);
+    
+    const question = response.content.trim().replace(/^["']|["']$/g, '');
+    const latency = Date.now() - startTime;
+    
+    return {
+      layer: 2,
+      question,
+      prompt_source: 'pichet',
+      context_hint: this.generateContextHint(engineId, result),
+      somatic_nudge: this.generateSomaticNudge(engineId, result),
+      llm_powered: true,
+      model_used: response.model_used,
+      inference_latency_ms: latency,
     };
   }
   

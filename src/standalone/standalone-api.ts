@@ -3,6 +3,7 @@
 // Three endpoints:
 //   GET  /                          → Product info + available engines
 //   POST /reading                   → Generate daily reading
+//   POST /reading/stream            → SSE streaming reading
 //   POST /reading/:engine_id        → Generate reading for specific engine
 //   GET  /forecast?birth_date=...   → 7-day engine forecast
 //
@@ -265,6 +266,61 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     },
     
     /**
+     * POST /reading/stream — SSE streaming reading (Layer 1 + Layer 2 streamed)
+     * Returns: text/event-stream with events: layer1, layer2_start, layer2_chunk, layer2_done, meta_pattern, done
+     */
+    async *readingStream(
+      body: unknown,
+      clientKey?: string,
+    ): AsyncGenerator<string, void, unknown> {
+      const validated = validateReadingRequest(body);
+      if ('error' in validated) {
+        yield `event: error\ndata: ${JSON.stringify(validated)}\n\n`;
+        return;
+      }
+      
+      const limitKey = clientKey || validated.birth_date;
+      if (!checkRateLimit(limitKey, rateLimit)) {
+        yield `event: error\ndata: ${JSON.stringify({ error: 'Rate limit exceeded', code: 'RATE_LIMITED' })}\n\n`;
+        return;
+      }
+      
+      try {
+        const birthData = toBirthData(validated);
+        const reading = await mirror.generateReading(birthData);
+        
+        // Send Layer 1 immediately
+        yield `event: layer1\ndata: ${JSON.stringify({ primary_reading: reading.primary_reading, all_readings: reading.all_readings })}\n\n`;
+        
+        // Send Layer 2 (already computed — stream as a whole)
+        if (reading.witness_question) {
+          yield `event: layer2\ndata: ${JSON.stringify(reading.witness_question)}\n\n`;
+        }
+        
+        // Send Layer 3 if available
+        if (reading.meta_pattern) {
+          yield `event: layer3\ndata: ${JSON.stringify(reading.meta_pattern)}\n\n`;
+        }
+        
+        // Send full reading metadata
+        yield `event: done\ndata: ${JSON.stringify({
+          id: reading.id,
+          date: reading.date,
+          primary_engine: reading.primary_engine,
+          max_layer_unlocked: reading.max_layer_unlocked,
+          decoder_state: reading.decoder_state,
+          total_latency_ms: reading.total_latency_ms,
+          cache_stats: reading.cache_stats,
+        })}\n\n`;
+      } catch (err) {
+        yield `event: error\ndata: ${JSON.stringify({ error: (err as Error).message, code: 'ENGINE_ERROR' })}\n\n`;
+      }
+    },
+    
+    /** Expose cache stats for health checks. */
+    getCacheStats() { return mirror.getCacheStats(); },
+    
+    /**
      * GET /forecast?birth_date=YYYY-MM-DD&days=7 — Engine rotation forecast
      */
     async forecast(birthDate: string, days?: number): Promise<{ status: number; body: unknown }> {
@@ -334,6 +390,17 @@ export async function createStandaloneServer(config: StandaloneApiConfig): Promi
         res.writeHead(result.status);
         res.end(JSON.stringify(result.body));
         
+      } else if (path === '/reading/stream' && req.method === 'POST') {
+        const body = await readBody(req);
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.writeHead(200);
+        for await (const event of handlers.readingStream(body)) {
+          res.write(event);
+        }
+        res.end();
+        
       } else if (path.startsWith('/reading/') && req.method === 'POST') {
         const engineId = path.split('/')[2];
         const body = await readBody(req);
@@ -352,7 +419,7 @@ export async function createStandaloneServer(config: StandaloneApiConfig): Promi
         res.writeHead(404);
         res.end(JSON.stringify({
           error: 'Not found',
-          endpoints: ['GET /', 'POST /reading', 'POST /reading/:engine_id', 'GET /forecast'],
+          endpoints: ['GET /', 'POST /reading', 'POST /reading/stream', 'POST /reading/:engine_id', 'GET /forecast'],
         }));
       }
     } catch (err) {

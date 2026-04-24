@@ -71,6 +71,9 @@ export {
 export { DailyMirror } from './daily-mirror.js';
 export type { DailyMirrorConfig } from './daily-mirror.js';
 
+// ─── Engine Cache ───────────────────────────────────────────────────
+export { EngineCache } from './engine-cache.js';
+
 // ─── Standalone API ─────────────────────────────────────────────────
 export {
   createStandaloneHandlers,
