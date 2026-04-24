@@ -105,16 +105,19 @@ function validateReadingRequest(body: unknown): ReadingRequest | ApiError {
     };
   }
   
-  // Validate time format if provided
+  // Validate and normalize time format if provided
   if (req.birth_time && typeof req.birth_time === 'string') {
+    // Accept HH:MM or HH:MM:SS — truncate to HH:MM
+    const timeStr = (req.birth_time as string).trim().slice(0, 5);
     const timeRegex = /^\d{2}:\d{2}$/;
-    if (!timeRegex.test(req.birth_time)) {
+    if (!timeRegex.test(timeStr)) {
       return {
         error: 'birth_time must be HH:MM format',
         code: 'INVALID_TIME_FORMAT',
-        hint: 'Example: "13:19"',
+        hint: 'Example: "13:19" or "13:19:00"',
       };
     }
+    req.birth_time = timeStr;
   }
   
   return {
