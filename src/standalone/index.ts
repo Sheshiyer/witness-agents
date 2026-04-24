@@ -74,6 +74,10 @@ export type { DailyMirrorConfig } from './daily-mirror.js';
 // ─── Engine Cache ───────────────────────────────────────────────────
 export { EngineCache } from './engine-cache.js';
 
+// ─── Circuit Breaker ────────────────────────────────────────────────
+export { CircuitBreaker } from './circuit-breaker.js';
+export type { CircuitState, EngineHealth, CircuitBreakerConfig } from './circuit-breaker.js';
+
 // ─── Standalone API ─────────────────────────────────────────────────
 export {
   createStandaloneHandlers,

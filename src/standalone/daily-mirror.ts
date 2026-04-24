@@ -22,6 +22,9 @@ import type { Tier } from '../types/interpretation.js';
 import { OpenRouterProvider } from '../inference/openrouter.js';
 import { getPrimaryEngine, getRotationOrder } from './engine-rotation.js';
 import { EngineCache } from './engine-cache.js';
+import { CircuitBreaker } from './circuit-breaker.js';
+import type { EngineHealth } from './circuit-breaker.js';
+import type { WitnessObserver } from './observability.js';
 import {
   hashBirthData,
   getDecoderState,
@@ -51,12 +54,16 @@ export interface DailyMirrorConfig {
   tier?: StandaloneTier;
   cache_enabled?: boolean;       // Default: true
   cache_max_entries?: number;    // Default: 1000
+  circuit_breaker?: Partial<import('./circuit-breaker.js').CircuitBreakerConfig>;
+  observer?: WitnessObserver;    // Structured observability (optional)
 }
 
 export class DailyMirror {
   private config: DailyMirrorConfig;
   private llmProvider: OpenRouterProvider | null;
   private cache: EngineCache | null;
+  private breaker: CircuitBreaker;
+  private observer: WitnessObserver | null;
   
   constructor(config: DailyMirrorConfig) {
     this.config = config;
@@ -75,10 +82,19 @@ export class DailyMirror {
     this.cache = (config.cache_enabled !== false)
       ? new EngineCache(config.cache_max_entries)
       : null;
+    
+    // Initialize circuit breaker
+    this.breaker = new CircuitBreaker(config.circuit_breaker);
+    
+    // Initialize observer (optional — no-op if not provided)
+    this.observer = config.observer ?? null;
   }
   
   /** Get cache statistics (for observability). */
   getCacheStats() { return this.cache?.getStats() ?? null; }
+  
+  /** Get circuit breaker health (for observability). */
+  getEngineHealth() { return this.breaker.getHealth(); }
   
   /**
    * Generate today's daily reading for a user.
@@ -139,6 +155,13 @@ export class DailyMirror {
     }
     
     // ─── Step 9: Assemble reading ───────────────────────────────
+    // Build engine health map from circuit breaker
+    const healthArr = this.breaker.getHealth() as EngineHealth[];
+    const engineHealthMap: Record<string, EngineHealth> = {};
+    for (const h of healthArr) {
+      engineHealthMap[h.engine_id] = h;
+    }
+    
     const reading: DailyReading = {
       id: `dw-${userHash.slice(0, 8)}-${today}`,
       date: today,
@@ -153,6 +176,7 @@ export class DailyMirror {
       engines_called: [...STANDALONE_ENGINES],
       total_latency_ms: Date.now() - startTime,
       cache_stats: this.cache?.getStats(),
+      engine_health: engineHealthMap,
       standalone_version: '0.1.0',
     };
     
@@ -232,11 +256,25 @@ export class DailyMirror {
   ): Promise<Map<StandaloneEngineId, SelemeneEngineOutput>> {
     const results = new Map<StandaloneEngineId, SelemeneEngineOutput>();
     
-    // Parallel calls to all 4 engines
+    // Parallel calls — skip open-circuit engines, try substitutes
     const promises = engines.map(async (engineId) => {
       try {
-        const output = await this.callSingleEngine(birthData, engineId);
-        if (output) results.set(engineId, output);
+        let targetId = engineId;
+        
+        // Check circuit breaker before calling
+        if (!this.breaker.canCall(engineId)) {
+          const substitute = this.breaker.getSubstitute(engineId);
+          if (substitute && !results.has(substitute)) {
+            console.warn(`[DailyWitness] Circuit open for ${engineId}, substituting ${substitute}`);
+            targetId = substitute;
+          } else {
+            console.warn(`[DailyWitness] Circuit open for ${engineId}, no substitute available`);
+            return;
+          }
+        }
+        
+        const output = await this.callSingleEngine(birthData, targetId);
+        if (output) results.set(targetId, output);
       } catch (err) {
         // Graceful degradation: if one engine fails, continue with others
         console.warn(`[DailyWitness] Engine ${engineId} failed:`, (err as Error).message);
@@ -251,13 +289,28 @@ export class DailyMirror {
     birthData: BirthData,
     engineId: StandaloneEngineId,
   ): Promise<SelemeneEngineOutput | undefined> {
+    const callStart = Date.now();
     // ─── Check cache first ──────────────────────────────────────────
     const birthHash = EngineCache.hashBirth(
       birthData.date, birthData.time, birthData.latitude, birthData.longitude,
     );
     if (this.cache) {
       const cached = this.cache.get(engineId, birthHash);
-      if (cached) return cached;
+      if (cached) {
+        this.observer?.recordEngineCall(engineId, Date.now() - callStart, true, true);
+        return cached;
+      }
+    }
+    
+    // ─── Check circuit breaker ──────────────────────────────────────
+    if (!this.breaker.canCall(engineId)) {
+      const substitute = this.breaker.getSubstitute(engineId);
+      if (substitute) {
+        console.warn(`[DailyWitness] Circuit open for ${engineId}, trying substitute ${substitute}`);
+        return this.callSingleEngine(birthData, substitute);
+      }
+      console.warn(`[DailyWitness] Circuit open for ${engineId}, skipping`);
+      return undefined;
     }
     
     // ─── Cache miss — call Selemene API ─────────────────────────────
@@ -277,28 +330,41 @@ export class DailyMirror {
       options: {},
     };
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.config.selemene_api_key,
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(15000),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Selemene ${engineId}: ${response.status} ${response.statusText}`);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': this.config.selemene_api_key,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(15000),
+      });
+      
+      if (!response.ok) {
+        const error = `Selemene ${engineId}: ${response.status} ${response.statusText}`;
+        this.breaker.recordFailure(engineId, error);
+        throw new Error(error);
+      }
+      
+      const output = await response.json() as SelemeneEngineOutput;
+      
+      // ─── Record success + store in cache ──────────────────────────
+      this.breaker.recordSuccess(engineId);
+      if (this.cache) {
+        this.cache.set(engineId, birthHash, output);
+      }
+      
+      return output;
+    } catch (err) {
+      // Record failure for non-HTTP errors (timeouts, network)
+      const error = (err as Error).message;
+      if (!error.startsWith('Selemene ')) {
+        this.breaker.recordFailure(engineId, error);
+      }
+      this.observer?.recordEngineCall(engineId, Date.now() - callStart, false, false);
+      throw err;
     }
-    
-    const output = await response.json() as SelemeneEngineOutput;
-    
-    // ─── Store in cache ─────────────────────────────────────────────
-    if (this.cache) {
-      this.cache.set(engineId, birthHash, output);
-    }
-    
-    return output;
   }
   
   // ═════════════════════════════════════════════════════════════════════

@@ -112,6 +112,7 @@ export interface DailyReading {
   engines_called: StandaloneEngineId[];
   total_latency_ms: number;
   cache_stats?: { hits: number; misses: number; size: number };
+  engine_health?: Record<string, import('./circuit-breaker.js').EngineHealth>;
   standalone_version: string;
 }
 
