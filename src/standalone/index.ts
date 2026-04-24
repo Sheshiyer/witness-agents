@@ -85,6 +85,27 @@ export {
 } from './standalone-api.js';
 export type { StandaloneApiConfig, ReadingRequest } from './standalone-api.js';
 
+// ─── Observability ──────────────────────────────────────────────────
+export { WitnessObserver } from './observability.js';
+export type {
+  LogLevel,
+  StructuredLog,
+  EngineMetrics,
+  CostMetrics,
+  FunnelMetrics,
+  WitnessObserverConfig,
+} from './observability.js';
+
+// ─── Rhythm SSE Server ──────────────────────────────────────────────
+export {
+  RhythmEventEmitter,
+  formatSSE,
+  detectOrganShift,
+  detectBiorhythmThreshold,
+  detectTimingNudge,
+} from './rhythm-server.js';
+export type { RhythmServerConfig, RhythmConnection } from './rhythm-server.js';
+
 // ─── skills.sh Integration ──────────────────────────────────────────
 export {
   SKILLS_SH_MANIFEST,
