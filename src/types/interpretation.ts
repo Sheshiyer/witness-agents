@@ -123,14 +123,31 @@ export interface WitnessInterpretation {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// BIRTH DATA — required for Selemene engine calculations
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface BirthData {
+  name?: string;
+  date: string;              // YYYY-MM-DD
+  time?: string;             // HH:MM
+  latitude: number;
+  longitude: number;
+  timezone: string;          // e.g. "Asia/Kolkata"
+}
+
+export type Precision = 'Standard' | 'High' | 'Extreme';
+
+// ═══════════════════════════════════════════════════════════════════════
 // PIPELINE QUERY — what comes in
 // ═══════════════════════════════════════════════════════════════════════
 
 export interface PipelineQuery {
   query: string;
   user_state: UserState;
+  birth_data: BirthData;                  // Required for Selemene API calls
   engine_hints?: SelemeneEngineId[];      // User or system can suggest engines
   workflow_hint?: string;                 // Suggest a workflow e.g. 'daily-practice'
+  precision?: Precision;                  // Default: 'Standard'
   session_id: string;
   request_id: string;
 }

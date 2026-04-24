@@ -244,14 +244,17 @@ export class InterpretationPipeline {
   // ─── PRIVATE: Selemene API ─────────────────────────────────────────
 
   private async callSelemene(query: PipelineQuery): Promise<SelemeneEngineOutput[]> {
+    const inputPayload = {
+      birth_data: query.birth_data,
+      current_time: new Date().toISOString(),
+      precision: query.precision || 'Standard',
+      options: {},
+    };
+
     // If workflow hint provided, use workflow endpoint
     if (query.workflow_hint) {
       try {
-        const result = await this.client.executeWorkflow(query.workflow_hint, {
-          birth_data: undefined, // Would come from user profile
-          current_time: new Date().toISOString(),
-          options: {},
-        });
+        const result = await this.client.executeWorkflow(query.workflow_hint, inputPayload);
         return Object.values(result.engine_results);
       } catch {
         // Fall through to individual engine calls
@@ -264,10 +267,7 @@ export class InterpretationPipeline {
 
     // Call engines in parallel
     const promises = engines.map(engineId =>
-      this.client.calculateEngine(engineId, {
-        current_time: new Date().toISOString(),
-        options: {},
-      }).catch(err => {
+      this.client.calculateEngine(engineId, inputPayload).catch(err => {
         console.error(`Engine ${engineId} failed:`, err);
         return null;
       })
