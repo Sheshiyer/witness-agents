@@ -270,6 +270,29 @@ export class DailyMirror {
       standalone_version: '0.1.0',
     };
   }
+
+  /**
+   * Build a witness question for the proxy endpoint.
+   * Called when Raycast sends a Selemene-format engine calculation through the witness gateway.
+   * Returns just the question string (or undefined if LLM unavailable).
+   */
+  async buildWitnessQuestionForProxy(
+    engineId: StandaloneEngineId,
+    result: Record<string, unknown>,
+    state: DecoderState,
+  ): Promise<string | undefined> {
+    if (!this.llmProvider) return undefined;
+
+    try {
+      const layer2 = await this.buildLayer2WithLLM(engineId, result, '', state);
+      return layer2.question;
+    } catch (err) {
+      console.warn(`[DailyWitness] Proxy witness question failed:`, (err as Error).message);
+      // Fallback to template
+      const question = this.generateWitnessQuestion(engineId, result, '', state);
+      return question;
+    }
+  }
   
   // ═════════════════════════════════════════════════════════════════════
   // PRIVATE: Selemene API Calls

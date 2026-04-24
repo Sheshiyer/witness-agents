@@ -1,12 +1,16 @@
 // ─── Daily Witness — Standalone HTTP API ──────────────────────────────
 // Lightweight HTTP server for the standalone product.
 // Endpoints:
-//   GET  /                          → Product info + available engines
-//   POST /reading                   → Generate daily reading
-//   POST /reading/stream            → SSE streaming reading
-//   POST /reading/:engine_id        → Generate reading for specific engine
-//   GET  /forecast?birth_date=...   → 7-day engine forecast
-//   GET  /metrics                   → Structured observability metrics
+//   GET  /                               → Product info + available engines
+//   POST /reading                        → Generate daily reading
+//   POST /reading/stream                 → SSE streaming reading
+//   POST /reading/:engine_id             → Generate reading for specific engine
+//   GET  /forecast?birth_date=...        → 7-day engine forecast
+//   GET  /metrics                        → Structured observability metrics
+//   GET  /health/live                    → Proxied health (Selemene-compat)
+//   GET  /api/v1/status                  → Proxied status (Selemene-compat)
+//   POST /api/v1/engines/:id/calculate   → Witness-enriched engine calculation
+//   *    /api/v1/*                       → Selemene proxy (all other /api/v1 paths)
 //
 // No auth required for free tier. Rate-limited by IP + birth_date hash.
 // Designed to be deployable as a single Cloudflare Worker or Railway service.
@@ -18,7 +22,8 @@ import { DailyMirror } from './daily-mirror.js';
 import type { DailyMirrorConfig } from './daily-mirror.js';
 import { getForecast } from './engine-rotation.js';
 import { RhythmEventEmitter, formatSSE, type RhythmServerConfig } from './rhythm-server.js';
-import { hashBirthData } from './decoder-ring.js';
+import { hashBirthData, getDecoderStateAsync, computeMaxLayer } from './decoder-ring.js';
+import { ENGINE_WITNESS_ROLE } from './types.js';
 import { WitnessObserver } from './observability.js';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -368,6 +373,197 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
         },
       };
     },
+
+    // ═══════════════════════════════════════════════════════════════════
+    // SELEMENE-COMPATIBLE PROXY ENDPOINTS (witness-enriched)
+    // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * GET /health/live — Proxied health check
+     */
+    async healthLive(): Promise<{ status: number; body: unknown }> {
+      try {
+        const selemeneUrl = config.selemene_url;
+        const resp = await fetch(`${selemeneUrl}/health/live`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000),
+        });
+        const upstream = await resp.json() as Record<string, unknown>;
+        return {
+          status: 200,
+          body: {
+            ...upstream,
+            witness_layer: 'active',
+            witness_version: '0.1.0',
+          },
+        };
+      } catch {
+        return {
+          status: 200,
+          body: {
+            status: 'degraded',
+            witness_layer: 'active',
+            witness_version: '0.1.0',
+            engines_loaded: STANDALONE_ENGINES.length,
+            workflows_loaded: 0,
+            uptime_seconds: Math.floor(process.uptime()),
+          },
+        };
+      }
+    },
+
+    /**
+     * GET /api/v1/status — Proxied status with witness enrichment
+     */
+    async apiStatus(): Promise<{ status: number; body: unknown }> {
+      try {
+        const selemeneUrl = config.selemene_url;
+        const resp = await fetch(`${selemeneUrl}/api/v1/status`, {
+          method: 'GET',
+          headers: { 'X-API-Key': config.selemene_api_key },
+          signal: AbortSignal.timeout(5000),
+        });
+        const upstream = await resp.json() as Record<string, unknown>;
+        return { status: 200, body: upstream };
+      } catch (err) {
+        return {
+          status: 502,
+          body: { error: 'Upstream Selemene unavailable', code: 'UPSTREAM_ERROR', hint: (err as Error).message },
+        };
+      }
+    },
+
+    /**
+     * POST /api/v1/engines/:engineId/calculate — Proxied engine calc with witness layer
+     * Calls Selemene for raw data, then wraps with witness question + decoder state
+     */
+    async apiEngineCalculate(
+      engineId: string,
+      body: unknown,
+      clientKey?: string,
+    ): Promise<{ status: number; body: unknown }> {
+      const selemeneUrl = config.selemene_url;
+      const requestBody = body as Record<string, unknown>;
+
+      // Forward to Selemene first
+      let rawResult: Record<string, unknown>;
+      try {
+        const resp = await fetch(`${selemeneUrl}/api/v1/engines/${engineId}/calculate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': config.selemene_api_key,
+          },
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!resp.ok) {
+          const errBody = await resp.text();
+          return { status: resp.status, body: JSON.parse(errBody || '{}') };
+        }
+        rawResult = await resp.json() as Record<string, unknown>;
+      } catch (err) {
+        return {
+          status: 502,
+          body: { error: 'Upstream Selemene engine call failed', code: 'UPSTREAM_ERROR', hint: (err as Error).message },
+        };
+      }
+
+      // Extract birth_data for decoder ring
+      const birthDataReq = (requestBody.birth_data || {}) as Record<string, unknown>;
+      const birthDate = (birthDataReq.date || '') as string;
+      const birthTime = (birthDataReq.time || undefined) as string | undefined;
+      const lat = (birthDataReq.latitude || 0) as number;
+      const lon = (birthDataReq.longitude || 0) as number;
+
+      if (!birthDate) {
+        // Can't compute witness context without birth_date — return raw
+        return { status: 200, body: { ...rawResult, witness_layer: null } };
+      }
+
+      // Compute witness enrichment
+      try {
+        const userHash = hashBirthData(birthDate, birthTime, lat, lon);
+        const today = new Date().toISOString().split('T')[0];
+        const isWitnessEngine = STANDALONE_ENGINES.includes(engineId as StandaloneEngineId);
+        const decoderState = await getDecoderStateAsync(userHash);
+        const maxLayer = computeMaxLayer(decoderState, config.tier);
+
+        let witnessQuestion: string | undefined;
+        if (maxLayer >= 2 && isWitnessEngine) {
+          // Build witness question via LLM
+          const result = (rawResult.result || rawResult) as Record<string, unknown>;
+          const witnessReading = await mirror.buildWitnessQuestionForProxy(
+            engineId as StandaloneEngineId,
+            result,
+            decoderState,
+          );
+          witnessQuestion = witnessReading;
+        }
+
+        return {
+          status: 200,
+          body: {
+            ...rawResult,
+            witness_layer: {
+              witness_question: witnessQuestion || null,
+              decoder_state: {
+                total_visits: decoderState.total_visits,
+                consecutive_days: decoderState.consecutive_days,
+                max_layer_reached: decoderState.max_layer_reached,
+              },
+              max_layer_unlocked: maxLayer,
+              engine_role: isWitnessEngine
+                ? ENGINE_WITNESS_ROLE[engineId as StandaloneEngineId]
+                : null,
+            },
+          },
+        };
+      } catch {
+        // Witness enrichment failed — return raw result anyway
+        return { status: 200, body: { ...rawResult, witness_layer: null } };
+      }
+    },
+
+    /**
+     * Proxy for any Selemene /api/v1/* path not handled above
+     */
+    async apiProxy(
+      method: string,
+      path: string,
+      body: unknown,
+    ): Promise<{ status: number; body: unknown; headers?: Record<string, string> }> {
+      const selemeneUrl = config.selemene_url;
+      try {
+        const resp = await fetch(`${selemeneUrl}${path}`, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': config.selemene_api_key,
+          },
+          body: method !== 'GET' && method !== 'HEAD' ? JSON.stringify(body) : undefined,
+          signal: AbortSignal.timeout(15000),
+        });
+        
+        // Forward rate limit headers
+        const proxyHeaders: Record<string, string> = {};
+        for (const key of ['x-ratelimit-limit', 'x-ratelimit-remaining', 'x-ratelimit-reset',
+                           'x-ratelimit-daily-remaining', 'x-ratelimit-daily-reset']) {
+          const val = resp.headers.get(key);
+          if (val) proxyHeaders[key] = val;
+        }
+
+        const text = await resp.text();
+        let parsed: unknown;
+        try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
+        return { status: resp.status, body: parsed, headers: proxyHeaders };
+      } catch (err) {
+        return {
+          status: 502,
+          body: { error: 'Upstream Selemene unavailable', code: 'UPSTREAM_ERROR', hint: (err as Error).message },
+        };
+      }
+    },
   };
 }
 
@@ -489,6 +685,37 @@ export async function createStandaloneServer(config: StandaloneApiConfig): Promi
         const result = await handlers.metrics();
         res.writeHead(result.status);
         res.end(JSON.stringify(result.body, null, 2));
+
+      // ─── Selemene-Compatible Proxy Endpoints ───────────────────────
+
+      } else if (path === '/health/live' && req.method === 'GET') {
+        const result = await handlers.healthLive();
+        res.writeHead(result.status);
+        res.end(JSON.stringify(result.body, null, 2));
+
+      } else if (path === '/api/v1/status' && req.method === 'GET') {
+        const result = await handlers.apiStatus();
+        res.writeHead(result.status);
+        res.end(JSON.stringify(result.body, null, 2));
+
+      } else if (path.match(/^\/api\/v1\/engines\/[^/]+\/calculate$/) && req.method === 'POST') {
+        const engineId = path.split('/')[4];
+        const body = await readBody(req);
+        const result = await handlers.apiEngineCalculate(engineId, body);
+        res.writeHead(result.status);
+        res.end(JSON.stringify(result.body));
+
+      } else if (path.startsWith('/api/v1/')) {
+        // Generic proxy for all other Selemene API paths
+        const body = req.method !== 'GET' && req.method !== 'HEAD' ? await readBody(req) : undefined;
+        const result = await handlers.apiProxy(req.method!, path, body);
+        if (result.headers) {
+          for (const [k, v] of Object.entries(result.headers)) {
+            res.setHeader(k, v);
+          }
+        }
+        res.writeHead(result.status);
+        res.end(JSON.stringify(result.body));
       
       // ─── Rhythm SSE Endpoints ──────────────────────────────────────
         
