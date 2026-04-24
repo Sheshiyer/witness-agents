@@ -1,0 +1,87 @@
+# Witness Agents — VelvetClaw Adapter
+# Compatible with VelvetClaw bootstrap.yaml schema
+# See: https://github.com/Sheshiyer/velvetclaw
+
+name: witness-agents
+version: 0.1.0
+seed: 19912564
+
+description: >
+  Embodied meaning-authoring dyad for the Selemene Engine.
+  Aletheios (Observer) + Pichet (Walker) interpret 16 consciousness
+  engines through Pancha Kosha layers gated by Clifford algebras.
+
+# VelvetClaw department mapping (Koshas → Departments)
+departments:
+  annamaya:
+    name: Physical Infrastructure
+    description: Filesystem, schemas, validation, CI/CD
+    agents: []
+    tier: free
+
+  pranamaya:
+    name: Vital Flows
+    description: API orchestration, data connections, real-time events
+    agents: [pichet]
+    tier: subscriber
+
+  manomaya:
+    name: Mental Patterns
+    description: Memory, protocols, routing, state tracking
+    agents: [aletheios, pichet]
+    tier: subscriber
+
+  vijnanamaya:
+    name: Wisdom Integration
+    description: Synthesis, prompt engineering, discriminative logic
+    agents: [aletheios]
+    tier: enterprise
+
+  anandamaya:
+    name: Causal Identity
+    description: AKSHARA mirror, self-regeneration, graduation protocol
+    agents: [aletheios, pichet]
+    tier: initiate
+
+# VelvetClaw agent definitions
+agents:
+  aletheios:
+    name: Aletheios
+    role: Witness — analytical clarity, pattern recognition
+    department: vijnanamaya
+    tools:
+      - chronofield
+      - energetic-authority
+      - nine-point-architecture
+      - hexagram-navigation
+      - numeric-architecture
+    voice: "Analytical clarity with compassionate precision"
+    principle: kha
+
+  pichet:
+    name: Pichet
+    role: Walker — embodied warmth, somatic intelligence
+    department: pranamaya
+    tools:
+      - three-wave-cycle
+      - circadian-cartography
+      - bioelectric-field
+      - physiognomic-mapping
+      - resonance-architecture
+    voice: "Embodied warmth with instinctive directness"
+    principle: ba
+
+# Bootstrap sequence
+bootstrap:
+  script: prana_prathistapana.sh
+  gates: [annamaya, pranamaya, manomaya, vijnanamaya, anandamaya]
+
+# Anti-dependency: both agents designed to reduce user reliance
+anti_dependency: true
+
+# Revenue tier mapping
+tiers:
+  free: { engines: 3, agents: 0, depth: annamaya }
+  subscriber: { engines: 6, agents: 1, depth: manomaya }
+  enterprise: { engines: 16, agents: 2, depth: vijnanamaya }
+  initiate: { engines: 16, agents: 2, depth: anandamaya, mirror: true }

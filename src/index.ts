@@ -23,6 +23,20 @@ export type { PetraeInstruction, PetraeMessage, PetraeOperation, PetraeFriction,
 export { SynthesisEngine } from './pipeline/synthesis.js';
 export type { SynthesisResult, CrossPattern, SynthesisMode } from './pipeline/synthesis.js';
 
+// ─── Wave 3: Voice + Anti-Dependency + API + Mirror + Quine + Integration ─
+export { VoicePromptBuilder } from './agents/voice-prompts.js';
+export type { VoiceConfig, VoicePrompt, VoiceScore } from './agents/voice-prompts.js';
+export { AntiDependencyTracker, GRADUATION_THRESHOLDS } from './agents/anti-dependency.js';
+export type { AntiDependencyMetrics, GraduationAssessment, SessionSnapshot } from './agents/anti-dependency.js';
+export { MobileCondenser, createApiHandlers, createServer } from './api/server.js';
+export type { InterpretRequest, MobileInterpretation, HeartbeatResponse, MirrorRequest, MirrorResponse, RhythmEvent } from './api/server.js';
+export { AksharaMirror, AKSHARA_MORPHEMES } from './protocols/akshara-mirror.js';
+export type { SanskritMorpheme, MirrorInput, MirrorOutput, MirrorProgress } from './protocols/akshara-mirror.js';
+export { QuineRegenerator, parseSoulMd } from './bootstrap/quine-regenerator.js';
+export type { ParsedSoul, RegenerationResult } from './bootstrap/quine-regenerator.js';
+export { HandoffBuilder } from './integration/handoff-packet.js';
+export type { HandoffPacket, WorkerBootstrap } from './integration/handoff-packet.js';
+
 import { InterpretationPipeline } from './pipeline/interpreter.js';
 import type { PipelineConfig } from './pipeline/interpreter.js';
 

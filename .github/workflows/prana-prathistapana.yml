@@ -1,0 +1,54 @@
+name: प्राण प्रतिष्ठापन — Kosha Gate Validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  kosha-gates:
+    name: Five Kosha Gate Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prana Prathistapana
+        run: bash prana_prathistapana.sh
+
+      - name: Run tests
+        run: npm test
+
+      - name: Manifest schema validation
+        run: |
+          node -e "
+            const yaml = require('js-yaml');
+            const fs = require('fs');
+            const m = yaml.load(fs.readFileSync('manifest.yaml', 'utf8'));
+            const required = ['name', 'version', 'seed', 'triad', 'agents', 'koshas', 'selemene', 'protocols'];
+            const missing = required.filter(k => !m[k]);
+            if (missing.length) { console.error('Missing keys:', missing); process.exit(1); }
+            if (Object.keys(m.agents).length !== 2) { console.error('Dyad invariant: need exactly 2 agents'); process.exit(1); }
+            if (Object.keys(m.koshas).length !== 5) { console.error('Pancha invariant: need exactly 5 koshas'); process.exit(1); }
+            console.log('✓ manifest.yaml schema valid');
+          "
+
+      - name: SOUL.md AKSHARA integrity
+        run: |
+          for agent in aletheios pichet; do
+            if ! grep -q "अक्षर" "agents/${agent}/SOUL.md"; then
+              echo "✗ agents/${agent}/SOUL.md missing AKSHARA glyph"
+              exit 1
+            fi
+            echo "✓ agents/${agent}/SOUL.md AKSHARA present"
+          done
