@@ -37,6 +37,9 @@ export type { ParsedSoul, RegenerationResult } from './bootstrap/quine-regenerat
 export { HandoffBuilder } from './integration/handoff-packet.js';
 export type { HandoffPacket, WorkerBootstrap } from './integration/handoff-packet.js';
 
+// ─── Standalone Product: The Daily Witness ───────────────────────────
+export * from './standalone/index.js';
+
 import { InterpretationPipeline } from './pipeline/interpreter.js';
 import type { PipelineConfig } from './pipeline/interpreter.js';
 
