@@ -42,6 +42,7 @@ import {
   extractDataPoints,
   generateHeadline,
 } from './fools-gate.js';
+import { AksharaMirror } from '../protocols/akshara-mirror.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // DAILY MIRROR ENGINE
@@ -64,6 +65,7 @@ export class DailyMirror {
   private cache: EngineCache | null;
   private breaker: CircuitBreaker;
   private observer: WitnessObserver | null;
+  private aksharaMirror: AksharaMirror | null;
   
   constructor(config: DailyMirrorConfig) {
     this.config = config;
@@ -76,6 +78,11 @@ export class DailyMirror {
           site_name: 'The Daily Witness',
           timeout_ms: 15_000,
         })
+      : null;
+    
+    // Initialize AKSHARA mirror for initiate tier (when LLM available)
+    this.aksharaMirror = (config.tier === 'witness-initiate' && config.openrouter_api_key)
+      ? new AksharaMirror()
       : null;
     
     // Initialize cache (on by default)
@@ -190,6 +197,24 @@ export class DailyMirror {
     if (narrative && reading.meta_pattern) {
       reading.meta_pattern.resonance_description =
         narrative + '\n\n' + reading.meta_pattern.resonance_description;
+    }
+    
+    // ─── Observability: log reading.complete + funnel event ──────
+    if (this.observer) {
+      this.observer.info('reading.complete', {
+        duration_ms: reading.total_latency_ms,
+        user_hash: userHash,
+        metadata: {
+          max_layer: maxLayer,
+          engines_called: STANDALONE_ENGINES.length,
+          primary_engine: primaryEngine,
+        },
+      });
+      this.observer.recordFunnelEvent(
+        maxLayer,
+        shouldShowFindersGate(decoderState),
+        shouldShowGraduation(decoderState),
+      );
     }
     
     return reading;
@@ -355,6 +380,7 @@ export class DailyMirror {
         this.cache.set(engineId, birthHash, output);
       }
       
+      this.observer?.recordEngineCall(engineId, Date.now() - callStart, true, false);
       return output;
     } catch (err) {
       // Record failure for non-HTTP errors (timeouts, network)
@@ -462,6 +488,33 @@ export class DailyMirror {
       },
     ];
     
+    // ─── AKSHARA enrichment for initiate tier ────────────────────
+    if (this.aksharaMirror && coreTier === 'initiate') {
+      const mirrorOutput = this.aksharaMirror.processIntention({
+        intention: witnessPrompt || `${engineId} somatic reading`,
+        user_id: state.user_hash,
+        session_id: `daily-mirror-${state.user_hash}`,
+      });
+      
+      const aksharaParts: string[] = [
+        '── AKSHARA MIRROR: Sanskrit Seed-Forms ──',
+        '',
+        `Encoded form: ${mirrorOutput.encoded_form}`,
+        '',
+        'Morpheme breakdown:',
+        ...mirrorOutput.morphemes.map(m =>
+          `  ${m.sanskrit} (${m.transliteration}) → ${m.meaning}`),
+        '',
+        'Ground your response in these Sanskrit seed-forms. Let the morphemes shape your language — use transliterations naturally where they add precision.',
+      ];
+      
+      // Inject between system and user messages
+      messages.splice(1, 0, {
+        role: 'system',
+        content: aksharaParts.join('\n'),
+      });
+    }
+    
     const request: InferenceRequest = {
       messages,
       model_role: 'pichet',
@@ -475,6 +528,15 @@ export class DailyMirror {
     
     const question = response.content.trim().replace(/^["']|["']$/g, '');
     const latency = Date.now() - startTime;
+    
+    // Record LLM call metrics
+    this.observer?.recordLLMCall(
+      response.model_used || 'unknown',
+      tier,
+      response.cost_estimate_usd ?? 0,
+      (response.usage?.prompt_tokens ?? 0) + (response.usage?.completion_tokens ?? 0),
+      latency,
+    );
     
     return {
       layer: 2,

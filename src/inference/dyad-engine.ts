@@ -18,6 +18,7 @@ import type {
 import type { SelemeneEngineOutput } from '../types/engine.js';
 import type { VoicePrompt } from '../agents/voice-prompts.js';
 import { VoicePromptBuilder } from '../agents/voice-prompts.js';
+import type { AksharaEnrichment } from './akshara-enrichment.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // DYAD INFERENCE ENGINE
@@ -27,16 +28,19 @@ export interface DyadInferenceConfig {
   parallel_agents?: boolean;   // Call Aletheios + Pichet in parallel (default: true)
   include_synthesis?: boolean; // Run synthesis pass (default: true for enterprise+)
   stream?: boolean;            // Future: streaming support
+  aksharaEnrichment?: AksharaEnrichment; // Optional: AKSHARA mirror enrichment for initiate tier
 }
 
 export class DyadInferenceEngine {
   private provider: OpenRouterProvider;
   private voiceBuilder: VoicePromptBuilder;
-  private defaults: Required<DyadInferenceConfig>;
+  private aksharaEnrichment?: AksharaEnrichment;
+  private defaults: Omit<Required<DyadInferenceConfig>, 'aksharaEnrichment'>;
 
   constructor(provider: OpenRouterProvider, config?: DyadInferenceConfig) {
     this.provider = provider;
     this.voiceBuilder = new VoicePromptBuilder();
+    this.aksharaEnrichment = config?.aksharaEnrichment;
     this.defaults = {
       parallel_agents: config?.parallel_agents ?? true,
       include_synthesis: config?.include_synthesis ?? true,
@@ -78,18 +82,18 @@ export class DyadInferenceEngine {
     if (runAletheios && runPichet && config.parallel_agents) {
       // Parallel: both agents at once
       const [aRes, pRes] = await Promise.all([
-        this.callAgent('aletheios', tier, userState, userMessage, engineOutputs),
-        this.callAgent('pichet', tier, userState, userMessage, engineOutputs),
+        this.callAgent('aletheios', tier, userState, userMessage, engineOutputs, interpretation),
+        this.callAgent('pichet', tier, userState, userMessage, engineOutputs, interpretation),
       ]);
       aletheiosRes = aRes;
       pichetRes = pRes;
     } else {
       // Sequential or single-agent
       if (runAletheios) {
-        aletheiosRes = await this.callAgent('aletheios', tier, userState, userMessage, engineOutputs);
+        aletheiosRes = await this.callAgent('aletheios', tier, userState, userMessage, engineOutputs, interpretation);
       }
       if (runPichet) {
-        pichetRes = await this.callAgent('pichet', tier, userState, userMessage, engineOutputs);
+        pichetRes = await this.callAgent('pichet', tier, userState, userMessage, engineOutputs, interpretation);
       }
     }
 
@@ -127,7 +131,7 @@ export class DyadInferenceEngine {
     engineOutputs: SelemeneEngineOutput[],
   ): Promise<InferenceResponse> {
     const userMessage = this.buildUserMessage(interpretation, engineOutputs);
-    return this.callAgent(agent, tier, userState, userMessage, engineOutputs);
+    return this.callAgent(agent, tier, userState, userMessage, engineOutputs, interpretation);
   }
 
   // ─── Private: Agent LLM Call ──────────────────────────────────────
@@ -138,6 +142,7 @@ export class DyadInferenceEngine {
     userState: UserState,
     userMessage: string,
     engineOutputs: SelemeneEngineOutput[],
+    interpretation?: WitnessInterpretation,
   ): Promise<InferenceResponse> {
     // Build voice prompt (system message)
     const voicePrompt = this.voiceBuilder.buildAgentPrompt({
@@ -148,10 +153,15 @@ export class DyadInferenceEngine {
     });
 
     const role: ModelRole = agent;
-    const messages: InferenceMessage[] = [
+    let messages: InferenceMessage[] = [
       { role: 'system', content: voicePrompt.system },
       { role: 'user', content: userMessage },
     ];
+
+    // ─── AKSHARA enrichment (initiate tier only) ─────────────────
+    if (this.aksharaEnrichment && interpretation) {
+      messages = this.aksharaEnrichment.enrichMessages(messages, interpretation, tier);
+    }
 
     return this.provider.completeWithRetry({
       messages,
