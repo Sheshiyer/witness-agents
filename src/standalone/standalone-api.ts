@@ -10,13 +10,19 @@
 //   GET  /health/live                    → Proxied health (Selemene-compat)
 //   GET  /api/v1/status                  → Proxied status (Selemene-compat)
 //   POST /api/v1/engines/:id/calculate   → Witness-enriched engine calculation
+//   POST /api/v1/workflows/:id/execute   → Witness-enriched workflow execution
 //   *    /api/v1/*                       → Selemene proxy (all other /api/v1 paths)
 //
 // No auth required for free tier. Rate-limited by IP + birth_date hash.
 // Designed to be deployable as a single Cloudflare Worker or Railway service.
 
 import type { BirthData } from '../types/engine.js';
-import type { StandaloneEngineId, StandaloneTier, SkillsShResponse } from './types.js';
+import type {
+  DecoderState,
+  StandaloneEngineId,
+  StandaloneTier,
+  SkillsShResponse,
+} from './types.js';
 import { STANDALONE_ENGINES } from './types.js';
 import { DailyMirror } from './daily-mirror.js';
 import type { DailyMirrorConfig } from './daily-mirror.js';
@@ -160,6 +166,83 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
   const mirrorConfig = { ...config, observer };
   const mirror = new DailyMirror(mirrorConfig);
   const rateLimit = config.rate_limit_per_hour || 30;
+
+  function parseUpstreamBody(text: string): unknown {
+    try {
+      return JSON.parse(text || '{}');
+    } catch {
+      return { raw: text };
+    }
+  }
+
+  function readBirthData(body: Record<string, unknown>): {
+    birthDate: string;
+    birthTime?: string;
+    latitude: number;
+    longitude: number;
+  } {
+    const birthDataReq = (body.birth_data || {}) as Record<string, unknown>;
+    return {
+      birthDate: (birthDataReq.date || '') as string,
+      birthTime: (birthDataReq.time || undefined) as string | undefined,
+      latitude: typeof birthDataReq.latitude === 'number' ? birthDataReq.latitude : 0,
+      longitude: typeof birthDataReq.longitude === 'number' ? birthDataReq.longitude : 0,
+    };
+  }
+
+  function summarizeDecoderState(decoderState: DecoderState) {
+    return {
+      total_visits: decoderState.total_visits,
+      consecutive_days: decoderState.consecutive_days,
+      max_layer_reached: decoderState.max_layer_reached,
+    };
+  }
+
+  async function buildWitnessLayer(
+    engineId: string,
+    rawResult: Record<string, unknown>,
+    decoderState: DecoderState,
+    maxLayer: number,
+  ): Promise<{
+    witness_question: string | null;
+    decoder_state: ReturnType<typeof summarizeDecoderState>;
+    max_layer_unlocked: number;
+    engine_role: string | null;
+  }> {
+    const isWitnessEngine = STANDALONE_ENGINES.includes(engineId as StandaloneEngineId);
+    let witnessQuestion: string | undefined;
+
+    if (maxLayer >= 2 && isWitnessEngine) {
+      const result = (rawResult.result || rawResult) as Record<string, unknown>;
+      witnessQuestion = await mirror.buildWitnessQuestionForProxy(
+        engineId as StandaloneEngineId,
+        result,
+        decoderState,
+      );
+    }
+
+    return {
+      witness_question: witnessQuestion || null,
+      decoder_state: summarizeDecoderState(decoderState),
+      max_layer_unlocked: maxLayer,
+      engine_role: isWitnessEngine
+        ? ENGINE_WITNESS_ROLE[engineId as StandaloneEngineId]
+        : null,
+    };
+  }
+
+  async function getWitnessContext(body: Record<string, unknown>): Promise<{
+    decoderState: DecoderState;
+    maxLayer: number;
+  } | null> {
+    const { birthDate, birthTime, latitude, longitude } = readBirthData(body);
+    if (!birthDate) return null;
+
+    const userHash = hashBirthData(birthDate, birthTime, latitude, longitude);
+    const decoderState = await getDecoderStateAsync(userHash);
+    const maxLayer = computeMaxLayer(decoderState, config.tier);
+    return { decoderState, maxLayer };
+  }
   
   return {
     /**
@@ -459,7 +542,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
         });
         if (!resp.ok) {
           const errBody = await resp.text();
-          return { status: resp.status, body: JSON.parse(errBody || '{}') };
+          return { status: resp.status, body: parseUpstreamBody(errBody) };
         }
         rawResult = await resp.json() as Record<string, unknown>;
       } catch (err) {
@@ -469,58 +552,113 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
         };
       }
 
-      // Extract birth_data for decoder ring
-      const birthDataReq = (requestBody.birth_data || {}) as Record<string, unknown>;
-      const birthDate = (birthDataReq.date || '') as string;
-      const birthTime = (birthDataReq.time || undefined) as string | undefined;
-      const lat = (birthDataReq.latitude || 0) as number;
-      const lon = (birthDataReq.longitude || 0) as number;
-
-      if (!birthDate) {
+      const witnessContext = await getWitnessContext(requestBody);
+      if (!witnessContext) {
         // Can't compute witness context without birth_date — return raw
         return { status: 200, body: { ...rawResult, witness_layer: null } };
       }
 
       // Compute witness enrichment
       try {
-        const userHash = hashBirthData(birthDate, birthTime, lat, lon);
-        const today = new Date().toISOString().split('T')[0];
-        const isWitnessEngine = STANDALONE_ENGINES.includes(engineId as StandaloneEngineId);
-        const decoderState = await getDecoderStateAsync(userHash);
-        const maxLayer = computeMaxLayer(decoderState, config.tier);
+        return {
+          status: 200,
+          body: {
+            ...rawResult,
+            witness_layer: await buildWitnessLayer(
+              engineId,
+              rawResult,
+              witnessContext.decoderState,
+              witnessContext.maxLayer,
+            ),
+          },
+        };
+      } catch {
+        // Witness enrichment failed — return raw result anyway
+        return { status: 200, body: { ...rawResult, witness_layer: null } };
+      }
+    },
 
-        let witnessQuestion: string | undefined;
-        if (maxLayer >= 2 && isWitnessEngine) {
-          // Build witness question via LLM
-          const result = (rawResult.result || rawResult) as Record<string, unknown>;
-          const witnessReading = await mirror.buildWitnessQuestionForProxy(
-            engineId as StandaloneEngineId,
-            result,
-            decoderState,
-          );
-          witnessQuestion = witnessReading;
+    /**
+     * POST /api/v1/workflows/:workflowId/execute — Proxied workflow execution with witness layer
+     * Preserves Selemene's workflow result contract while attaching per-engine witness metadata.
+     */
+    async apiWorkflowExecute(
+      workflowId: string,
+      body: unknown,
+    ): Promise<{ status: number; body: unknown }> {
+      const selemeneUrl = config.selemene_url;
+      const requestBody = body as Record<string, unknown>;
+
+      let rawResult: Record<string, unknown>;
+      try {
+        const resp = await fetch(`${selemeneUrl}/api/v1/workflows/${workflowId}/execute`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': config.selemene_api_key,
+          },
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!resp.ok) {
+          const errBody = await resp.text();
+          return { status: resp.status, body: parseUpstreamBody(errBody) };
         }
+        rawResult = await resp.json() as Record<string, unknown>;
+      } catch (err) {
+        return {
+          status: 502,
+          body: {
+            error: 'Upstream Selemene workflow call failed',
+            code: 'UPSTREAM_ERROR',
+            hint: (err as Error).message,
+          },
+        };
+      }
+
+      const witnessContext = await getWitnessContext(requestBody);
+      if (!witnessContext) {
+        return { status: 200, body: { ...rawResult, witness_layer: null } };
+      }
+
+      try {
+        const engineResults = (rawResult.engine_results || {}) as Record<string, Record<string, unknown>>;
+        const enrichedEntries = await Promise.all(
+          Object.entries(engineResults).map(async ([engineId, engineResult]) => ([
+            engineId,
+            {
+              ...engineResult,
+              witness_layer: await buildWitnessLayer(
+                engineId,
+                engineResult,
+                witnessContext.decoderState,
+                witnessContext.maxLayer,
+              ),
+            },
+          ] as const)),
+        );
+
+        const enrichedEngineIds = enrichedEntries
+          .map(([engineId, engineResult]) => {
+            const witnessLayer = engineResult.witness_layer as { engine_role: string | null };
+            return witnessLayer.engine_role ? engineId : null;
+          })
+          .filter((engineId): engineId is string => Boolean(engineId));
 
         return {
           status: 200,
           body: {
             ...rawResult,
+            engine_results: Object.fromEntries(enrichedEntries),
             witness_layer: {
-              witness_question: witnessQuestion || null,
-              decoder_state: {
-                total_visits: decoderState.total_visits,
-                consecutive_days: decoderState.consecutive_days,
-                max_layer_reached: decoderState.max_layer_reached,
-              },
-              max_layer_unlocked: maxLayer,
-              engine_role: isWitnessEngine
-                ? ENGINE_WITNESS_ROLE[engineId as StandaloneEngineId]
-                : null,
+              workflow_id: workflowId,
+              decoder_state: summarizeDecoderState(witnessContext.decoderState),
+              max_layer_unlocked: witnessContext.maxLayer,
+              enriched_engines: enrichedEngineIds,
             },
           },
         };
       } catch {
-        // Witness enrichment failed — return raw result anyway
         return { status: 200, body: { ...rawResult, witness_layer: null } };
       }
     },
@@ -554,8 +692,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
         }
 
         const text = await resp.text();
-        let parsed: unknown;
-        try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
+        const parsed = parseUpstreamBody(text);
         return { status: resp.status, body: parsed, headers: proxyHeaders };
       } catch (err) {
         return {
@@ -705,10 +842,17 @@ export async function createStandaloneServer(config: StandaloneApiConfig): Promi
         res.writeHead(result.status);
         res.end(JSON.stringify(result.body));
 
+      } else if (path.match(/^\/api\/v1\/workflows\/[^/]+\/execute$/) && req.method === 'POST') {
+        const workflowId = path.split('/')[4];
+        const body = await readBody(req);
+        const result = await handlers.apiWorkflowExecute(workflowId, body);
+        res.writeHead(result.status);
+        res.end(JSON.stringify(result.body));
+
       } else if (path.startsWith('/api/v1/')) {
         // Generic proxy for all other Selemene API paths
         const body = req.method !== 'GET' && req.method !== 'HEAD' ? await readBody(req) : undefined;
-        const result = await handlers.apiProxy(req.method!, path, body);
+        const result = await handlers.apiProxy(req.method!, `${path}${url.search}`, body);
         if (result.headers) {
           for (const [k, v] of Object.entries(result.headers)) {
             res.setHeader(k, v);

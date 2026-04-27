@@ -2,7 +2,7 @@
 // Unit tests for all standalone components.
 // Live tests (marked LIVE) require SELEMENE_API_KEY env var.
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 // ─── Engine Rotation ────────────────────────────────────────────────
@@ -597,6 +597,12 @@ import {
 } from '../src/standalone/standalone-api.js';
 
 describe('Standalone API', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
   it('info endpoint returns product metadata', async () => {
     const handlers = createStandaloneHandlers({
       selemene_url: 'https://example.com',
@@ -732,6 +738,133 @@ describe('Standalone API', () => {
     assert.equal(r3.status, 429);
     
     _resetRateLimiter();
+  });
+
+  it('workflow execute attaches witness metadata to engine results', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      workflow_id: 'daily-practice',
+      engine_results: {
+        biorhythm: {
+          engine_id: 'biorhythm',
+          result: { physical: { percentage: 61 } },
+          witness_prompt: 'The body is in a usable rhythm today.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 3,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        transits: {
+          engine_id: 'transits',
+          result: { active_transits: [{ name: 'Saturn square Sun' }] },
+          witness_prompt: 'A weather front is passing through.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-subscriber',
+    });
+
+    const result = await handlers.apiWorkflowExecute('daily-practice', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const workflowWitness = body.witness_layer as Record<string, unknown>;
+    const engineResults = body.engine_results as Record<string, Record<string, unknown>>;
+    const bioWitness = engineResults.biorhythm.witness_layer as Record<string, unknown>;
+    const transitsWitness = engineResults.transits.witness_layer as Record<string, unknown>;
+
+    assert.equal(workflowWitness.workflow_id, 'daily-practice');
+    assert.equal(workflowWitness.max_layer_unlocked, 2);
+    assert.deepEqual(workflowWitness.enriched_engines, ['biorhythm']);
+    assert.equal(bioWitness.engine_role, 'somatic-pulse');
+    assert.equal(transitsWitness.engine_role, null);
+  });
+
+  it('engine calculate preserves non-JSON upstream error bodies', async () => {
+    globalThis.fetch = (async () => new Response('temporarily unavailable', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+    });
+
+    const result = await handlers.apiEngineCalculate('biorhythm', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+    });
+
+    assert.equal(result.status, 503);
+    assert.deepEqual(result.body, { raw: 'temporarily unavailable' });
+  });
+
+  it('generic api proxy forwards query strings unchanged', async () => {
+    let forwardedUrl = '';
+    globalThis.fetch = (async (input) => {
+      forwardedUrl = String(input);
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+    });
+
+    const result = await handlers.apiProxy(
+      'GET',
+      '/api/v1/readings?limit=5&offset=10',
+      undefined,
+    );
+
+    assert.equal(result.status, 200);
+    assert.equal(
+      forwardedUrl,
+      'https://example.com/api/v1/readings?limit=5&offset=10',
+    );
   });
 });
 
