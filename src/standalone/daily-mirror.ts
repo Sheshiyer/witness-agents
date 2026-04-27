@@ -76,7 +76,7 @@ export class DailyMirror {
           api_key: config.openrouter_api_key,
           site_url: 'https://tryambakam.space/daily-witness',
           site_name: 'The Daily Witness',
-          timeout_ms: 15_000,
+          timeout_ms: 30_000,
         })
       : null;
     
@@ -542,7 +542,7 @@ export class DailyMirror {
       messages,
       model_role: 'pichet',
       tier: coreTier as Tier,
-      max_tokens_override: 200,
+      max_tokens_override: 400,
       temperature_override: 0.8,
       metadata: { engine: engineId, source: 'daily-witness-layer2' },
     };
