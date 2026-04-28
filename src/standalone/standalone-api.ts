@@ -16,14 +16,18 @@
 // No auth required for free tier. Rate-limited by IP + birth_date hash.
 // Designed to be deployable as a single Cloudflare Worker or Railway service.
 
-import type { BirthData } from '../types/engine.js';
+import { randomUUID } from 'node:crypto';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import type { BirthData, Precision, RoutingMode, SelemeneEngineId, SelemeneEngineOutput } from '../types/engine.js';
 import type {
   DecoderState,
   StandaloneEngineId,
   StandaloneTier,
   SkillsShResponse,
 } from './types.js';
-import { STANDALONE_ENGINES } from './types.js';
+import { STANDALONE_ENGINES, STANDALONE_TO_CORE_TIER } from './types.js';
 import { DailyMirror } from './daily-mirror.js';
 import type { DailyMirrorConfig } from './daily-mirror.js';
 import { getForecast } from './engine-rotation.js';
@@ -32,6 +36,10 @@ import { hashBirthData, getDecoderStateAsync, computeMaxLayer } from './decoder-
 import { ENGINE_WITNESS_ROLE } from './types.js';
 import { WitnessObserver } from './observability.js';
 import { getWitnessDeploymentInfo, WITNESS_VERSION } from './deployment-info.js';
+import { InterpretationPipeline } from '../pipeline/interpreter.js';
+import type { PipelineQuery, Tier, UserState, WitnessInterpretation } from '../types/interpretation.js';
+import { CONSCIOUSNESS_TO_KOSHA } from '../types/interpretation.js';
+import { ENGINE_ROUTING } from '../types/engine.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // API TYPES
@@ -41,6 +49,7 @@ export interface StandaloneApiConfig extends DailyMirrorConfig {
   port?: number;
   rate_limit_per_hour?: number;  // Default: 30 for free, 300 for subscriber
   cors_origin?: string;          // Default: '*'
+  knowledge_path?: string;       // Default: ../../knowledge from this module
   // Rhythm SSE server config (optional — rhythm endpoints disabled if not provided)
   rhythm?: {
     poll_interval_ms?: number;   // Default: 120_000 (2 min)
@@ -63,11 +72,34 @@ export interface ApiError {
   hint?: string;
 }
 
+type WitnessDyadPayload = {
+  witness_question: string | null;
+  aletheios: WitnessInterpretation['aletheios'] | null;
+  pichet: WitnessInterpretation['pichet'] | null;
+  synthesis: string | null;
+  routing_mode: RoutingMode | null;
+  response_cadence: WitnessInterpretation['response_cadence'] | null;
+  kosha_depth: WitnessInterpretation['kosha_depth'] | null;
+  clifford_level: WitnessInterpretation['clifford_level'] | null;
+  tier: WitnessInterpretation['tier'] | null;
+};
+
+interface ProxyWitnessContext {
+  birthData: BirthData;
+  decoderState: DecoderState;
+  maxLayer: number;
+  userHash: string;
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // RATE LIMITER (in-memory, per birth_date hash)
 // ═══════════════════════════════════════════════════════════════════════
 
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const DEFAULT_KNOWLEDGE_PATH = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../knowledge',
+);
 
 function checkRateLimit(key: string, limit: number): boolean {
   const now = Date.now();
@@ -167,6 +199,17 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
   const mirrorConfig = { ...config, observer };
   const mirror = new DailyMirror(mirrorConfig);
   const rateLimit = config.rate_limit_per_hour || 30;
+  const knowledgePath = config.knowledge_path ?? DEFAULT_KNOWLEDGE_PATH;
+  const proxyTier = STANDALONE_TO_CORE_TIER[config.tier ?? 'witness-initiate'];
+  const pipeline = new InterpretationPipeline({
+    selemene: {
+      base_url: config.selemene_url,
+      api_key: config.selemene_api_key,
+      timeout_ms: 15_000,
+    },
+    knowledge_path: knowledgePath,
+  });
+  let pipelineReady: Promise<InterpretationPipeline> | null = null;
 
   function parseUpstreamBody(text: string): unknown {
     try {
@@ -176,18 +219,30 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     }
   }
 
-  function readBirthData(body: Record<string, unknown>): {
-    birthDate: string;
-    birthTime?: string;
-    latitude: number;
-    longitude: number;
-  } {
+  async function getPipeline(): Promise<InterpretationPipeline> {
+    if (!pipelineReady) {
+      pipelineReady = pipeline.initialize()
+        .then(() => pipeline)
+        .catch((err) => {
+          pipelineReady = null;
+          throw err;
+        });
+    }
+    return pipelineReady;
+  }
+
+  function readProxyBirthData(body: Record<string, unknown>): BirthData | null {
     const birthDataReq = (body.birth_data || {}) as Record<string, unknown>;
+    const birthDate = typeof birthDataReq.date === 'string' ? birthDataReq.date : '';
+    if (!birthDate) return null;
+
     return {
-      birthDate: (birthDataReq.date || '') as string,
-      birthTime: (birthDataReq.time || undefined) as string | undefined,
+      date: birthDate,
+      time: typeof birthDataReq.time === 'string' ? birthDataReq.time : undefined,
       latitude: typeof birthDataReq.latitude === 'number' ? birthDataReq.latitude : 0,
       longitude: typeof birthDataReq.longitude === 'number' ? birthDataReq.longitude : 0,
+      timezone: typeof birthDataReq.timezone === 'string' ? birthDataReq.timezone : 'UTC',
+      name: typeof birthDataReq.name === 'string' ? birthDataReq.name : undefined,
     };
   }
 
@@ -199,33 +254,216 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     };
   }
 
+  function emptyDyadPayload(): WitnessDyadPayload {
+    return {
+      witness_question: null,
+      aletheios: null,
+      pichet: null,
+      synthesis: null,
+      routing_mode: null,
+      response_cadence: null,
+      kosha_depth: null,
+      clifford_level: null,
+      tier: null,
+    };
+  }
+
+  function isSelemeneEngineId(value: string): value is SelemeneEngineId {
+    return typeof value === 'string' && value in ENGINE_ROUTING;
+  }
+
+  function coerceEngineOutput(rawResult: Record<string, unknown>): SelemeneEngineOutput | null {
+    const engineId = rawResult.engine_id;
+    if (typeof engineId !== 'string' || !isSelemeneEngineId(engineId)) {
+      return null;
+    }
+
+    return rawResult as unknown as SelemeneEngineOutput;
+  }
+
+  function extractBiorhythmState(
+    outputs: SelemeneEngineOutput[],
+  ): UserState['biorhythm'] | undefined {
+    const biorhythmOutput = outputs.find((output) => output.engine_id === 'biorhythm');
+    if (!biorhythmOutput) return undefined;
+
+    const result = biorhythmOutput.result as Record<string, unknown>;
+    const physical = (result.physical || {}) as Record<string, unknown>;
+    const emotional = (result.emotional || {}) as Record<string, unknown>;
+    const intellectual = (result.intellectual || {}) as Record<string, unknown>;
+    const physicalPct = typeof physical.percentage === 'number' ? physical.percentage : null;
+    const emotionalPct = typeof emotional.percentage === 'number' ? emotional.percentage : null;
+    const intellectualPct = typeof intellectual.percentage === 'number' ? intellectual.percentage : null;
+
+    if (physicalPct === null || emotionalPct === null || intellectualPct === null) {
+      return undefined;
+    }
+
+    return {
+      physical: physicalPct,
+      emotional: emotionalPct,
+      intellectual: intellectualPct,
+    };
+  }
+
+  function deriveOverwhelmLevel(outputs: SelemeneEngineOutput[]): number {
+    const biorhythm = extractBiorhythmState(outputs);
+    if (!biorhythm) return 0.15;
+
+    let level = 0;
+    if (biorhythm.physical < 35) level += 0.25;
+    if (biorhythm.emotional < 35) level += 0.35;
+    if (biorhythm.intellectual < 35) level += 0.15;
+
+    const biorhythmOutput = outputs.find((output) => output.engine_id === 'biorhythm');
+    if (biorhythmOutput) {
+      const result = biorhythmOutput.result as Record<string, unknown>;
+      const physical = (result.physical || {}) as Record<string, unknown>;
+      const emotional = (result.emotional || {}) as Record<string, unknown>;
+      const intellectual = (result.intellectual || {}) as Record<string, unknown>;
+      if (physical.is_critical === true) level += 0.15;
+      if (emotional.is_critical === true) level += 0.2;
+      if (intellectual.is_critical === true) level += 0.1;
+    }
+
+    return Math.min(1, level);
+  }
+
+  function deriveFallbackKosha(maxLayer: number): UserState['active_kosha'] {
+    if (maxLayer >= 3) return 'manomaya';
+    if (maxLayer >= 2) return 'pranamaya';
+    return 'annamaya';
+  }
+
+  function deriveUserState(
+    tier: Tier,
+    maxLayer: number,
+    outputs: SelemeneEngineOutput[],
+  ): UserState {
+    const primary = outputs[0];
+    const routing = primary ? ENGINE_ROUTING[primary.engine_id] : 'dyad-synthesis';
+    const consciousnessLevel = typeof primary?.consciousness_level === 'number'
+      ? Math.max(0, Math.min(5, primary.consciousness_level))
+      : null;
+
+    return {
+      tier,
+      http_status: 200,
+      overwhelm_level: deriveOverwhelmLevel(outputs),
+      active_kosha: consciousnessLevel !== null
+        ? CONSCIOUSNESS_TO_KOSHA[consciousnessLevel]
+        : deriveFallbackKosha(maxLayer),
+      dominant_center: routing === 'aletheios-primary'
+        ? 'head'
+        : routing === 'pichet-primary'
+          ? 'gut'
+          : 'heart',
+      recursion_detected: false,
+      anti_dependency_score: 0,
+      biorhythm: extractBiorhythmState(outputs),
+      session_query_count: 1,
+    };
+  }
+
+  function buildCompatibilityQuestion(interpretation: WitnessInterpretation): string | null {
+    return interpretation.synthesis
+      || interpretation.response
+      || interpretation.pichet?.perspective
+      || interpretation.aletheios?.perspective
+      || null;
+  }
+
+  function buildDyadPayload(
+    interpretation: WitnessInterpretation | null,
+  ): WitnessDyadPayload {
+    if (!interpretation) return emptyDyadPayload();
+
+    return {
+      witness_question: buildCompatibilityQuestion(interpretation),
+      aletheios: interpretation.aletheios ?? null,
+      pichet: interpretation.pichet ?? null,
+      synthesis: interpretation.synthesis ?? null,
+      routing_mode: interpretation.routing_mode,
+      response_cadence: interpretation.response_cadence,
+      kosha_depth: interpretation.kosha_depth,
+      clifford_level: interpretation.clifford_level,
+      tier: interpretation.tier,
+    };
+  }
+
+  function buildProxyQuery(
+    kind: 'engine' | 'workflow',
+    id: string,
+    witnessContext: ProxyWitnessContext,
+    outputs: SelemeneEngineOutput[],
+    body: Record<string, unknown>,
+  ): PipelineQuery {
+    const precision = typeof body.precision === 'string'
+      ? body.precision as Precision
+      : 'Standard';
+
+    return {
+      query: kind === 'workflow'
+        ? `Synthesize the current ${id} workflow through the witness dyad.`
+        : `Interpret the current ${id} signal through the witness dyad.`,
+      user_state: deriveUserState(proxyTier, witnessContext.maxLayer, outputs),
+      birth_data: witnessContext.birthData,
+      engine_hints: kind === 'engine' && isSelemeneEngineId(id) ? [id] : undefined,
+      workflow_hint: kind === 'workflow' ? id : undefined,
+      precision,
+      session_id: `standalone:${witnessContext.userHash}`,
+      request_id: `standalone:${kind}:${id}:${randomUUID()}`,
+    };
+  }
+
+  async function buildInterpretation(
+    kind: 'engine' | 'workflow',
+    id: string,
+    outputs: SelemeneEngineOutput[],
+    witnessContext: ProxyWitnessContext,
+    body: Record<string, unknown>,
+  ): Promise<WitnessInterpretation | null> {
+    if (witnessContext.maxLayer < 2 || outputs.length === 0) {
+      return null;
+    }
+
+    const activePipeline = await getPipeline();
+    return activePipeline.processResolvedOutputs(
+      buildProxyQuery(kind, id, witnessContext, outputs, body),
+      outputs,
+      { record_usage: false },
+    );
+  }
+
   async function buildWitnessLayer(
     engineId: string,
     rawResult: Record<string, unknown>,
-    decoderState: DecoderState,
-    maxLayer: number,
+    witnessContext: ProxyWitnessContext,
+    requestBody: Record<string, unknown>,
   ): Promise<{
     witness_question: string | null;
+    aletheios: WitnessInterpretation['aletheios'] | null;
+    pichet: WitnessInterpretation['pichet'] | null;
+    synthesis: string | null;
+    routing_mode: RoutingMode | null;
+    response_cadence: WitnessInterpretation['response_cadence'] | null;
+    kosha_depth: WitnessInterpretation['kosha_depth'] | null;
+    clifford_level: WitnessInterpretation['clifford_level'] | null;
+    tier: WitnessInterpretation['tier'] | null;
     decoder_state: ReturnType<typeof summarizeDecoderState>;
     max_layer_unlocked: number;
     engine_role: string | null;
   }> {
     const isWitnessEngine = STANDALONE_ENGINES.includes(engineId as StandaloneEngineId);
-    let witnessQuestion: string | undefined;
-
-    if (maxLayer >= 2 && isWitnessEngine) {
-      const result = (rawResult.result || rawResult) as Record<string, unknown>;
-      witnessQuestion = await mirror.buildWitnessQuestionForProxy(
-        engineId as StandaloneEngineId,
-        result,
-        decoderState,
-      );
-    }
+    const engineOutput = coerceEngineOutput(rawResult);
+    const interpretation = engineOutput
+      ? await buildInterpretation('engine', engineId, [engineOutput], witnessContext, requestBody)
+      : null;
 
     return {
-      witness_question: witnessQuestion || null,
-      decoder_state: summarizeDecoderState(decoderState),
-      max_layer_unlocked: maxLayer,
+      ...buildDyadPayload(interpretation),
+      decoder_state: summarizeDecoderState(witnessContext.decoderState),
+      max_layer_unlocked: witnessContext.maxLayer,
       engine_role: isWitnessEngine
         ? ENGINE_WITNESS_ROLE[engineId as StandaloneEngineId]
         : null,
@@ -233,16 +471,23 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
   }
 
   async function getWitnessContext(body: Record<string, unknown>): Promise<{
+    birthData: BirthData;
     decoderState: DecoderState;
     maxLayer: number;
+    userHash: string;
   } | null> {
-    const { birthDate, birthTime, latitude, longitude } = readBirthData(body);
-    if (!birthDate) return null;
+    const birthData = readProxyBirthData(body);
+    if (!birthData) return null;
 
-    const userHash = hashBirthData(birthDate, birthTime, latitude, longitude);
+    const userHash = hashBirthData(
+      birthData.date,
+      birthData.time,
+      birthData.latitude,
+      birthData.longitude,
+    );
     const decoderState = await getDecoderStateAsync(userHash);
     const maxLayer = computeMaxLayer(decoderState, config.tier);
-    return { decoderState, maxLayer };
+    return { birthData, decoderState, maxLayer, userHash };
   }
   
   return {
@@ -573,8 +818,8 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
             witness_layer: await buildWitnessLayer(
               engineId,
               rawResult,
-              witnessContext.decoderState,
-              witnessContext.maxLayer,
+              witnessContext,
+              requestBody,
             ),
           },
         };
@@ -637,11 +882,21 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
               witness_layer: await buildWitnessLayer(
                 engineId,
                 engineResult,
-                witnessContext.decoderState,
-                witnessContext.maxLayer,
+                witnessContext,
+                requestBody,
               ),
             },
           ] as const)),
+        );
+        const workflowOutputs = Object.values(engineResults)
+          .map((engineResult) => coerceEngineOutput(engineResult))
+          .filter((engineResult): engineResult is SelemeneEngineOutput => Boolean(engineResult));
+        const workflowInterpretation = await buildInterpretation(
+          'workflow',
+          workflowId,
+          workflowOutputs,
+          witnessContext,
+          requestBody,
         );
 
         const enrichedEngineIds = enrichedEntries
@@ -657,6 +912,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
             ...rawResult,
             engine_results: Object.fromEntries(enrichedEntries),
             witness_layer: {
+              ...buildDyadPayload(workflowInterpretation),
               workflow_id: workflowId,
               decoder_state: summarizeDecoderState(witnessContext.decoderState),
               max_layer_unlocked: witnessContext.maxLayer,

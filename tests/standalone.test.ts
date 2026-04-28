@@ -103,17 +103,20 @@ describe('Engine Rotation', () => {
 import {
   hashBirthData,
   getDecoderState,
+  getDecoderStateAsync,
   recordVisit,
   computeMaxLayer,
   shouldShowFindersGate,
   shouldShowGraduation,
   getDecoderNarrative,
   _resetStateStore,
+  setDecoderStore,
 } from '../src/standalone/decoder-ring.js';
 import type { DecoderState } from '../src/standalone/types.js';
 import { DECODER_THRESHOLDS } from '../src/standalone/types.js';
 import { WitnessObserver, type StructuredLog } from '../src/standalone/observability.js';
 import { getWitnessDeploymentInfo, WITNESS_VERSION } from '../src/standalone/deployment-info.js';
+import type { DecoderStateStore } from '../src/standalone/decoder-store.js';
 
 describe('Decoder Ring', () => {
   beforeEach(() => {
@@ -140,6 +143,26 @@ describe('Decoder Ring', () => {
     assert.equal(state.max_layer_reached, 1);
     assert.equal(state.finder_gate_shown, false);
     assert.equal(state.graduation_shown, false);
+  });
+
+  it('getDecoderStateAsync does not persist blank dates for a fresh user', async () => {
+    let writes = 0;
+    const store: DecoderStateStore = {
+      async get() {
+        return null;
+      },
+      async set() {
+        writes++;
+      },
+      async clear() {},
+    };
+
+    setDecoderStore(store);
+    const state = await getDecoderStateAsync('fresh-user');
+
+    assert.equal(state.first_visit, '');
+    assert.equal(state.last_visit, '');
+    assert.equal(writes, 0);
   });
   
   it('recordVisit increments total_visits', () => {
@@ -979,7 +1002,7 @@ describe('Standalone API', () => {
     const handlers = createStandaloneHandlers({
       selemene_url: 'https://example.com',
       selemene_api_key: 'test',
-      tier: 'witness-subscriber',
+      tier: 'witness-initiate',
     });
 
     const result = await handlers.apiWorkflowExecute('daily-practice', {
@@ -1003,10 +1026,90 @@ describe('Standalone API', () => {
     const transitsWitness = engineResults.transits.witness_layer as Record<string, unknown>;
 
     assert.equal(workflowWitness.workflow_id, 'daily-practice');
-    assert.equal(workflowWitness.max_layer_unlocked, 2);
+    assert.equal(workflowWitness.max_layer_unlocked, 3);
     assert.deepEqual(workflowWitness.enriched_engines, ['biorhythm']);
+    assert.equal(typeof workflowWitness.witness_question, 'string');
+    assert.equal(workflowWitness.witness_question, workflowWitness.synthesis);
+    assert.equal(typeof workflowWitness.synthesis, 'string');
+    assert.ok((workflowWitness.synthesis as string).length > 0);
+    assert.ok(workflowWitness.aletheios);
+    assert.ok(workflowWitness.pichet);
+    assert.equal(workflowWitness.routing_mode, 'pichet-primary');
+    assert.equal(workflowWitness.response_cadence, 'immediate');
     assert.equal(bioWitness.engine_role, 'somatic-pulse');
+    assert.equal(typeof bioWitness.witness_question, 'string');
+    assert.equal(bioWitness.witness_question, bioWitness.synthesis);
+    assert.ok(bioWitness.aletheios);
+    assert.ok(bioWitness.pichet);
+    assert.equal(bioWitness.routing_mode, 'pichet-primary');
     assert.equal(transitsWitness.engine_role, null);
+    assert.equal(typeof transitsWitness.witness_question, 'string');
+    assert.equal(transitsWitness.witness_question, transitsWitness.synthesis);
+    assert.ok(transitsWitness.aletheios);
+    assert.ok(transitsWitness.pichet);
+    assert.equal(transitsWitness.routing_mode, 'dyad-synthesis');
+  });
+
+  it('engine calculate returns dyad enrichment with compatibility question', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      engine_id: 'biorhythm',
+      result: {
+        physical: { percentage: 86, phase: 'Rising', is_critical: false },
+        emotional: { percentage: 32, phase: 'Falling', is_critical: false },
+        intellectual: { percentage: 71, phase: 'Rising', is_critical: false },
+        overall_energy: 63,
+        critical_days: [],
+      },
+      witness_prompt: 'A physical surge is moving through the day.',
+      consciousness_level: 1,
+      metadata: {
+        calculation_time_ms: 5,
+        backend: 'typescript',
+        precision_achieved: 'exact',
+        cached: false,
+        timestamp: '2026-04-26T00:00:00.000Z',
+        engine_version: '1.0.0',
+      },
+      envelope_version: '1',
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+    });
+
+    const result = await handlers.apiEngineCalculate('biorhythm', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const witnessLayer = body.witness_layer as Record<string, unknown>;
+
+    assert.equal(witnessLayer.engine_role, 'somatic-pulse');
+    assert.equal(witnessLayer.max_layer_unlocked, 3);
+    assert.equal(witnessLayer.tier, 'initiate');
+    assert.equal(witnessLayer.routing_mode, 'pichet-primary');
+    assert.equal(witnessLayer.response_cadence, 'immediate');
+    assert.equal(typeof witnessLayer.witness_question, 'string');
+    assert.equal(witnessLayer.witness_question, witnessLayer.synthesis);
+    assert.ok((witnessLayer.witness_question as string).length > 0);
+    assert.ok(witnessLayer.aletheios);
+    assert.ok(witnessLayer.pichet);
+    assert.equal(witnessLayer.kosha_depth, 'anandamaya');
   });
 
   it('engine calculate preserves non-JSON upstream error bodies', async () => {

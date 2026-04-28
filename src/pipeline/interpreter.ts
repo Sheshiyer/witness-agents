@@ -147,6 +147,10 @@ export interface PipelineConfig {
   tier_gate?: TierGate;
 }
 
+export interface ResolvedOutputOptions {
+  record_usage?: boolean;
+}
+
 export class InterpretationPipeline {
   private client: SelemeneClient;
   private dyad: DyadCoordinator;
@@ -190,7 +194,6 @@ export class InterpretationPipeline {
    */
   async process(query: PipelineQuery): Promise<WitnessInterpretation> {
     if (!this.initialized) await this.initialize();
-    const startTime = Date.now();
 
     // ─── Step 1: Tier gate ──────────────────────
     const tierCheck = this.tierGate.check(query.user_state.tier, query.session_id);
@@ -200,9 +203,25 @@ export class InterpretationPipeline {
 
     // ─── Step 2: Determine engines & call Selemene ──────────────────
     const engineOutputs = await this.callSelemene(query);
+    return this.processResolvedOutputs(query, engineOutputs);
+  }
+
+  /**
+   * Process a query using already-fetched engine outputs.
+   * This is the seam used by standalone proxy paths so they can reuse the
+   * deterministic dyad pipeline without re-calling Selemene.
+   */
+  async processResolvedOutputs(
+    query: PipelineQuery,
+    engineOutputs: SelemeneEngineOutput[],
+    options: ResolvedOutputOptions = {},
+  ): Promise<WitnessInterpretation> {
+    if (!this.initialized) await this.initialize();
     if (engineOutputs.length === 0) {
       return this.buildEmptyResponse(query, 'No engine results available');
     }
+
+    const recordUsage = options.record_usage ?? true;
 
     // ─── Step 3: Clifford gate evaluation ───────────────────────────
     const cliffordLevel = this.cliffordGate.evaluate(query.user_state);
@@ -216,80 +235,89 @@ export class InterpretationPipeline {
     this.dyad.trackQuery(query.query);
     this.dyad.activateForQuery(routing, cliffordLevel, requireDyad);
 
-    // ─── Step 5: Anti-dependency tracking ────────────────────────────
-    this.antiDep.startSession(query.session_id);
-    this.antiDep.recordQuery(
-      query.query,
-      query.user_state,
-      engineOutputs.map(o => o.engine_id),
-    );
+    try {
+      // ─── Step 5: Anti-dependency tracking ──────────────────────────
+      this.antiDep.startSession(query.session_id);
+      this.antiDep.recordQuery(
+        query.query,
+        query.user_state,
+        engineOutputs.map(o => o.engine_id),
+      );
 
-    // ─── Step 6: Knowledge-grounded interpretation ──────────────────
-    const aletheiosInterp = this.shouldInterpret('aletheios', routing, query.user_state.tier)
-      ? this.interpretAletheios(engineOutputs, query.user_state, cliffordLevel)
-      : undefined;
+      // ─── Step 6: Knowledge-grounded interpretation ────────────────
+      const aletheiosInterp = this.shouldInterpret('aletheios', routing, query.user_state.tier)
+        ? this.interpretAletheios(engineOutputs, query.user_state, cliffordLevel)
+        : undefined;
 
-    const pichetInterp = this.shouldInterpret('pichet', routing, query.user_state.tier)
-      ? this.interpretPichet(engineOutputs, query.user_state, cliffordLevel)
-      : undefined;
+      const pichetInterp = this.shouldInterpret('pichet', routing, query.user_state.tier)
+        ? this.interpretPichet(engineOutputs, query.user_state, cliffordLevel)
+        : undefined;
 
-    // ─── Step 7: Synthesis (use SynthesisEngine for enterprise+) ────
-    let synthesis: string | undefined;
-    let synthResult: SynthesisResult | undefined;
-    if (aletheiosInterp && pichetInterp) {
-      this.dyad.interpret(routing);
-      this.dyad.synthesize();
+      // ─── Step 7: Synthesis (use SynthesisEngine for enterprise+) ──
+      let synthesis: string | undefined;
+      if (aletheiosInterp && pichetInterp) {
+        this.dyad.interpret(routing);
+        this.dyad.synthesize();
 
-      if (requireDyad && engineOutputs.length >= 2) {
-        // Use the full SynthesisEngine for enterprise/initiate
-        synthResult = this.synthesisEngine.synthesize(
-          engineOutputs,
-          query.user_state,
-          this.knowledge,
-          undefined,
-          cliffordLevel,
-        );
-        synthesis = synthResult.unified_narrative;
-      } else {
-        synthesis = this.synthesize(aletheiosInterp, pichetInterp, query.user_state);
+        if (requireDyad && engineOutputs.length >= 2) {
+          const synthResult = this.synthesisEngine.synthesize(
+            engineOutputs,
+            query.user_state,
+            this.knowledge,
+            undefined,
+            cliffordLevel,
+          );
+          synthesis = synthResult.unified_narrative;
+        } else {
+          synthesis = this.synthesize(aletheiosInterp, pichetInterp, query.user_state);
+        }
       }
+
+      // ─── Step 8: Build response ───────────────────────────────────
+      const overwhelmLevel = this.dyad.assessOverwhelm({
+        query_cadence_per_min: 0,
+        heavy_topics: this.detectHeavyTopics(engineOutputs),
+        session_duration_min: 0,
+      });
+
+      const response = this.buildResponse(
+        query,
+        engineOutputs,
+        routing,
+        cliffordLevel,
+        koshaDepth,
+        aletheiosInterp,
+        pichetInterp,
+        synthesis,
+        overwhelmLevel,
+      );
+
+      // ─── Step 9: Generate voice prompts (attach for downstream LLM) ─
+      if (requireDyad) {
+        (response as any).voice_prompts = {
+          aletheios: this.voiceBuilder.buildAgentPrompt({
+            agent: 'aletheios',
+            tier: query.user_state.tier,
+            userState: query.user_state,
+            engineOutputs,
+          }),
+          pichet: this.voiceBuilder.buildAgentPrompt({
+            agent: 'pichet',
+            tier: query.user_state.tier,
+            userState: query.user_state,
+            engineOutputs,
+          }),
+        };
+      }
+
+      if (recordUsage) {
+        this.tierGate.recordUsage(query.user_state.tier, query.session_id);
+      }
+
+      return response;
+    } finally {
+      this.dyad.deactivate();
     }
-
-    // ─── Step 8: Build response ─────────────────────────────────────
-    const overwhelmLevel = this.dyad.assessOverwhelm({
-      query_cadence_per_min: 0,
-      heavy_topics: this.detectHeavyTopics(engineOutputs),
-      session_duration_min: 0,
-    });
-
-    const response = this.buildResponse(
-      query, engineOutputs, routing, cliffordLevel, koshaDepth,
-      aletheiosInterp, pichetInterp, synthesis, overwhelmLevel,
-    );
-
-    // ─── Step 9: Generate voice prompts (attach for downstream LLM) ─
-    if (requireDyad) {
-      (response as any).voice_prompts = {
-        aletheios: this.voiceBuilder.buildAgentPrompt({
-          agent: 'aletheios',
-          tier: query.user_state.tier,
-          userState: query.user_state,
-          engineOutputs,
-        }),
-        pichet: this.voiceBuilder.buildAgentPrompt({
-          agent: 'pichet',
-          tier: query.user_state.tier,
-          userState: query.user_state,
-          engineOutputs,
-        }),
-      };
-    }
-
-    // ─── Cleanup ────────────────────────────────────────────────────
-    this.dyad.deactivate();
-    this.tierGate.recordUsage(query.user_state.tier, query.session_id);
-
-    return response;
   }
 
   // ─── PRIVATE: Selemene API ─────────────────────────────────────────

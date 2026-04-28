@@ -32,25 +32,25 @@
 ## Step 3 Dyad Plan
 - Scope: proxy-first. Wire the Selemene-compatible proxy endpoints to deterministic Aletheios + Pichet + Synthesis first. Leave `/reading` and `daily-mirror.ts` on the current Pichet-only path for the first cut.
 - Contract strategy: keep `witness_question` temporarily as a compatibility field while adding rich dyad output fields. During Step 3, populate the new structure first and only remove or repurpose legacy fields after the consuming client is confirmed.
-- [ ] Factor `InterpretationPipeline.process()` so the pipeline can accept already-fetched `SelemeneEngineOutput[]` without re-calling Selemene.
+- [x] Factor `InterpretationPipeline.process()` so the pipeline can accept already-fetched `SelemeneEngineOutput[]` without re-calling Selemene.
   - Files: `src/pipeline/interpreter.ts`
   - Target seam: expose a `processResolvedOutputs(query, engineOutputs)` or equivalent extracted post-fetch path.
-- [ ] Initialize the standalone server with the shared knowledge path and a singleton pipeline instance.
+- [x] Initialize the standalone server with the shared knowledge path and a singleton pipeline instance.
   - Files: `src/serve.ts`, `src/standalone/standalone-api.ts`
   - Requirement: pass a concrete `knowledge_path` into pipeline config once at startup, not per request.
-- [ ] Replace the current question-only `buildWitnessLayer()` enrichment path with proxy-first dyad enrichment.
+- [x] Replace the current question-only `buildWitnessLayer()` enrichment path with proxy-first dyad enrichment.
   - Files: `src/standalone/standalone-api.ts`
   - Output target: preserve decoder metadata and add `aletheios`, `pichet`, `synthesis`, `routing_mode`, and `response_cadence`.
   - Input target: derive minimal `PipelineQuery` and `UserState` from request birth data, tier, and decoder state.
-- [ ] Reuse upstream Selemene results instead of re-fetching inside the pipeline.
+- [x] Reuse upstream Selemene results instead of re-fetching inside the pipeline.
   - Reason: avoids extra latency and avoids time drift on engines like `vedic-clock`.
-- [ ] Delay optional LLM voice passes until after deterministic dyad extraction is present and verified.
+- [x] Delay optional LLM voice passes until after deterministic dyad extraction is present and verified.
   - Files: `src/inference/dyad-engine.ts`, `src/standalone/standalone-api.ts`
   - Guardrail: do not call `DyadInferenceEngine` directly on raw Selemene output; it expects populated `interpretation.aletheios` and `interpretation.pichet` fields.
-- [ ] Expand standalone proxy tests around both engine and workflow endpoints.
+- [x] Expand standalone proxy tests around both engine and workflow endpoints.
   - Files: `tests/standalone.test.ts`
   - Required assertions: single-engine proxy response contains rich dyad fields; workflow response contains per-engine dyad enrichment plus workflow-level synthesis metadata; compatibility field remains present during transition.
-- [ ] Verify live against `48.tryambakam.space` after Step 3 deploy.
+- [x] Verify live against `48.tryambakam.space` after Step 3 deploy.
   - Probe 1: `POST /api/v1/engines/biorhythm/calculate` returns full dyad fields instead of only a short witness question.
   - Probe 2: `POST /api/v1/workflows/:id/execute` returns enriched per-engine dyad output plus workflow-level synthesis.
   - Probe 3: `/metrics` and logs still show healthy LLM and engine behavior with no regression to fallback-only output.
@@ -60,3 +60,19 @@
 - Proxy request bodies do not contain a natural-language query, so Step 3 needs a stable default query/user-state mapping or the dyad output will be shallow.
 - Response shape churn can break clients if legacy `witness_question` disappears too early.
 - Knowledge loading must stay singleton-scoped; per-request initialization will hurt latency and cold starts.
+
+## Step 3 Review
+- Local verification passed:
+  - `npm run typecheck`
+  - `node --import tsx --test tests/standalone.test.ts`
+- Railway deployments succeeded on 2026-04-28:
+  - `1847bc78-da3b-436c-a690-d8bfaeea9470` shipped the proxy-first dyad wiring.
+  - `37bf69d8-eda9-49b7-8b39-5001529fed9a` followed immediately with the decoder-store blank-date persistence fix discovered during live verification.
+- Live verification passed:
+  - `GET https://48.tryambakam.space/health/live` returned `witness_build_id: 37bf69d8-eda9-49b7-8b39-5001529fed9a` with `service_name: witness-agents` and `started_at: 2026-04-28T14:52:40.669Z`.
+  - `POST https://48.tryambakam.space/api/v1/engines/biorhythm/calculate` returned `witness_layer` with `aletheios`, `pichet`, `synthesis`, `routing_mode: pichet-primary`, `response_cadence: immediate`, `kosha_depth: anandamaya`, and the compatibility `witness_question`.
+  - `POST https://48.tryambakam.space/api/v1/workflows/daily-practice/execute` returned workflow-level dyad synthesis plus per-engine dyad enrichment for `biorhythm`, `panchanga`, and `vedic-clock`.
+- Runtime note:
+  - Railway startup logs show the new knowledge path (`/app/knowledge`) and deployment metadata as expected.
+  - The initial dyad deploy exposed a fresh-user decoder persistence bug: `getDecoderStateAsync()` was upserting blank `first_visit` / `last_visit` dates before the first visit existed.
+  - Follow-up deploy `37bf69d8-eda9-49b7-8b39-5001529fed9a` removed that write on the fresh-state path. Repeating the public proxy probes after that deploy did not reproduce the Supabase date warning.

@@ -102,7 +102,6 @@ export async function getDecoderStateAsync(userHash: string): Promise<DecoderSta
   }
   const state = freshState(userHash);
   syncCache.set(userHash, state);
-  await activeStore.set(userHash, state);
   return state;
 }
 
