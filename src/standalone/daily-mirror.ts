@@ -546,8 +546,18 @@ export class DailyMirror {
       temperature_override: 0.8,
       metadata: { engine: engineId, source: 'daily-witness-layer2' },
     };
-    
-    const response = await this.llmProvider!.complete(request);
+
+    const preferredModel = request.model_override
+      ? request.model_override
+      : this.llmProvider!.resolveModel(coreTier as Tier, request.model_role).model_id;
+
+    let response;
+    try {
+      response = await this.llmProvider!.complete(request);
+    } catch (err) {
+      this.logLayer2LLMFailure(engineId, tier, coreTier as Tier, state, request, preferredModel, Date.now() - startTime, err);
+      throw err;
+    }
     
     const question = response.content.trim().replace(/^["']|["']$/g, '');
     const latency = Date.now() - startTime;
@@ -571,6 +581,107 @@ export class DailyMirror {
       model_used: response.model_used,
       inference_latency_ms: latency,
     };
+  }
+
+  private logLayer2LLMFailure(
+    engineId: StandaloneEngineId,
+    tier: StandaloneTier,
+    coreTier: Tier,
+    state: DecoderState,
+    request: InferenceRequest,
+    preferredModel: string,
+    latencyMs: number,
+    err: unknown,
+  ): void {
+    const details = this.normalizeLLMError(err);
+    this.observer?.error('layer2.llm.error', {
+      engine_id: engineId,
+      tier,
+      user_hash: state.user_hash,
+      duration_ms: latencyMs,
+      error: details.error,
+      metadata: {
+        core_tier: coreTier,
+        model_role: request.model_role,
+        preferred_model: preferredModel,
+        request_model_override: request.model_override ?? null,
+        request_max_tokens: request.max_tokens_override ?? null,
+        request_temperature: request.temperature_override ?? null,
+        request_metadata: request.metadata ?? {},
+        provider: details.provider,
+        error_model: details.model,
+        status: details.status,
+        retryable: details.retryable,
+        error_type: details.error_type,
+        upstream_code: details.upstream_code,
+        upstream_message: details.upstream_message,
+        total_visits: state.total_visits,
+        consecutive_days: state.consecutive_days,
+      },
+    });
+  }
+
+  private normalizeLLMError(err: unknown): {
+    error: string;
+    provider: string;
+    model: string | null;
+    status: number | null;
+    retryable: boolean | null;
+    error_type: string;
+    upstream_code: string | number | null;
+    upstream_message: string | null;
+  } {
+    const fallbackMessage = err instanceof Error
+      ? err.message
+      : typeof err === 'string'
+        ? err
+        : 'Unknown LLM error';
+
+    const errorRecord = (err && typeof err === 'object')
+      ? err as Record<string, unknown>
+      : {};
+
+    const rawMessage = typeof errorRecord.message === 'string'
+      ? errorRecord.message
+      : fallbackMessage;
+
+    let upstreamCode: string | number | null = null;
+    let upstreamMessage: string | null = null;
+
+    try {
+      const parsed = JSON.parse(rawMessage) as Record<string, unknown>;
+      const parsedError = (parsed.error && typeof parsed.error === 'object')
+        ? parsed.error as Record<string, unknown>
+        : parsed;
+
+      if (typeof parsedError.code === 'string' || typeof parsedError.code === 'number') {
+        upstreamCode = parsedError.code;
+      }
+      if (typeof parsedError.message === 'string') {
+        upstreamMessage = parsedError.message;
+      } else if (typeof parsed.message === 'string') {
+        upstreamMessage = parsed.message;
+      }
+    } catch {
+      upstreamMessage = rawMessage;
+    }
+
+    const errorMessage = this.truncateForLog(upstreamMessage || rawMessage || fallbackMessage);
+
+    return {
+      error: errorMessage,
+      provider: typeof errorRecord.provider === 'string' ? errorRecord.provider : 'unknown',
+      model: typeof errorRecord.model === 'string' ? errorRecord.model : null,
+      status: typeof errorRecord.status === 'number' ? errorRecord.status : null,
+      retryable: typeof errorRecord.retryable === 'boolean' ? errorRecord.retryable : null,
+      error_type: err instanceof Error ? err.name : typeof err,
+      upstream_code: upstreamCode,
+      upstream_message: upstreamMessage ? this.truncateForLog(upstreamMessage) : null,
+    };
+  }
+
+  private truncateForLog(value: string, maxLength = 400): string {
+    return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
   }
   
   private buildLayer3(

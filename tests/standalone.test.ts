@@ -112,6 +112,7 @@ import {
 } from '../src/standalone/decoder-ring.js';
 import type { DecoderState } from '../src/standalone/types.js';
 import { DECODER_THRESHOLDS } from '../src/standalone/types.js';
+import { WitnessObserver, type StructuredLog } from '../src/standalone/observability.js';
 
 describe('Decoder Ring', () => {
   beforeEach(() => {
@@ -586,6 +587,79 @@ describe('Daily Mirror', () => {
     });
     assert.ok(mirror);
     assert.equal(mirror.getCacheStats(), null);
+  });
+
+  it('logs structured LLM failure details before proxy fallback', async () => {
+    const captured: StructuredLog[] = [];
+    const observer = new WitnessObserver({
+      level: 'debug',
+      sink: (log) => captured.push(log),
+    });
+
+    const mirror = new DailyMirror({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test-key',
+      openrouter_api_key: 'or-test-key',
+      observer,
+    });
+
+    (mirror as any).llmProvider = {
+      resolveModel: () => ({
+        model_id: 'anthropic/claude-sonnet-4.6',
+        max_tokens: 512,
+        temperature: 0.6,
+      }),
+      complete: async () => {
+        throw {
+          provider: 'openrouter',
+          model: 'anthropic/claude-sonnet-4.6',
+          status: 404,
+          retryable: false,
+          message: JSON.stringify({
+            error: {
+              code: 'model_not_available',
+              message: 'No endpoints found matching that model',
+            },
+          }),
+        };
+      },
+    };
+
+    const state: DecoderState = {
+      user_hash: 'hashed-user',
+      total_visits: 4,
+      consecutive_days: 2,
+      last_visit: '2026-04-27',
+      first_visit: '2026-04-24',
+      max_layer_reached: 2,
+      finder_gate_shown: false,
+      graduation_shown: false,
+      engines_most_viewed: {
+        'biorhythm': 2,
+        'vedic-clock': 1,
+        'panchanga': 1,
+        'numerology': 0,
+      },
+    };
+
+    const question = await mirror.buildWitnessQuestionForProxy('biorhythm', {
+      physical: { percentage: 92 },
+      emotional: { percentage: 21 },
+    }, state);
+
+    assert.equal(question, 'Your body is ready but your heart isn\'t. What are you avoiding feeling?');
+
+    const errorLogs = captured.filter((log) => log.event === 'layer2.llm.error');
+    assert.equal(errorLogs.length, 1);
+    assert.equal(errorLogs[0].level, 'error');
+    assert.equal(errorLogs[0].engine_id, 'biorhythm');
+    assert.equal(errorLogs[0].tier, 'witness-free');
+    assert.equal(errorLogs[0].user_hash, 'hashed-user');
+    assert.equal(errorLogs[0].error, 'No endpoints found matching that model');
+    assert.equal(errorLogs[0].metadata?.preferred_model, 'anthropic/claude-sonnet-4.6');
+    assert.equal(errorLogs[0].metadata?.status, 404);
+    assert.equal(errorLogs[0].metadata?.retryable, false);
+    assert.equal(errorLogs[0].metadata?.upstream_code, 'model_not_available');
   });
 });
 
