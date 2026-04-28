@@ -73,7 +73,7 @@ export interface ApiError {
 }
 
 type WitnessDyadPayload = {
-  witness_question: string | null;
+  response: string | null;
   aletheios: WitnessInterpretation['aletheios'] | null;
   pichet: WitnessInterpretation['pichet'] | null;
   synthesis: string | null;
@@ -256,7 +256,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
 
   function emptyDyadPayload(): WitnessDyadPayload {
     return {
-      witness_question: null,
+      response: null,
       aletheios: null,
       pichet: null,
       synthesis: null,
@@ -365,21 +365,13 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     };
   }
 
-  function buildCompatibilityQuestion(interpretation: WitnessInterpretation): string | null {
-    return interpretation.synthesis
-      || interpretation.response
-      || interpretation.pichet?.perspective
-      || interpretation.aletheios?.perspective
-      || null;
-  }
-
   function buildDyadPayload(
     interpretation: WitnessInterpretation | null,
   ): WitnessDyadPayload {
     if (!interpretation) return emptyDyadPayload();
 
     return {
-      witness_question: buildCompatibilityQuestion(interpretation),
+      response: interpretation.response ?? null,
       aletheios: interpretation.aletheios ?? null,
       pichet: interpretation.pichet ?? null,
       synthesis: interpretation.synthesis ?? null,
@@ -441,7 +433,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     witnessContext: ProxyWitnessContext,
     requestBody: Record<string, unknown>,
   ): Promise<{
-    witness_question: string | null;
+    response: string | null;
     aletheios: WitnessInterpretation['aletheios'] | null;
     pichet: WitnessInterpretation['pichet'] | null;
     synthesis: string | null;

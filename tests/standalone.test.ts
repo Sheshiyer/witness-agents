@@ -959,7 +959,7 @@ describe('Standalone API', () => {
     _resetRateLimiter();
   });
 
-  it('workflow execute attaches witness metadata to engine results', async () => {
+  it('workflow execute attaches dyad metadata to engine results without compatibility alias', async () => {
     globalThis.fetch = (async () => new Response(JSON.stringify({
       workflow_id: 'daily-practice',
       engine_results: {
@@ -1028,29 +1028,32 @@ describe('Standalone API', () => {
     assert.equal(workflowWitness.workflow_id, 'daily-practice');
     assert.equal(workflowWitness.max_layer_unlocked, 3);
     assert.deepEqual(workflowWitness.enriched_engines, ['biorhythm']);
-    assert.equal(typeof workflowWitness.witness_question, 'string');
-    assert.equal(workflowWitness.witness_question, workflowWitness.synthesis);
+    assert.equal(typeof workflowWitness.response, 'string');
+    assert.equal(workflowWitness.response, workflowWitness.synthesis);
     assert.equal(typeof workflowWitness.synthesis, 'string');
     assert.ok((workflowWitness.synthesis as string).length > 0);
     assert.ok(workflowWitness.aletheios);
     assert.ok(workflowWitness.pichet);
     assert.equal(workflowWitness.routing_mode, 'pichet-primary');
     assert.equal(workflowWitness.response_cadence, 'immediate');
+    assert.equal('witness_question' in workflowWitness, false);
     assert.equal(bioWitness.engine_role, 'somatic-pulse');
-    assert.equal(typeof bioWitness.witness_question, 'string');
-    assert.equal(bioWitness.witness_question, bioWitness.synthesis);
+    assert.equal(typeof bioWitness.response, 'string');
+    assert.equal(bioWitness.response, bioWitness.synthesis);
     assert.ok(bioWitness.aletheios);
     assert.ok(bioWitness.pichet);
     assert.equal(bioWitness.routing_mode, 'pichet-primary');
+    assert.equal('witness_question' in bioWitness, false);
     assert.equal(transitsWitness.engine_role, null);
-    assert.equal(typeof transitsWitness.witness_question, 'string');
-    assert.equal(transitsWitness.witness_question, transitsWitness.synthesis);
+    assert.equal(typeof transitsWitness.response, 'string');
+    assert.equal(transitsWitness.response, transitsWitness.synthesis);
     assert.ok(transitsWitness.aletheios);
     assert.ok(transitsWitness.pichet);
     assert.equal(transitsWitness.routing_mode, 'dyad-synthesis');
+    assert.equal('witness_question' in transitsWitness, false);
   });
 
-  it('engine calculate returns dyad enrichment with compatibility question', async () => {
+  it('engine calculate returns dyad enrichment without compatibility question alias', async () => {
     globalThis.fetch = (async () => new Response(JSON.stringify({
       engine_id: 'biorhythm',
       result: {
@@ -1104,12 +1107,13 @@ describe('Standalone API', () => {
     assert.equal(witnessLayer.tier, 'initiate');
     assert.equal(witnessLayer.routing_mode, 'pichet-primary');
     assert.equal(witnessLayer.response_cadence, 'immediate');
-    assert.equal(typeof witnessLayer.witness_question, 'string');
-    assert.equal(witnessLayer.witness_question, witnessLayer.synthesis);
-    assert.ok((witnessLayer.witness_question as string).length > 0);
+    assert.equal(typeof witnessLayer.response, 'string');
+    assert.equal(witnessLayer.response, witnessLayer.synthesis);
+    assert.ok((witnessLayer.response as string).length > 0);
     assert.ok(witnessLayer.aletheios);
     assert.ok(witnessLayer.pichet);
     assert.equal(witnessLayer.kosha_depth, 'anandamaya');
+    assert.equal('witness_question' in witnessLayer, false);
   });
 
   it('engine calculate preserves non-JSON upstream error bodies', async () => {

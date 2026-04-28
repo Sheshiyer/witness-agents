@@ -76,3 +76,28 @@
   - Railway startup logs show the new knowledge path (`/app/knowledge`) and deployment metadata as expected.
   - The initial dyad deploy exposed a fresh-user decoder persistence bug: `getDecoderStateAsync()` was upserting blank `first_visit` / `last_visit` dates before the first visit existed.
   - Follow-up deploy `37bf69d8-eda9-49b7-8b39-5001529fed9a` removed that write on the fresh-state path. Repeating the public proxy probes after that deploy did not reproduce the Supabase date warning.
+
+## Step 3 Contract Cleanup
+- Scope: remove the proxy-only `witness_question` compatibility alias now that the consuming client reads dyad fields directly.
+- [x] Audit the repo for in-tree consumers of proxy `witness_question`.
+  - Result: no source consumer reads `witness_layer.witness_question`; remaining uses are the `/reading` Layer 2 type, tests, and historical task notes.
+- [x] Replace the proxy alias with a semantically correct final-text field.
+  - Files: `src/standalone/standalone-api.ts`
+  - Decision: expose `witness_layer.response` as the final merged text and keep `synthesis` for the explicit dyad merge output.
+- [x] Update standalone proxy tests to enforce the new contract.
+  - Files: `tests/standalone.test.ts`
+  - Guardrail: proxy payloads must not include `witness_question`; `/reading` still retains its Layer 2 `witness_question`.
+
+## Step 3 Contract Cleanup Review
+- Local verification passed:
+  - `npm run typecheck`
+  - `node --import tsx --test tests/standalone.test.ts`
+- Railway deployment `820753d8-7231-4784-8a37-d9fcb2ac5a59` succeeded on 2026-04-28.
+- Contract result:
+  - `witness_layer.response` now carries the final user-facing proxy text.
+  - `witness_layer.synthesis` remains available for callers that want the explicit dyad merge.
+  - `witness_layer.witness_question` is no longer emitted by proxy engine/workflow endpoints.
+- Live verification passed:
+  - `GET https://48.tryambakam.space/health/live` returned `witness_build_id: 820753d8-7231-4784-8a37-d9fcb2ac5a59` with `started_at: 2026-04-28T15:49:05.995Z`.
+  - `POST https://48.tryambakam.space/api/v1/engines/biorhythm/calculate` returned `witness_layer.response`, retained dyad fields, and omitted `witness_question`.
+  - `POST https://48.tryambakam.space/api/v1/workflows/daily-practice/execute` returned `witness_layer.response`, retained workflow synthesis metadata, and omitted `witness_question`.
