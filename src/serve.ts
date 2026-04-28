@@ -5,6 +5,7 @@
 import { createStandaloneServer } from './standalone/standalone-api.js';
 import { setDecoderStore } from './standalone/decoder-ring.js';
 import { createDecoderStore } from './standalone/decoder-store.js';
+import { getWitnessDeploymentInfo, WITNESS_VERSION } from './standalone/deployment-info.js';
 
 import type { StandaloneTier } from './standalone/types.js';
 
@@ -13,16 +14,19 @@ const selemeneUrl = process.env.SELEMENE_API_URL || 'https://selemene.tryambakam
 const selemeneApiKey = process.env.SELEMENE_API_KEY || '';
 const openrouterKey = process.env.OPENROUTER_API_KEY || '';
 const tier = (process.env.WITNESS_TIER || 'witness-initiate') as StandaloneTier;
+const deploymentInfo = getWitnessDeploymentInfo();
 
 // Initialize persistence before starting server
 const store = createDecoderStore();
 setDecoderStore(store);
 
 console.log(`[WitnessAgents] Starting standalone server...`);
+console.log(`[WitnessAgents] Version: ${WITNESS_VERSION}`);
 console.log(`[WitnessAgents] Selemene API: ${selemeneUrl}`);
 console.log(`[WitnessAgents] Port: ${port}`);
 console.log(`[WitnessAgents] LLM: ${openrouterKey ? 'OpenRouter configured' : 'template-only (no LLM key)'}`);
 console.log(`[WitnessAgents] Tier: ${tier}`);
+console.log(`[WitnessAgents] Deployment: ${JSON.stringify(deploymentInfo)}`);
 
 createStandaloneServer({
   port,

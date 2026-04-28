@@ -113,6 +113,7 @@ import {
 import type { DecoderState } from '../src/standalone/types.js';
 import { DECODER_THRESHOLDS } from '../src/standalone/types.js';
 import { WitnessObserver, type StructuredLog } from '../src/standalone/observability.js';
+import { getWitnessDeploymentInfo, WITNESS_VERSION } from '../src/standalone/deployment-info.js';
 
 describe('Decoder Ring', () => {
   beforeEach(() => {
@@ -663,6 +664,82 @@ describe('Daily Mirror', () => {
   });
 });
 
+describe('Deployment Info', () => {
+  const DEPLOYMENT_ENV_KEYS = [
+    'RAILWAY_DEPLOYMENT_ID',
+    'RAILWAY_SNAPSHOT_ID',
+    'RAILWAY_GIT_COMMIT_SHA',
+    'RAILWAY_GIT_BRANCH',
+    'RAILWAY_PROJECT_NAME',
+    'RAILWAY_ENVIRONMENT_NAME',
+    'RAILWAY_SERVICE_NAME',
+    'RAILWAY_PUBLIC_DOMAIN',
+    'RAILWAY_REPLICA_ID',
+    'RAILWAY_REPLICA_REGION',
+  ] as const;
+
+  function withDeploymentEnv<T>(values: Partial<Record<typeof DEPLOYMENT_ENV_KEYS[number], string>>, fn: () => T): T {
+    const previous = Object.fromEntries(
+      DEPLOYMENT_ENV_KEYS.map((key) => [key, process.env[key]]),
+    ) as Record<typeof DEPLOYMENT_ENV_KEYS[number], string | undefined>;
+
+    for (const key of DEPLOYMENT_ENV_KEYS) {
+      const value = values[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+
+    try {
+      return fn();
+    } finally {
+      for (const key of DEPLOYMENT_ENV_KEYS) {
+        const value = previous[key];
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  }
+
+  it('prefers Railway deployment id for build proof and keeps git metadata when present', () => {
+    const info = withDeploymentEnv({
+      RAILWAY_DEPLOYMENT_ID: 'dep_123',
+      RAILWAY_SNAPSHOT_ID: 'snap_456',
+      RAILWAY_GIT_COMMIT_SHA: 'abc123def456',
+      RAILWAY_GIT_BRANCH: 'main',
+      RAILWAY_PROJECT_NAME: 'robust-adventure',
+      RAILWAY_ENVIRONMENT_NAME: 'production',
+      RAILWAY_SERVICE_NAME: 'witness-agents',
+      RAILWAY_PUBLIC_DOMAIN: '48.tryambakam.space',
+      RAILWAY_REPLICA_ID: 'replica-1',
+      RAILWAY_REPLICA_REGION: 'asia-southeast1-eqsg3a',
+    }, () => getWitnessDeploymentInfo());
+
+    assert.equal(info.witness_version, WITNESS_VERSION);
+    assert.equal(info.build_id, 'dep_123');
+    assert.equal(info.deploy_origin, 'github');
+    assert.equal(info.deployment_id, 'dep_123');
+    assert.equal(info.snapshot_id, 'snap_456');
+    assert.equal(info.git_commit_sha, 'abc123def456');
+    assert.equal(info.git_branch, 'main');
+    assert.equal(info.project_name, 'robust-adventure');
+    assert.equal(info.environment_name, 'production');
+    assert.equal(info.service_name, 'witness-agents');
+    assert.equal(info.public_domain, '48.tryambakam.space');
+    assert.equal(info.replica_id, 'replica-1');
+    assert.equal(info.replica_region, 'asia-southeast1-eqsg3a');
+    assert.match(info.started_at, /^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('falls back to startup fingerprint when Railway metadata is unavailable', () => {
+    const info = withDeploymentEnv({}, () => getWitnessDeploymentInfo());
+
+    assert.equal(info.deploy_origin, 'local');
+    assert.equal(info.deployment_id, null);
+    assert.equal(info.git_commit_sha, null);
+    assert.match(info.build_id, /^startup:/);
+  });
+});
+
 // ─── Standalone API ─────────────────────────────────────────────────
 
 import {
@@ -690,6 +767,51 @@ describe('Standalone API', () => {
     assert.ok(body.engines);
     assert.ok(body.layers);
     assert.equal(body.full_platform, 'https://tryambakam.space');
+  });
+
+  it('healthLive exposes deploy-proof metadata', async () => {
+    const previousDeploymentId = process.env.RAILWAY_DEPLOYMENT_ID;
+    const previousServiceName = process.env.RAILWAY_SERVICE_NAME;
+    const previousPublicDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+    const previousGitSha = process.env.RAILWAY_GIT_COMMIT_SHA;
+
+    process.env.RAILWAY_DEPLOYMENT_ID = 'dep_live_123';
+    process.env.RAILWAY_SERVICE_NAME = 'witness-agents';
+    process.env.RAILWAY_PUBLIC_DOMAIN = '48.tryambakam.space';
+    process.env.RAILWAY_GIT_COMMIT_SHA = 'feedface';
+
+    globalThis.fetch = (async () => {
+      throw new Error('upstream offline');
+    }) as typeof fetch;
+
+    try {
+      const handlers = createStandaloneHandlers({
+        selemene_url: 'https://example.com',
+        selemene_api_key: 'test',
+      });
+
+      const result = await handlers.healthLive();
+      assert.equal(result.status, 200);
+
+      const body = result.body as Record<string, any>;
+      assert.equal(body.witness_version, WITNESS_VERSION);
+      assert.equal(body.witness_build_id, 'dep_live_123');
+      assert.equal(body.witness_build.deployment_id, 'dep_live_123');
+      assert.equal(body.witness_build.service_name, 'witness-agents');
+      assert.equal(body.witness_build.public_domain, '48.tryambakam.space');
+      assert.equal(body.witness_build.git_commit_sha, 'feedface');
+      assert.equal(body.witness_build.deploy_origin, 'github');
+      assert.match(body.witness_build.started_at, /^\d{4}-\d{2}-\d{2}T/);
+    } finally {
+      if (previousDeploymentId === undefined) delete process.env.RAILWAY_DEPLOYMENT_ID;
+      else process.env.RAILWAY_DEPLOYMENT_ID = previousDeploymentId;
+      if (previousServiceName === undefined) delete process.env.RAILWAY_SERVICE_NAME;
+      else process.env.RAILWAY_SERVICE_NAME = previousServiceName;
+      if (previousPublicDomain === undefined) delete process.env.RAILWAY_PUBLIC_DOMAIN;
+      else process.env.RAILWAY_PUBLIC_DOMAIN = previousPublicDomain;
+      if (previousGitSha === undefined) delete process.env.RAILWAY_GIT_COMMIT_SHA;
+      else process.env.RAILWAY_GIT_COMMIT_SHA = previousGitSha;
+    }
   });
   
   it('reading endpoint rejects missing birth_date', async () => {

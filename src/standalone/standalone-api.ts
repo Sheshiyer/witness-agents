@@ -31,6 +31,7 @@ import { RhythmEventEmitter, formatSSE, type RhythmServerConfig } from './rhythm
 import { hashBirthData, getDecoderStateAsync, computeMaxLayer } from './decoder-ring.js';
 import { ENGINE_WITNESS_ROLE } from './types.js';
 import { WitnessObserver } from './observability.js';
+import { getWitnessDeploymentInfo, WITNESS_VERSION } from './deployment-info.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // API TYPES
@@ -465,6 +466,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
      * GET /health/live — Proxied health check
      */
     async healthLive(): Promise<{ status: number; body: unknown }> {
+      const deployment = getWitnessDeploymentInfo();
       try {
         const selemeneUrl = config.selemene_url;
         const resp = await fetch(`${selemeneUrl}/health/live`, {
@@ -477,7 +479,9 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
           body: {
             ...upstream,
             witness_layer: 'active',
-            witness_version: '0.1.0',
+            witness_version: WITNESS_VERSION,
+            witness_build_id: deployment.build_id,
+            witness_build: deployment,
           },
         };
       } catch {
@@ -486,7 +490,9 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
           body: {
             status: 'degraded',
             witness_layer: 'active',
-            witness_version: '0.1.0',
+            witness_version: WITNESS_VERSION,
+            witness_build_id: deployment.build_id,
+            witness_build: deployment,
             engines_loaded: STANDALONE_ENGINES.length,
             workflows_loaded: 0,
             uptime_seconds: Math.floor(process.uptime()),
