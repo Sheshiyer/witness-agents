@@ -483,15 +483,14 @@ export class SynthesisEngine {
     routing?: RoutingDecision,
   ): string {
     const parts = [
-      `Full symbolic portrait across ${aliases.length} engines.`,
-    ];
+      this.describePortraitTension(outputs),
+    ].filter(Boolean);
 
-    const convergences = patterns.filter(p => p.significance === 'convergence');
-    if (convergences.length > 0) {
-      parts.push(`Architecture nodes: ${convergences.map(c => c.engines.join('+')).join(', ')}`);
-    }
+    const support = this.describePortraitSupport(outputs);
+    if (support) parts.push(support);
 
-    parts.push(`${patterns.length} cross-patterns identified across the full spectrum.`);
+    const anchor = support ? null : this.describePatternAnchor(outputs, patterns);
+    if (anchor) parts.push(anchor);
 
     return parts.join('\n');
   }
@@ -502,13 +501,34 @@ export class SynthesisEngine {
     userState: UserState,
     knowledge: KnowledgeStore,
   ): string {
-    return [
-      'The full portrait is a mirror, not a map.',
-      'You don\'t need to understand every engine. You need to feel which pattern your body already knows.',
-      userState.overwhelm_level > 0.5
-        ? 'And right now, your body says: less. Sit with one insight before reaching for the next.'
-        : 'What part of this portrait makes you breathe differently? Start there.',
-    ].join('\n');
+    const biorhythm = this.getResult(outputs, 'biorhythm');
+    const vedicClock = this.getResult(outputs, 'vedic-clock');
+    const panchanga = this.getResult(outputs, 'panchanga');
+
+    const physical = this.readPercentage(biorhythm?.physical);
+    const emotional = this.readPercentage(biorhythm?.emotional);
+    const breathFirst = this.isLungBreathWindow(vedicClock);
+
+    if (physical !== null && emotional !== null && physical >= 75 && emotional <= 35) {
+      if (breathFirst) {
+        return 'Start in the chest with three slower breaths, then take one clean action sized to what your emotional field can actually hold.';
+      }
+      return 'Take one clean action, but size it to what your emotional field can actually hold.';
+    }
+
+    if (physical !== null && emotional !== null && physical <= 35 && emotional <= 35) {
+      return 'Choose restoration before expansion. The system will stabilize faster through gentleness than force.';
+    }
+
+    if (panchanga && (panchanga.tithi_name || panchanga.nakshatra_name)) {
+      return breathFirst
+        ? 'Use one slower breath to settle, then make one deliberate move instead of scattering attention.'
+        : 'Make one deliberate move instead of scattering attention.';
+    }
+
+    return userState.overwhelm_level > 0.5
+      ? 'Stay with one signal until the body loosens. More input is not the medicine right now.'
+      : 'Start with the signal that makes the body feel more coherent, not the one that feels most urgent.';
   }
 
   private buildMirrorReflection(
@@ -528,6 +548,153 @@ export class SynthesisEngine {
     }
 
     return parts.join('\n');
+  }
+
+  private describePortraitTension(outputs: SelemeneEngineOutput[]): string {
+    const biorhythm = this.getResult(outputs, 'biorhythm');
+    const vedicClock = this.getResult(outputs, 'vedic-clock');
+    const panchanga = this.getResult(outputs, 'panchanga');
+
+    const physical = this.readPercentage(biorhythm?.physical);
+    const emotional = this.readPercentage(biorhythm?.emotional);
+    const intellectual = this.readPercentage(biorhythm?.intellectual);
+
+    if (physical !== null && emotional !== null && physical >= 75 && emotional <= 35) {
+      return 'Your body is ready to move, but regulation needs to set the pace.';
+    }
+
+    if (physical !== null && emotional !== null && physical <= 35 && emotional <= 35) {
+      return 'Your reserves are low enough that gentleness matters more than output right now.';
+    }
+
+    if (vedicClock?.current_dosha?.dosha === 'Vata') {
+      return 'Movement is available, but steadiness will decide whether it becomes clarity or scatter.';
+    }
+
+    if (panchanga?.tithi_name || panchanga?.nakshatra_name) {
+      return 'The day is asking for alignment before force.';
+    }
+
+    if (intellectual !== null && emotional !== null && intellectual >= 75 && emotional <= 35) {
+      return 'Mental clarity is outrunning emotional readiness. Let pacing protect the quality of the next move.';
+    }
+
+    return 'Several signals are active at once. Let the theme that repeats across body and timing guide the day.';
+  }
+
+  private describePortraitSupport(outputs: SelemeneEngineOutput[]): string | null {
+    const biorhythm = this.getResult(outputs, 'biorhythm');
+    const vedicClock = this.getResult(outputs, 'vedic-clock');
+    const panchanga = this.getResult(outputs, 'panchanga');
+
+    const physical = this.readPercentage(biorhythm?.physical);
+    const emotional = this.readPercentage(biorhythm?.emotional);
+    const intellectual = this.readPercentage(biorhythm?.intellectual);
+    const supportBits: string[] = [];
+
+    if (physical !== null && emotional !== null && intellectual !== null) {
+      supportBits.push(
+        `High physical ${this.formatPercent(physical)} and intellectual ${this.formatPercent(intellectual)} capacity are arriving alongside emotional reserves at ${this.formatPercent(emotional)}`
+      );
+    } else if (physical !== null || emotional !== null || intellectual !== null) {
+      const metrics: string[] = [];
+      if (physical !== null) metrics.push(`physical ${this.formatPercent(physical)}`);
+      if (emotional !== null) metrics.push(`emotional ${this.formatPercent(emotional)}`);
+      if (intellectual !== null) metrics.push(`intellectual ${this.formatPercent(intellectual)}`);
+      supportBits.push(`The system is carrying ${metrics.join(', ')}`);
+    }
+
+    const timingBits: string[] = [];
+    if (vedicClock) {
+      const organ = vedicClock.current_organ as Record<string, any> | undefined;
+      const dosha = vedicClock.current_dosha as Record<string, any> | undefined;
+      if (organ?.organ && dosha?.dosha) {
+        timingBits.push(`${organ.organ} time under ${dosha.dosha} makes breath and pacing more reliable than force`);
+      } else if (organ?.organ) {
+        timingBits.push(`${organ.organ} time makes the body's timing cues more reliable than urgency`);
+      }
+    }
+
+    if (panchanga) {
+      const anchors = [
+        panchanga.tithi_name,
+        panchanga.nakshatra_name,
+        panchanga.yoga_name ? `${panchanga.yoga_name} yoga` : null,
+      ].filter((value): value is string => Boolean(value));
+      if (anchors.length > 0) {
+        timingBits.push(`${anchors.join(', ')} favors alignment and clean sequencing`);
+      }
+    }
+
+    if (supportBits.length === 0 && timingBits.length === 0) return null;
+    if (timingBits.length === 0) return `${supportBits[0]}.`;
+    if (supportBits.length === 0) return `${timingBits.join(' while ')}.`;
+
+    return `${supportBits[0]}, and ${timingBits.join(' while ')}.`;
+  }
+
+  private describePatternAnchor(
+    outputs: SelemeneEngineOutput[],
+    patterns: CrossPattern[],
+  ): string | null {
+    const aliases = new Set(outputs.map((output) => ENGINE_ID_MAP[output.engine_id as SelemeneEngineId]));
+
+    if (aliases.has('three-wave-cycle') && aliases.has('circadian-cartography')) {
+      return 'Body rhythm and time-of-day rhythm are reinforcing the same message: move, but let regulation determine the size of the move.';
+    }
+
+    const meaningfulPattern = patterns.find((pattern) =>
+      pattern.significance === 'major' && !pattern.pattern.startsWith('Shared knowledge domain')
+    );
+    if (meaningfulPattern) {
+      return meaningfulPattern.pattern;
+    }
+
+    return null;
+  }
+
+  private getResult(
+    outputs: SelemeneEngineOutput[],
+    engineId: SelemeneEngineId,
+  ): Record<string, any> | null {
+    const output = outputs.find((candidate) => candidate.engine_id === engineId);
+    if (!output || typeof output.result !== 'object' || output.result === null) return null;
+    return output.result as Record<string, any>;
+  }
+
+  private readPercentage(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'object' && value !== null) {
+      const percentage = (value as { percentage?: unknown }).percentage;
+      if (typeof percentage === 'number' && Number.isFinite(percentage)) return percentage;
+    }
+    return null;
+  }
+
+  private formatPercent(value: number): string {
+    return `${Math.round(value)}%`;
+  }
+
+  private isLungBreathWindow(vedicClock: Record<string, any> | null): boolean {
+    if (!vedicClock) return false;
+
+    const organ = vedicClock.current_organ as Record<string, any> | undefined;
+    if (organ?.organ === 'Lung') return true;
+
+    const activitySources = [
+      ...(Array.isArray(organ?.recommended_activities) ? organ.recommended_activities : []),
+      ...(Array.isArray(vedicClock.recommendation?.activities)
+        ? vedicClock.recommendation.activities.map((entry: unknown) =>
+            typeof entry === 'string'
+              ? entry
+              : typeof entry === 'object' && entry !== null && typeof (entry as { activity?: unknown }).activity === 'string'
+                ? (entry as { activity: string }).activity
+                : null
+          )
+        : []),
+    ].filter((entry): entry is string => typeof entry === 'string');
+
+    return activitySources.some((entry) => /breath|pranayama/i.test(entry));
   }
 
   // ─── PRIVATE: Engine-Specific Insight Extraction ──────────────────

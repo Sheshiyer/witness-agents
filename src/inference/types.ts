@@ -7,7 +7,7 @@ import type { Tier } from '../types/interpretation.js';
 // PROVIDER ABSTRACTION
 // ═══════════════════════════════════════════════════════════════════════
 
-export type ProviderId = 'openrouter' | 'anthropic' | 'openai' | 'local';
+export type ProviderId = 'openrouter' | 'nvidia' | 'anthropic' | 'openai' | 'local';
 
 export interface ProviderConfig {
   id: ProviderId;
@@ -90,4 +90,20 @@ export interface DyadInferenceResult {
   synthesis?: InferenceResponse;
   total_cost_usd: number;
   total_latency_ms: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PROVIDER INTERFACE — contract every LLM provider implements
+// ═══════════════════════════════════════════════════════════════════════
+
+import type { Tier as _TierForProvider } from '../types/interpretation.js';
+
+export interface LLMProvider {
+  readonly id: ProviderId;
+  resolveModel(tier: _TierForProvider, role: ModelRole): ModelPreference;
+  complete(request: InferenceRequest): Promise<InferenceResponse>;
+  completeWithRetry(request: InferenceRequest, maxRetries?: number): Promise<InferenceResponse>;
+  completeStream?(request: InferenceRequest): AsyncGenerator<string, void, unknown>;
+  getRouting(): ModelRoutingTable;
+  setModelPreference(tier: _TierForProvider, role: ModelRole, pref: ModelPreference): void;
 }

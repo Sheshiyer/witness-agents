@@ -1057,11 +1057,12 @@ describe('Standalone API', () => {
     globalThis.fetch = (async () => new Response(JSON.stringify({
       engine_id: 'biorhythm',
       result: {
-        physical: { percentage: 86, phase: 'Rising', is_critical: false },
-        emotional: { percentage: 32, phase: 'Falling', is_critical: false },
-        intellectual: { percentage: 71, phase: 'Rising', is_critical: false },
-        overall_energy: 63,
-        critical_days: [],
+        physical: { percentage: 99.88343845952808, phase: 'Peak', is_critical: false },
+        emotional: { percentage: 4.95155660487529, phase: 'Rising', is_critical: false },
+        intellectual: { percentage: 98.59057841617404, phase: 'Peak', is_critical: false },
+        intuitive: { percentage: 8.141676086886223, phase: 'Falling', is_critical: false },
+        overall_energy: 67.80852449352581,
+        critical_days: ['2026-05-05', '2026-05-06'],
       },
       witness_prompt: 'A physical surge is moving through the day.',
       consciousness_level: 1,
@@ -1110,10 +1111,251 @@ describe('Standalone API', () => {
     assert.equal(typeof witnessLayer.response, 'string');
     assert.equal(witnessLayer.response, witnessLayer.synthesis);
     assert.ok((witnessLayer.response as string).length > 0);
+    assert.match(witnessLayer.response as string, /Physical 100% \(Peak\)/);
+    assert.match(witnessLayer.response as string, /Emotional 5% \(Rising\)/);
+    assert.match(witnessLayer.response as string, /Overall 68%/);
+    assert.match(witnessLayer.response as string, /Next critical window: 2026-05-05 to 2026-05-06\./);
+    assert.doesNotMatch(witnessLayer.response as string, /undefined on undefined/);
+    assert.doesNotMatch(witnessLayer.response as string, /99\.88343845952808|4\.95155660487529/);
+    assert.doesNotMatch(
+      witnessLayer.response as string,
+      /The pattern and the body agree — this is a convergence point worth your attention\./,
+    );
     assert.ok(witnessLayer.aletheios);
     assert.ok(witnessLayer.pichet);
     assert.equal(witnessLayer.kosha_depth, 'anandamaya');
     assert.equal('witness_question' in witnessLayer, false);
+  });
+
+  it('engine calculate keeps a stronger raw panchanga witness prompt', async () => {
+    const rawPrompt = 'You were born under Tithi Chaturthi (Shukla) and Nakshatra Uttara Phalguni. What pattern do you notice when your intentions and feelings are misaligned?';
+
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      engine_id: 'panchanga',
+      result: {
+        tithi_name: 'Chaturthi (Shukla)',
+        nakshatra_name: 'Uttara Phalguni',
+        yoga_name: 'Siddha',
+        vara_name: 'Mangalavara (Tuesday)',
+        karana_name: 'Vishti',
+      },
+      witness_prompt: rawPrompt,
+      consciousness_level: 0,
+      metadata: {
+        calculation_time_ms: 5,
+        backend: 'typescript',
+        precision_achieved: 'exact',
+        cached: false,
+        timestamp: '2026-04-26T00:00:00.000Z',
+        engine_version: '1.0.0',
+      },
+      envelope_version: '1',
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+    });
+
+    const result = await handlers.apiEngineCalculate('panchanga', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const witnessLayer = body.witness_layer as Record<string, unknown>;
+
+    assert.equal(witnessLayer.response, rawPrompt);
+    assert.equal(witnessLayer.synthesis, rawPrompt);
+    assert.doesNotMatch(witnessLayer.response as string, /^The day's symbolic frame is /);
+  });
+
+  it('engine calculate blends a stronger biorhythm prompt with one practical detail line', async () => {
+    const rawPrompt =
+      'Your physical cycle is at 100% while emotional is at 5%. Notice: how does this contrast show up in your day? Are you the energy, or the one who observes it?';
+
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      engine_id: 'biorhythm',
+      result: {
+        physical: { percentage: 99.88343845952808, phase: 'Peak', is_critical: false },
+        emotional: { percentage: 4.95155660487529, phase: 'Rising', is_critical: false },
+        intellectual: { percentage: 98.59057841617404, phase: 'Peak', is_critical: false },
+        intuitive: { percentage: 8.141676086886223, phase: 'Falling', is_critical: false },
+        overall_energy: 67.80852449352581,
+        critical_days: ['2026-05-05', '2026-05-06'],
+      },
+      witness_prompt: rawPrompt,
+      consciousness_level: 0,
+      metadata: {
+        calculation_time_ms: 5,
+        backend: 'typescript',
+        precision_achieved: 'exact',
+        cached: false,
+        timestamp: '2026-04-26T00:00:00.000Z',
+        engine_version: '1.0.0',
+      },
+      envelope_version: '1',
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+    });
+
+    const result = await handlers.apiEngineCalculate('biorhythm', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const witnessLayer = body.witness_layer as Record<string, unknown>;
+    const response = witnessLayer.response as string;
+
+    assert.match(response, new RegExp(rawPrompt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(response, /Next critical window: 2026-05-05 to 2026-05-06\./);
+    assert.doesNotMatch(response, /Physical 100% \(Peak\), Emotional 5% \(Rising\)/);
+  });
+
+  it('workflow execute leads with dominant tension instead of engine counts', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      workflow_id: 'daily-practice',
+      engine_results: {
+        panchanga: {
+          engine_id: 'panchanga',
+          result: {
+            tithi_name: 'Chaturthi (Shukla)',
+            nakshatra_name: 'Uttara Phalguni',
+            yoga_name: 'Siddha',
+          },
+          witness_prompt: 'A pattern of alignment is asking for attention.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 3,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        'vedic-clock': {
+          engine_id: 'vedic-clock',
+          result: {
+            current_dosha: {
+              dosha: 'Vata',
+              qualities: ['Movement', 'Creativity'],
+            },
+            current_organ: {
+              organ: 'Lung',
+              element: 'Metal',
+              time_window: '3 AM - 5 AM',
+              associated_emotion: 'Grief (imbalanced) / Inspiration (balanced)',
+              recommended_activities: ['Deep breathing exercises', 'Meditation'],
+            },
+            recommendation: {
+              activities: [
+                { activity: 'Deep breathing exercises' },
+                { activity: 'Meditation' },
+              ],
+            },
+          },
+          witness_prompt: 'Breath and rhythm are speaking first.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        biorhythm: {
+          engine_id: 'biorhythm',
+          result: {
+            physical: { percentage: 99.88, phase: 'Peak', is_critical: false },
+            emotional: { percentage: 4.95, phase: 'Rising', is_critical: false },
+            intellectual: { percentage: 98.59, phase: 'Peak', is_critical: false },
+            overall_energy: 67.8,
+            critical_days: ['2026-05-05', '2026-05-06'],
+          },
+          witness_prompt: 'The body is ready but the heart needs gentleness.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 5,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+    });
+
+    const result = await handlers.apiWorkflowExecute('daily-practice', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const witnessLayer = body.witness_layer as Record<string, unknown>;
+    const response = witnessLayer.response as string;
+    const nonEmptyLines = response.split(/\n+/).filter((line) => line.trim().length > 0);
+
+    assert.doesNotMatch(response, /Full symbolic portrait across/);
+    assert.doesNotMatch(response, /cross-patterns identified/);
+    assert.match(response, /regulation needs to set the pace/i);
+    assert.match(response, /Start in the chest with three slower breaths, then take one clean action/i);
+    assert.ok(nonEmptyLines.length <= 3);
+    assert.doesNotMatch(response, /Let timing organize the day|Body rhythm and time-of-day rhythm are reinforcing/i);
   });
 
   it('engine calculate preserves non-JSON upstream error bodies', async () => {

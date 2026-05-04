@@ -8,8 +8,8 @@ import type {
   DyadInferenceResult,
   InferenceMessage,
   ModelRole,
+  LLMProvider,
 } from './types.js';
-import type { OpenRouterProvider } from './openrouter.js';
 import type {
   WitnessInterpretation,
   Tier,
@@ -32,12 +32,12 @@ export interface DyadInferenceConfig {
 }
 
 export class DyadInferenceEngine {
-  private provider: OpenRouterProvider;
+  private provider: LLMProvider;
   private voiceBuilder: VoicePromptBuilder;
   private aksharaEnrichment?: AksharaEnrichment;
   private defaults: Omit<Required<DyadInferenceConfig>, 'aksharaEnrichment'>;
 
-  constructor(provider: OpenRouterProvider, config?: DyadInferenceConfig) {
+  constructor(provider: LLMProvider, config?: DyadInferenceConfig) {
     this.provider = provider;
     this.voiceBuilder = new VoicePromptBuilder();
     this.aksharaEnrichment = config?.aksharaEnrichment;

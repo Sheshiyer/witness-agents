@@ -269,8 +269,10 @@ export class InterpretationPipeline {
           );
           synthesis = synthResult.unified_narrative;
         } else {
-          synthesis = this.synthesize(aletheiosInterp, pichetInterp, query.user_state);
+          synthesis = this.synthesize(aletheiosInterp, pichetInterp, query.user_state, engineOutputs);
         }
+
+        synthesis = this.applyWitnessPromptGuard(engineOutputs, synthesis);
       }
 
       // ─── Step 8: Build response ───────────────────────────────────
@@ -491,6 +493,7 @@ export class InterpretationPipeline {
     aletheios: AgentInterpretation,
     pichet: AgentInterpretation,
     userState: UserState,
+    outputs: SelemeneEngineOutput[],
   ): string {
     // Dyad synthesis: merge analytical + somatic perspectives
     const parts: string[] = [];
@@ -502,19 +505,9 @@ export class InterpretationPipeline {
       parts.push(pichet.perspective);
     }
 
-    // Add integration insight when both agents contribute
-    if (aletheios.confidence > 0.5 && pichet.confidence > 0.5) {
-      parts.push(
-        'The pattern and the body agree — this is a convergence point worth your attention.'
-      );
-    } else if (aletheios.confidence > pichet.confidence) {
-      parts.push(
-        'The pattern is clearer than the body signal right now. Ground before acting.'
-      );
-    } else {
-      parts.push(
-        'The body knows something the pattern hasn\'t revealed yet. Listen inward.'
-      );
+    const integrationInsight = this.buildIntegrationInsight(outputs, userState);
+    if (integrationInsight) {
+      parts.push(integrationInsight);
     }
 
     return parts.join('\n\n');
@@ -595,13 +588,13 @@ export class InterpretationPipeline {
 
       // ─── Panchanga / Temporal Grammar ─────────────────
       case 'temporal-grammar': {
-        const parts: string[] = [];
-        if (result?.tithi_name) parts.push(`Tithi: ${result.tithi_name}`);
-        if (result?.nakshatra_name) parts.push(`Nakshatra: ${result.nakshatra_name}`);
-        if (result?.yoga_name) parts.push(`Yoga: ${result.yoga_name}`);
-        if (result?.vara_name) parts.push(`Vara: ${result.vara_name}`);
-        if (result?.karana_name) parts.push(`Karana: ${result.karana_name}`);
-        if (parts.length) return `Five limbs of time: ${parts.join(', ')}.`;
+        const anchors: string[] = [];
+        if (result?.tithi_name) anchors.push(result.tithi_name as string);
+        if (result?.nakshatra_name) anchors.push(result.nakshatra_name as string);
+        if (result?.yoga_name) anchors.push(`${result.yoga_name} yoga`);
+        if (anchors.length) {
+          return `The day's symbolic frame is ${anchors.join(', ')}. Let alignment lead before force.`;
+        }
         break;
       }
 
@@ -612,11 +605,11 @@ export class InterpretationPipeline {
         const i = result?.intellectual;
         const intu = result?.intuitive;
         const parts: string[] = [];
-        if (p) parts.push(`Physical ${p.percentage}% (${p.phase})`);
-        if (e) parts.push(`Emotional ${e.percentage}% (${e.phase})`);
-        if (i) parts.push(`Intellectual ${i.percentage}% (${i.phase})`);
-        if (intu) parts.push(`Intuitive ${intu.percentage}% (${intu.phase})`);
-        if (result?.overall_energy != null) parts.push(`Overall: ${result.overall_energy}%`);
+        if (p) parts.push(`Physical ${this.formatPercent(p.percentage)} (${p.phase})`);
+        if (e) parts.push(`Emotional ${this.formatPercent(e.percentage)} (${e.phase})`);
+        if (i) parts.push(`Intellectual ${this.formatPercent(i.percentage)} (${i.phase})`);
+        if (intu) parts.push(`Intuitive ${this.formatPercent(intu.percentage)} (${intu.phase})`);
+        if (result?.overall_energy != null) parts.push(`Overall ${this.formatPercent(result.overall_energy)}`);
         if (parts.length) return `Biorhythm: ${parts.join(', ')}.`;
         break;
       }
@@ -733,17 +726,15 @@ export class InterpretationPipeline {
           if (p.is_critical) notes.push('Physical critical day — avoid overexertion.');
           else if (p.percentage > 70) notes.push('Physical energy peaks — body ready for action.');
           else if (p.percentage < 30) notes.push('Physical energy low — honor rest, body is integrating.');
-          if (p.phase === 'Rising') notes.push('Physical wave rising.');
         }
         if (e) {
           if (e.is_critical) notes.push('Emotional critical day — be gentle with relational demands.');
           else if (e.percentage < 30) notes.push('Emotional reserves low — protect your inner space.');
         }
         if (i?.is_critical) notes.push('Intellectual critical day — postpone complex decisions.');
-        const criticals = result?.critical_days as any[];
-        if (criticals?.length) {
-          const next = criticals[0];
-          notes.push(`Next critical: ${next.type} on ${next.date}.`);
+        const criticalWindow = this.formatCriticalDays(result?.critical_days);
+        if (criticalWindow) {
+          notes.push(criticalWindow);
         }
         return notes.join(' ');
       }
@@ -756,8 +747,8 @@ export class InterpretationPipeline {
         if (organ) {
           notes.push(`${organ.organ} meridian active (${organ.element}).`);
           if (organ.associated_emotion) notes.push(`Emotion: ${organ.associated_emotion}.`);
-          const activities = organ.recommended_activities || rec?.activities;
-          if (activities?.length) notes.push(`Try: ${activities.slice(0, 2).join(', ')}.`);
+          const activities = this.normalizeActivities(organ.recommended_activities || rec?.activities);
+          if (activities.length > 0) notes.push(`Try: ${activities.slice(0, 2).join(', ')}.`);
         }
         if (dosha) notes.push(`${dosha.dosha} dominant — ${dosha.qualities?.join(', ') || ''}.`);
         return notes.join(' ');
@@ -840,7 +831,9 @@ export class InterpretationPipeline {
     const parts: string[] = [];
     if (userState.biorhythm) {
       const { physical, emotional, intellectual } = userState.biorhythm;
-      parts.push(`Body state: physical ${physical}%, emotional ${emotional}%, intellectual ${intellectual}%`);
+      parts.push(
+        `Body state: physical ${this.formatPercent(physical)}, emotional ${this.formatPercent(emotional)}, intellectual ${this.formatPercent(intellectual)}`
+      );
     }
     return parts.join('. ');
   }
@@ -879,6 +872,9 @@ export class InterpretationPipeline {
     } else {
       response = this.buildFreeResponse(outputs);
     }
+
+    response = this.applyWitnessPromptGuard(outputs, response) ?? response;
+    response = this.blendPracticalDetail(outputs, response, pichet);
 
     // Anti-dependency check
     let antiDependencyNote: string | undefined;
@@ -959,4 +955,188 @@ export class InterpretationPipeline {
 
   getDyadState() { return this.dyad.getState(); }
   getKnowledgeStats() { return this.knowledge.getStats(); }
+
+  private formatPercent(value: unknown): string {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return 'unknown';
+    return `${Math.round(value)}%`;
+  }
+
+  private formatCriticalDays(criticalDays: unknown): string | null {
+    if (!Array.isArray(criticalDays) || criticalDays.length === 0) return null;
+
+    const stringDates = criticalDays
+      .filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
+    if (stringDates.length > 0) {
+      const uniqueDates = [...new Set(stringDates)];
+      if (uniqueDates.length === 1) {
+        return `Next critical day: ${uniqueDates[0]}.`;
+      }
+      return `Next critical window: ${uniqueDates[0]} to ${uniqueDates[uniqueDates.length - 1]}.`;
+    }
+
+    const objectDates = criticalDays
+      .filter((entry): entry is { type?: unknown; date?: unknown } =>
+        typeof entry === 'object' && entry !== null
+      )
+      .map((entry) => ({
+        type: typeof entry.type === 'string' ? entry.type : null,
+        date: typeof entry.date === 'string' ? entry.date : null,
+      }))
+      .filter((entry) => entry.date);
+    if (objectDates.length === 0) return null;
+
+    const next = objectDates[0];
+    return next.type
+      ? `Next critical ${next.type}: ${next.date}.`
+      : `Next critical day: ${next.date}.`;
+  }
+
+  private buildIntegrationInsight(
+    outputs: SelemeneEngineOutput[],
+    userState: UserState,
+  ): string | null {
+    const primary = outputs[0];
+    if (!primary) return null;
+
+    switch (primary.engine_id) {
+      case 'biorhythm': {
+        const result = primary.result as Record<string, any>;
+        const physical = Number(result?.physical?.percentage ?? userState.biorhythm?.physical);
+        const emotional = Number(result?.emotional?.percentage ?? userState.biorhythm?.emotional);
+        const intellectual = Number(result?.intellectual?.percentage ?? userState.biorhythm?.intellectual);
+
+        if (Number.isFinite(physical) && Number.isFinite(emotional) && physical >= 75 && emotional <= 35) {
+          return 'Capacity is high, but the emotional field is thinner than the action available. Move forward without outrunning what you actually feel.';
+        }
+        if (Number.isFinite(physical) && Number.isFinite(emotional) && physical <= 35 && emotional <= 35) {
+          return 'Both energy and feeling are running low. Treat this as a restoration window, not a proving ground.';
+        }
+        if (Number.isFinite(intellectual) && Number.isFinite(emotional) && intellectual >= 75 && emotional <= 35) {
+          return 'The mind can push harder than the heart can carry today. Keep decisions simple and paced.';
+        }
+        return null;
+      }
+
+      case 'vedic-clock': {
+        const result = primary.result as Record<string, any>;
+        const organ = result?.current_organ as Record<string, any> | undefined;
+        const dosha = result?.current_dosha as Record<string, any> | undefined;
+        const activities = this.normalizeActivities(
+          organ?.recommended_activities ?? result?.recommendation?.activities
+        );
+        const hasBreathCue = activities.some((activity) => /breath|pranayama/i.test(activity));
+        if (organ?.organ === 'Lung' || hasBreathCue) {
+          return 'Breath is the cleanest bridge between pattern and regulation right now.';
+        }
+        if (dosha?.dosha === 'Vata') {
+          return 'Movement is available, but steadiness determines whether it becomes clarity or scatter.';
+        }
+        return null;
+      }
+
+      default:
+        return null;
+    }
+  }
+
+  private normalizeActivities(activities: unknown): string[] {
+    if (!Array.isArray(activities)) return [];
+    return activities
+      .map((activity) => {
+        if (typeof activity === 'string') return activity;
+        if (typeof activity === 'object' && activity !== null && typeof (activity as { activity?: unknown }).activity === 'string') {
+          return (activity as { activity: string }).activity;
+        }
+        return null;
+      })
+      .filter((activity): activity is string => Boolean(activity));
+  }
+
+  private applyWitnessPromptGuard(
+    outputs: SelemeneEngineOutput[],
+    candidate?: string,
+  ): string | undefined {
+    if (!candidate || outputs.length !== 1) return candidate;
+
+    const prompt = outputs[0].witness_prompt?.trim();
+    if (!prompt) return candidate;
+
+    return this.shouldPreferWitnessPrompt(candidate, prompt, outputs[0])
+      ? prompt
+      : candidate;
+  }
+
+  private blendPracticalDetail(
+    outputs: SelemeneEngineOutput[],
+    response: string,
+    pichet?: AgentInterpretation,
+  ): string {
+    if (outputs.length !== 1) return response;
+
+    const output = outputs[0];
+    if (output.engine_id !== 'biorhythm') return response;
+
+    const prompt = output.witness_prompt?.trim();
+    if (!prompt || response.trim() !== prompt) return response;
+
+    const detail = this.selectPracticalDetail(output, pichet?.perspective);
+    if (!detail || response.includes(detail)) return response;
+
+    return `${response}\n\n${detail}`;
+  }
+
+  private selectPracticalDetail(
+    output: SelemeneEngineOutput,
+    pichetPerspective?: string,
+  ): string | null {
+    const result = output.result as Record<string, any>;
+    const criticalWindow = this.formatCriticalDays(result?.critical_days);
+    if (criticalWindow) return criticalWindow;
+
+    const physical = Number(result?.physical?.percentage);
+    const emotional = Number(result?.emotional?.percentage);
+    if (Number.isFinite(physical) && Number.isFinite(emotional) && physical >= 75 && emotional <= 35) {
+      return 'Move forward, but keep emotional commitments lighter than your physical drive.';
+    }
+
+    if (pichetPerspective) {
+      const firstSentence = pichetPerspective
+        .split(/(?<=[.!?])\s+/)
+        .map((part) => part.trim())
+        .find(Boolean);
+      if (firstSentence && !/^Physical energy peaks/i.test(firstSentence)) {
+        return firstSentence;
+      }
+    }
+
+    return null;
+  }
+
+  private shouldPreferWitnessPrompt(
+    candidate: string,
+    prompt: string,
+    output: SelemeneEngineOutput,
+  ): boolean {
+    return this.scoreUserFacingText(prompt, output) >= this.scoreUserFacingText(candidate, output) + 2;
+  }
+
+  private scoreUserFacingText(text: string, output: SelemeneEngineOutput): number {
+    let score = 0;
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    const words = normalized.split(' ').filter(Boolean);
+    const decimals = normalized.match(/\b\d+\.\d+\b/g) ?? [];
+    const numerics = normalized.match(/\b\d+(?:\.\d+)?%?\b/g) ?? [];
+
+    score += Math.min(6, Math.floor(words.length / 6));
+    if (/\b(you|your)\b/i.test(normalized)) score += 2;
+    if (/[?]/.test(normalized)) score += 1;
+    if (/\b(notice|feel|what|how|where)\b/i.test(normalized)) score += 1;
+    if (/\b(undefined|null|nan)\b/i.test(normalized)) score -= 8;
+    if (/Full symbolic portrait across|cross-patterns identified|Five limbs of time:/i.test(normalized)) score -= 4;
+    if (output.engine_id === 'panchanga' && /alignment.*force/i.test(normalized)) score -= 1;
+    score -= Math.min(3, decimals.length);
+    if (numerics.length > 5) score -= 2;
+
+    return score;
+  }
 }

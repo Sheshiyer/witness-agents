@@ -19,7 +19,8 @@ import { ENGINE_WITNESS_ROLE, STANDALONE_ENGINES, STANDALONE_TO_CORE_TIER } from
 import type { BirthData, SelemeneEngineOutput } from '../types/engine.js';
 import type { InferenceMessage, InferenceRequest } from '../inference/types.js';
 import type { Tier } from '../types/interpretation.js';
-import { OpenRouterProvider } from '../inference/openrouter.js';
+import type { LLMProvider } from '../inference/types.js';
+import { createLLMProvider, resolveProviderChoice } from '../inference/provider-factory.js';
 import { getPrimaryEngine, getRotationOrder } from './engine-rotation.js';
 import { EngineCache } from './engine-cache.js';
 import { CircuitBreaker } from './circuit-breaker.js';
@@ -51,7 +52,9 @@ import { AksharaMirror } from '../protocols/akshara-mirror.js';
 export interface DailyMirrorConfig {
   selemene_url: string;
   selemene_api_key: string;
-  openrouter_api_key?: string;  // Enables LLM-powered Layer 2 witness questions
+  openrouter_api_key?: string;  // Enables LLM-powered Layer 2 witness questions (OpenRouter)
+  nvidia_api_key?: string;      // Alternative LLM provider — NVIDIA NIM hosted endpoint
+  llm_provider?: 'openrouter' | 'nvidia';  // Force a provider; otherwise auto-resolves from keys + LLM_PROVIDER env
   tier?: StandaloneTier;
   cache_enabled?: boolean;       // Default: true
   cache_max_entries?: number;    // Default: 1000
@@ -61,7 +64,7 @@ export interface DailyMirrorConfig {
 
 export class DailyMirror {
   private config: DailyMirrorConfig;
-  private llmProvider: OpenRouterProvider | null;
+  private llmProvider: LLMProvider | null;
   private cache: EngineCache | null;
   private breaker: CircuitBreaker;
   private observer: WitnessObserver | null;
@@ -70,18 +73,26 @@ export class DailyMirror {
   constructor(config: DailyMirrorConfig) {
     this.config = config;
     
-    // Initialize LLM provider if API key provided
-    this.llmProvider = config.openrouter_api_key
-      ? new OpenRouterProvider({
-          api_key: config.openrouter_api_key,
+    // Initialize LLM provider via factory — picks NVIDIA or OpenRouter based on
+    // explicit choice → LLM_PROVIDER env → which key is set.
+    const providerChoice = resolveProviderChoice({
+      provider: config.llm_provider,
+      openrouter_api_key: config.openrouter_api_key,
+      nvidia_api_key: config.nvidia_api_key,
+    });
+    this.llmProvider = providerChoice
+      ? createLLMProvider({
+          provider: providerChoice,
+          openrouter_api_key: config.openrouter_api_key,
+          nvidia_api_key: config.nvidia_api_key,
           site_url: 'https://tryambakam.space/daily-witness',
           site_name: 'The Daily Witness',
           timeout_ms: 30_000,
         })
       : null;
-    
+
     // Initialize AKSHARA mirror for initiate tier (when LLM available)
-    this.aksharaMirror = (config.tier === 'witness-initiate' && config.openrouter_api_key)
+    this.aksharaMirror = (config.tier === 'witness-initiate' && this.llmProvider)
       ? new AksharaMirror()
       : null;
     

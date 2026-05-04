@@ -16,6 +16,12 @@ const port = parseInt(process.env.PORT || '3333', 10);
 const selemeneUrl = process.env.SELEMENE_API_URL || 'https://selemene.tryambakam.space';
 const selemeneApiKey = process.env.SELEMENE_API_KEY || '';
 const openrouterKey = process.env.OPENROUTER_API_KEY || '';
+const nvidiaKey = process.env.NVIDIA_API_KEY || '';
+const llmProviderEnv = (process.env.LLM_PROVIDER || '').toLowerCase();
+const llmProviderForced =
+  llmProviderEnv === 'nvidia' || llmProviderEnv === 'openrouter'
+    ? (llmProviderEnv as 'nvidia' | 'openrouter')
+    : undefined;
 const tier = (process.env.WITNESS_TIER || 'witness-initiate') as StandaloneTier;
 const deploymentInfo = getWitnessDeploymentInfo();
 const knowledgePath = process.env.WITNESS_KNOWLEDGE_PATH
@@ -25,11 +31,20 @@ const knowledgePath = process.env.WITNESS_KNOWLEDGE_PATH
 const store = createDecoderStore();
 setDecoderStore(store);
 
+const llmStatus = (() => {
+  if (llmProviderForced === 'nvidia' && nvidiaKey) return 'NVIDIA NIM (forced)';
+  if (llmProviderForced === 'openrouter' && openrouterKey) return 'OpenRouter (forced)';
+  if (nvidiaKey && !openrouterKey) return 'NVIDIA NIM (auto)';
+  if (openrouterKey && !nvidiaKey) return 'OpenRouter (auto)';
+  if (openrouterKey && nvidiaKey) return 'OpenRouter (default — both keys present, set LLM_PROVIDER=nvidia to switch)';
+  return 'template-only (no LLM key)';
+})();
+
 console.log(`[WitnessAgents] Starting standalone server...`);
 console.log(`[WitnessAgents] Version: ${WITNESS_VERSION}`);
 console.log(`[WitnessAgents] Selemene API: ${selemeneUrl}`);
 console.log(`[WitnessAgents] Port: ${port}`);
-console.log(`[WitnessAgents] LLM: ${openrouterKey ? 'OpenRouter configured' : 'template-only (no LLM key)'}`);
+console.log(`[WitnessAgents] LLM: ${llmStatus}`);
 console.log(`[WitnessAgents] Tier: ${tier}`);
 console.log(`[WitnessAgents] Knowledge path: ${knowledgePath}`);
 console.log(`[WitnessAgents] Deployment: ${JSON.stringify(deploymentInfo)}`);
@@ -39,6 +54,8 @@ createStandaloneServer({
   selemene_url: selemeneUrl,
   selemene_api_key: selemeneApiKey,
   openrouter_api_key: openrouterKey,
+  nvidia_api_key: nvidiaKey,
+  llm_provider: llmProviderForced,
   tier,
   knowledge_path: knowledgePath,
   rhythm: {

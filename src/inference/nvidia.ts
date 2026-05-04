@@ -1,57 +1,48 @@
-// ─── Witness Agents — OpenRouter Provider ─────────────────────────────
-// OpenAI-compatible LLM inference via OpenRouter.
-// Handles: model routing, retries, cost tracking, streaming (future).
+// ─── Witness Agents — NVIDIA NIM Provider ─────────────────────────────
+// OpenAI-compatible LLM inference via NVIDIA's hosted build platform.
+// Endpoint: https://integrate.api.nvidia.com/v1
+// Free tier when logged in at build.nvidia.com (subject to NVIDIA quotas).
 
 import type {
   ProviderConfig,
   InferenceRequest,
   InferenceResponse,
-  InferenceMessage,
   InferenceError,
   ModelPreference,
   ModelRole,
   ProviderId,
   LLMProvider,
+  ModelRoutingTable,
 } from './types.js';
 import type { Tier } from '../types/interpretation.js';
-import { DEFAULT_MODEL_ROUTING, estimateCost } from './model-routing.js';
-import type { ModelRoutingTable } from './types.js';
+import { DEFAULT_NVIDIA_ROUTING, estimateNvidiaCost } from './nvidia-routing.js';
 
-// ═══════════════════════════════════════════════════════════════════════
-// OPENROUTER PROVIDER
-// ═══════════════════════════════════════════════════════════════════════
+const NVIDIA_BASE = 'https://integrate.api.nvidia.com/v1';
 
-const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
-
-export interface OpenRouterConfig {
+export interface NvidiaConfig {
   api_key: string;
-  site_url?: string;       // HTTP-Referer header
-  site_name?: string;      // X-Title header
+  base_url?: string;          // Override (e.g. self-hosted NIM)
   timeout_ms?: number;
   routing_table?: Partial<ModelRoutingTable>;
 }
 
-export class OpenRouterProvider implements LLMProvider {
+export class NvidiaProvider implements LLMProvider {
   private config: ProviderConfig;
   private routing: ModelRoutingTable;
-  private siteUrl: string;
-  private siteName: string;
   private timeout: number;
 
-  constructor(config: OpenRouterConfig) {
+  constructor(config: NvidiaConfig) {
     this.config = {
-      id: 'openrouter',
+      id: 'nvidia',
       api_key: config.api_key,
-      base_url: OPENROUTER_BASE,
-      default_model: 'meta-llama/llama-4-scout',
+      base_url: config.base_url || NVIDIA_BASE,
+      default_model: 'meta/llama-3.1-8b-instruct',
     };
-    this.siteUrl = config.site_url || 'https://tryambakam.space';
-    this.siteName = config.site_name || 'WitnessOS';
     this.timeout = config.timeout_ms || 30_000;
 
     // Deep copy routing to prevent cross-instance mutation
     this.routing = {} as ModelRoutingTable;
-    for (const [tier, roles] of Object.entries(DEFAULT_MODEL_ROUTING)) {
+    for (const [tier, roles] of Object.entries(DEFAULT_NVIDIA_ROUTING)) {
       this.routing[tier as Tier] = { ...roles };
     }
     if (config.routing_table) {
@@ -63,18 +54,12 @@ export class OpenRouterProvider implements LLMProvider {
     }
   }
 
-  get id(): ProviderId { return 'openrouter'; }
+  get id(): ProviderId { return 'nvidia'; }
 
-  /**
-   * Resolve which model to use for a given tier + role.
-   */
   resolveModel(tier: Tier, role: ModelRole): ModelPreference {
     return this.routing[tier]?.[role] || this.routing.free.fast;
   }
 
-  /**
-   * Execute a chat completion request via OpenRouter.
-   */
   async complete(request: InferenceRequest): Promise<InferenceResponse> {
     const pref = request.model_override
       ? { model_id: request.model_override, max_tokens: request.max_tokens_override || 1024, temperature: request.temperature_override || 0.5 }
@@ -89,7 +74,6 @@ export class OpenRouterProvider implements LLMProvider {
     };
 
     const start = Date.now();
-
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -99,8 +83,7 @@ export class OpenRouterProvider implements LLMProvider {
         headers: {
           'Authorization': `Bearer ${this.config.api_key}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': this.siteUrl,
-          'X-Title': this.siteName,
+          'Accept': 'application/json',
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -109,7 +92,7 @@ export class OpenRouterProvider implements LLMProvider {
       if (!res.ok) {
         const errBody = await res.text().catch(() => '');
         const err: InferenceError = {
-          provider: 'openrouter',
+          provider: 'nvidia',
           model: pref.model_id,
           status: res.status,
           message: errBody || res.statusText,
@@ -120,14 +103,22 @@ export class OpenRouterProvider implements LLMProvider {
 
       const data = await res.json() as any;
       const latency = Date.now() - start;
-
       const choice = data.choices?.[0];
       const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
+      // Reasoning models (gpt-oss, minimax m2.7, glm4.7, nemotron-super-*, kimi-k2-thinking)
+      // emit answer in `message.reasoning_content` if they ran out of tokens before
+      // producing `message.content`, OR alongside it. Prefer `content`, fall back to
+      // `reasoning_content` so we never return an empty string.
+      const msg = choice?.message || {};
+      const primary = (msg.content || '').trim();
+      const reasoning = (msg.reasoning_content || '').trim();
+      const finalContent = primary || reasoning;
+
       return {
-        content: choice?.message?.content || '',
+        content: finalContent,
         model_used: data.model || pref.model_id,
-        provider: 'openrouter',
+        provider: 'nvidia',
         usage: {
           prompt_tokens: usage.prompt_tokens,
           completion_tokens: usage.completion_tokens,
@@ -135,16 +126,13 @@ export class OpenRouterProvider implements LLMProvider {
         },
         latency_ms: latency,
         finish_reason: choice?.finish_reason || 'unknown',
-        cost_estimate_usd: estimateCost(pref.model_id, usage.prompt_tokens, usage.completion_tokens),
+        cost_estimate_usd: estimateNvidiaCost(pref.model_id, usage.prompt_tokens, usage.completion_tokens),
       };
     } finally {
       clearTimeout(timeoutId);
     }
   }
 
-  /**
-   * Complete with retry (for transient errors / rate limits).
-   */
   async completeWithRetry(request: InferenceRequest, maxRetries = 2): Promise<InferenceResponse> {
     let lastError: any;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -153,17 +141,12 @@ export class OpenRouterProvider implements LLMProvider {
       } catch (err: any) {
         lastError = err;
         if (!err.retryable || attempt === maxRetries) throw err;
-        // Exponential backoff: 1s, 2s
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
       }
     }
     throw lastError;
   }
 
-  /**
-   * Streaming chat completion — yields text chunks as they arrive.
-   * OpenRouter supports `stream: true` returning SSE `data: {...}` events.
-   */
   async *completeStream(request: InferenceRequest): AsyncGenerator<string, void, unknown> {
     const pref = request.model_override
       ? { model_id: request.model_override, max_tokens: request.max_tokens_override || 1024, temperature: request.temperature_override || 0.5 }
@@ -187,8 +170,7 @@ export class OpenRouterProvider implements LLMProvider {
         headers: {
           'Authorization': `Bearer ${this.config.api_key}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': this.siteUrl,
-          'X-Title': this.siteName,
+          'Accept': 'text/event-stream',
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -197,7 +179,7 @@ export class OpenRouterProvider implements LLMProvider {
       if (!res.ok) {
         const errBody = await res.text().catch(() => '');
         const err: InferenceError = {
-          provider: 'openrouter',
+          provider: 'nvidia',
           model: pref.model_id,
           status: res.status,
           message: errBody || res.statusText,
@@ -220,7 +202,6 @@ export class OpenRouterProvider implements LLMProvider {
           const trimmed = line.trim();
           if (!trimmed || trimmed === 'data: [DONE]') continue;
           if (!trimmed.startsWith('data: ')) continue;
-
           try {
             const data = JSON.parse(trimmed.slice(6));
             const delta = data.choices?.[0]?.delta?.content;
@@ -235,16 +216,10 @@ export class OpenRouterProvider implements LLMProvider {
     }
   }
 
-  /**
-   * Get the current routing table (for inspection/debugging).
-   */
   getRouting(): ModelRoutingTable {
     return { ...this.routing };
   }
 
-  /**
-   * Update model routing at runtime (e.g., A/B testing, model migration).
-   */
   setModelPreference(tier: Tier, role: ModelRole, pref: ModelPreference): void {
     this.routing[tier][role] = pref;
   }
