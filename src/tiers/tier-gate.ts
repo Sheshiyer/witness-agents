@@ -6,6 +6,7 @@ import type { Tier, CliffordLevel, Kosha } from '../types/interpretation.js';
 import { TIER_RATE_LIMITS, TIER_MAX_CLIFFORD, TIER_MAX_KOSHA } from '../types/interpretation.js';
 import type { SubscriptionTier } from '../types/engine.js';
 import { SUPABASE_TIER_MAP } from '../types/engine.js';
+import { WITNESS_CAPABILITY_PROFILES } from '../config/witness-capabilities.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // TIER GATE CHECK RESULT
@@ -170,12 +171,7 @@ export class TierGate {
   // ─── PRIVATE ──────────────────────────────────────────────────────
 
   private getAgentsMode(tier: Tier): TierCheckResult['agents_mode'] {
-    switch (tier) {
-      case 'free': return 'none';
-      case 'subscriber': return 'single';
-      case 'enterprise': return 'dyad';
-      case 'initiate': return 'dyad_mirror';
-    }
+    return WITNESS_CAPABILITY_PROFILES[tier].agents_mode;
   }
 
   private buildRateLimitMessage(tier: Tier, resetMs: number): string {

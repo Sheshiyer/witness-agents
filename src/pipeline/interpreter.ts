@@ -6,6 +6,7 @@ import type {
   PipelineQuery,
   WitnessInterpretation,
   AgentInterpretation,
+  WitnessInferenceTrace,
   Tier,
   Kosha,
   CliffordLevel,
@@ -32,6 +33,8 @@ import { SynthesisEngine } from './synthesis.js';
 import type { SynthesisResult } from './synthesis.js';
 import { VoicePromptBuilder } from '../agents/voice-prompts.js';
 import { AntiDependencyTracker } from '../agents/anti-dependency.js';
+import { DyadInferenceEngine } from '../inference/dyad-engine.js';
+import type { DyadInferenceResult, InferenceResponse, LLMProvider } from '../inference/types.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // SELEMENE CLIENT — calls the real Selemene API
@@ -145,10 +148,13 @@ export interface PipelineConfig {
   selemene: SelemeneClientConfig;
   knowledge_path: string;
   tier_gate?: TierGate;
+  llm_provider?: LLMProvider;
 }
 
 export interface ResolvedOutputOptions {
   record_usage?: boolean;
+  enable_inference?: boolean;
+  inference_mode?: 'full-dyad' | 'synthesis-only';
 }
 
 export class InterpretationPipeline {
@@ -160,6 +166,7 @@ export class InterpretationPipeline {
   private synthesisEngine: SynthesisEngine;
   private voiceBuilder: VoicePromptBuilder;
   private antiDep: AntiDependencyTracker;
+  private dyadInference?: DyadInferenceEngine;
   private initialized = false;
 
   constructor(config: PipelineConfig) {
@@ -171,6 +178,9 @@ export class InterpretationPipeline {
     this.synthesisEngine = new SynthesisEngine();
     this.voiceBuilder = new VoicePromptBuilder();
     this.antiDep = new AntiDependencyTracker();
+    this.dyadInference = config.llm_provider
+      ? new DyadInferenceEngine(config.llm_provider)
+      : undefined;
   }
 
   /**
@@ -222,6 +232,8 @@ export class InterpretationPipeline {
     }
 
     const recordUsage = options.record_usage ?? true;
+    const enableInference = options.enable_inference ?? true;
+    const inferenceMode = options.inference_mode ?? 'full-dyad';
 
     // ─── Step 3: Clifford gate evaluation ───────────────────────────
     const cliffordLevel = this.cliffordGate.evaluate(query.user_state);
@@ -245,11 +257,11 @@ export class InterpretationPipeline {
       );
 
       // ─── Step 6: Knowledge-grounded interpretation ────────────────
-      const aletheiosInterp = this.shouldInterpret('aletheios', routing, query.user_state.tier)
+      let aletheiosInterp = this.shouldInterpret('aletheios', routing, query.user_state.tier)
         ? this.interpretAletheios(engineOutputs, query.user_state, cliffordLevel)
         : undefined;
 
-      const pichetInterp = this.shouldInterpret('pichet', routing, query.user_state.tier)
+      let pichetInterp = this.shouldInterpret('pichet', routing, query.user_state.tier)
         ? this.interpretPichet(engineOutputs, query.user_state, cliffordLevel)
         : undefined;
 
@@ -275,6 +287,69 @@ export class InterpretationPipeline {
         synthesis = this.applyWitnessPromptGuard(engineOutputs, synthesis);
       }
 
+      let inferenceTrace: WitnessInferenceTrace | undefined;
+      if (enableInference && this.dyadInference && query.user_state.tier !== 'free' && (aletheiosInterp || pichetInterp)) {
+        try {
+          if (
+            inferenceMode === 'synthesis-only'
+            && aletheiosInterp?.perspective
+            && pichetInterp?.perspective
+          ) {
+            const synthesisResult = await this.dyadInference.inferSynthesis(
+              query.user_state.tier,
+              query.user_state,
+              aletheiosInterp.perspective,
+              pichetInterp.perspective,
+            );
+            synthesis = this.applyWitnessPromptGuard(engineOutputs, synthesisResult.content);
+            inferenceTrace = this.buildInferenceTrace({
+              synthesis: synthesisResult,
+              total_cost_usd: synthesisResult.cost_estimate_usd ?? 0,
+              total_latency_ms: synthesisResult.latency_ms,
+            });
+          } else {
+            const llmSeed = this.buildLLMSeedInterpretation(
+              query,
+              engineOutputs,
+              routing,
+              koshaDepth,
+              cliffordLevel,
+              aletheiosInterp,
+              pichetInterp,
+              synthesis,
+            );
+            const llmResult = await this.dyadInference.infer(
+              llmSeed,
+              query.user_state,
+              engineOutputs,
+              { include_synthesis: requireDyad && engineOutputs.length >= 2 },
+            );
+
+            if (llmResult.aletheios) {
+              aletheiosInterp = this.overlayInferenceOnAgent(
+                aletheiosInterp,
+                'aletheios',
+                llmResult.aletheios,
+              );
+            }
+            if (llmResult.pichet) {
+              pichetInterp = this.overlayInferenceOnAgent(
+                pichetInterp,
+                'pichet',
+                llmResult.pichet,
+              );
+            }
+            if (llmResult.synthesis?.content) {
+              synthesis = this.applyWitnessPromptGuard(engineOutputs, llmResult.synthesis.content);
+            }
+
+            inferenceTrace = this.buildInferenceTrace(llmResult);
+          }
+        } catch (err) {
+          console.warn('[InterpretationPipeline] LLM inference unavailable, falling back to deterministic interpretation:', err);
+        }
+      }
+
       // ─── Step 8: Build response ───────────────────────────────────
       const overwhelmLevel = this.dyad.assessOverwhelm({
         query_cadence_per_min: 0,
@@ -293,6 +368,10 @@ export class InterpretationPipeline {
         synthesis,
         overwhelmLevel,
       );
+
+      if (inferenceTrace) {
+        response.inference = inferenceTrace;
+      }
 
       // ─── Step 9: Generate voice prompts (attach for downstream LLM) ─
       if (requireDyad) {
@@ -842,6 +921,83 @@ export class InterpretationPipeline {
     // Engines dealing with shadow/grief/stress are "heavy"
     const heavyEngines: SelemeneEngineId[] = ['gene-keys', 'enneagram', 'face-reading'];
     return outputs.some(o => heavyEngines.includes(o.engine_id as SelemeneEngineId));
+  }
+
+  private buildLLMSeedInterpretation(
+    query: PipelineQuery,
+    outputs: SelemeneEngineOutput[],
+    routing: RoutingMode,
+    koshaDepth: Kosha,
+    cliffordLevel: CliffordLevel,
+    aletheios?: AgentInterpretation,
+    pichet?: AgentInterpretation,
+    synthesis?: string,
+  ): WitnessInterpretation {
+    return {
+      id: query.request_id,
+      timestamp: new Date().toISOString(),
+      query: query.query,
+      engines_invoked: outputs.map(o => o.engine_id as SelemeneEngineId),
+      engine_outputs: outputs,
+      routing_mode: routing,
+      workflow_id: query.workflow_hint,
+      aletheios,
+      pichet,
+      synthesis,
+      tier: query.user_state.tier,
+      kosha_depth: koshaDepth,
+      clifford_level: cliffordLevel,
+      response: synthesis ?? aletheios?.perspective ?? pichet?.perspective ?? this.buildFreeResponse(outputs),
+      response_cadence: 'immediate',
+      overwhelm_flag: false,
+      recursion_flag: false,
+    };
+  }
+
+  private overlayInferenceOnAgent(
+    base: AgentInterpretation | undefined,
+    agent: 'aletheios' | 'pichet',
+    inference: InferenceResponse,
+  ): AgentInterpretation {
+    return {
+      agent,
+      perspective: inference.content,
+      domains_consulted: base?.domains_consulted ?? [],
+      confidence: base?.confidence ?? 0.8,
+      somatic_note: base?.somatic_note,
+      pattern_note: base?.pattern_note,
+      provider: inference.provider,
+      model_used: inference.model_used,
+    };
+  }
+
+  private buildInferenceTrace(result: DyadInferenceResult): WitnessInferenceTrace | undefined {
+    const roles = {
+      ...(result.aletheios ? { aletheios: this.traceRole(result.aletheios) } : {}),
+      ...(result.pichet ? { pichet: this.traceRole(result.pichet) } : {}),
+      ...(result.synthesis ? { synthesis: this.traceRole(result.synthesis) } : {}),
+    };
+
+    const provider = result.aletheios?.provider
+      ?? result.pichet?.provider
+      ?? result.synthesis?.provider;
+
+    if (!provider || Object.keys(roles).length === 0) return undefined;
+
+    return {
+      provider,
+      roles,
+    };
+  }
+
+  private traceRole(response: InferenceResponse) {
+    return {
+      provider: response.provider,
+      model_used: response.model_used,
+      latency_ms: response.latency_ms,
+      cost_estimate_usd: response.cost_estimate_usd,
+      usage: response.usage,
+    };
   }
 
   // ─── PRIVATE: Response Builders ───────────────────────────────────

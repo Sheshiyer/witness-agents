@@ -37,9 +37,18 @@ import { ENGINE_WITNESS_ROLE } from './types.js';
 import { WitnessObserver } from './observability.js';
 import { getWitnessDeploymentInfo, WITNESS_VERSION } from './deployment-info.js';
 import { InterpretationPipeline } from '../pipeline/interpreter.js';
-import type { PipelineQuery, Tier, UserState, WitnessInterpretation } from '../types/interpretation.js';
+import type {
+  PipelineQuery,
+  Tier,
+  UserState,
+  WitnessEvidence,
+  WitnessInterpretation,
+  WitnessReadingSubject,
+} from '../types/interpretation.js';
 import { CONSCIOUSNESS_TO_KOSHA } from '../types/interpretation.js';
 import { ENGINE_ROUTING } from '../types/engine.js';
+import { createLLMProvider, resolveProviderChoice } from '../inference/provider-factory.js';
+import type { LLMProvider } from '../inference/types.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // API TYPES
@@ -50,6 +59,8 @@ export interface StandaloneApiConfig extends DailyMirrorConfig {
   rate_limit_per_hour?: number;  // Default: 30 for free, 300 for subscriber
   cors_origin?: string;          // Default: '*'
   knowledge_path?: string;       // Default: ../../knowledge from this module
+  llm_timeout_ms?: number;       // Optional override for proxy LLM inference timeout
+  llm_provider_instance?: LLMProvider; // Optional injection for tests / custom wiring
   // Rhythm SSE server config (optional — rhythm endpoints disabled if not provided)
   rhythm?: {
     poll_interval_ms?: number;   // Default: 120_000 (2 min)
@@ -72,16 +83,32 @@ export interface ApiError {
   hint?: string;
 }
 
+interface PromoMetadata {
+  promo_active: boolean;
+  promo_label: string | null;
+  promo_expires_at: string | null;
+}
+
 type WitnessDyadPayload = {
   response: string | null;
   aletheios: WitnessInterpretation['aletheios'] | null;
   pichet: WitnessInterpretation['pichet'] | null;
   synthesis: string | null;
+  inference: WitnessInterpretation['inference'] | null;
   routing_mode: RoutingMode | null;
   response_cadence: WitnessInterpretation['response_cadence'] | null;
   kosha_depth: WitnessInterpretation['kosha_depth'] | null;
   clifford_level: WitnessInterpretation['clifford_level'] | null;
   tier: WitnessInterpretation['tier'] | null;
+} & PromoMetadata;
+
+type WitnessReportPayload = {
+  title: string | null;
+  summary: string | null;
+  convergences: string[] | null;
+  frictions: string[] | null;
+  practice: string[] | null;
+  question: string | null;
 };
 
 interface ProxyWitnessContext {
@@ -100,6 +127,34 @@ const DEFAULT_KNOWLEDGE_PATH = resolve(
   dirname(fileURLToPath(import.meta.url)),
   '../../knowledge',
 );
+const DEFAULT_PROMO_LABEL = 'Enterprise Promo';
+const DEFAULT_PROMO_EXPIRES_AT = '2026-05-26T23:59:59Z';
+
+function getPromoMetadata(now = Date.now()): PromoMetadata {
+  const label = (process.env.WITNESS_PROMO_LABEL || DEFAULT_PROMO_LABEL).trim() || null;
+  const expiresAtRaw = (process.env.WITNESS_PROMO_EXPIRES_AT || DEFAULT_PROMO_EXPIRES_AT).trim();
+  const expiresAt = expiresAtRaw || null;
+  const override = (process.env.WITNESS_PROMO_ACTIVE || '').trim().toLowerCase();
+
+  if (override === 'true') {
+    return { promo_active: true, promo_label: label, promo_expires_at: expiresAt };
+  }
+
+  if (override === 'false') {
+    return { promo_active: false, promo_label: label, promo_expires_at: expiresAt };
+  }
+
+  if (!expiresAt) {
+    return { promo_active: Boolean(label), promo_label: label, promo_expires_at: null };
+  }
+
+  const parsed = Date.parse(expiresAt);
+  return {
+    promo_active: Number.isFinite(parsed) ? parsed >= now : Boolean(label),
+    promo_label: label,
+    promo_expires_at: expiresAt,
+  };
+}
 
 function checkRateLimit(key: string, limit: number): boolean {
   const now = Date.now();
@@ -185,6 +240,494 @@ function toBirthData(req: ReadingRequest): BirthData {
   };
 }
 
+const GENERIC_READING_TITLES = new Set([
+  'unified insight',
+  'witness reading',
+  'daily witness reading',
+  'opening',
+  'synthesis',
+]);
+
+function cleanWitnessText(value: unknown): string {
+  if (typeof value !== 'string') return '';
+
+  return value
+    .trim()
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(^|[\s(])\*(?!\s)([^*]+?)\*(?=$|[\s).,!?:;])/gm, '$1$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .trim();
+}
+
+function normalizeWitnessText(value: unknown): string {
+  return cleanWitnessText(value).replace(/\s+/g, ' ').toLowerCase();
+}
+
+function splitWitnessBlocks(value: unknown): string[] {
+  return cleanWitnessText(value)
+    .split(/\n\s*\n+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function firstWitnessSentence(value: unknown): string {
+  const text = cleanWitnessText(value);
+  if (!text) return '';
+
+  const sentence = text
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .find(Boolean);
+
+  return sentence || text;
+}
+
+function pickQuestionSentence(value: unknown): string {
+  const text = cleanWitnessText(value);
+  if (!text) return '';
+
+  const question = text
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .find((part) => part.endsWith('?'));
+
+  return question || '';
+}
+
+function dedupeText(items: Array<string | null | undefined>): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const item of items) {
+    const text = cleanWitnessText(item);
+    if (!text) continue;
+
+    const normalized = normalizeWitnessText(text);
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    result.push(text);
+  }
+
+  return result;
+}
+
+function readPercentage(value: unknown): number | null {
+  if (!value || typeof value !== 'object') return null;
+  const percentage = (value as { percentage?: unknown }).percentage;
+  const parsed = typeof percentage === 'number' ? percentage : Number(percentage);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeActivities(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry) => {
+      if (typeof entry === 'string') return entry;
+      if (entry && typeof entry === 'object' && typeof (entry as { activity?: unknown }).activity === 'string') {
+        return (entry as { activity: string }).activity;
+      }
+      return '';
+    })
+    .map((entry) => cleanWitnessText(entry))
+    .filter(Boolean);
+}
+
+function isBreathFirstWindow(result: Record<string, unknown> | null): boolean {
+  if (!result) return false;
+
+  const organ = result.current_organ as Record<string, unknown> | undefined;
+  const activities = normalizeActivities(
+    organ?.recommended_activities ?? (result.recommendation as Record<string, unknown> | undefined)?.activities,
+  );
+
+  return organ?.organ === 'Lung' || activities.some((activity) => /breath|pranayama|meditation/i.test(activity));
+}
+
+function isVataWindow(result: Record<string, unknown> | null): boolean {
+  if (!result) return false;
+  const dosha = (result.current_dosha as Record<string, unknown> | undefined)?.dosha;
+  return typeof dosha === 'string' && dosha.toLowerCase() === 'vata';
+}
+
+function describeCriticalWindow(result: Record<string, unknown> | null): string | null {
+  if (!result) return null;
+  const criticalDays = result.critical_days;
+  if (!Array.isArray(criticalDays) || criticalDays.length === 0) return null;
+
+  const dates = criticalDays.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
+  if (dates.length === 0) return null;
+  if (dates.length === 1) return `Protect the next critical day: ${dates[0]}.`;
+  return `Protect the next critical window: ${dates[0]} to ${dates[dates.length - 1]}.`;
+}
+
+function isHighCapacityLowReserve(result: Record<string, unknown> | null): boolean {
+  if (!result) return false;
+
+  const physical = readPercentage(result.physical);
+  const emotional = readPercentage(result.emotional);
+  const intellectual = readPercentage(result.intellectual);
+
+  return physical !== null && emotional !== null && intellectual !== null
+    && physical >= 75
+    && intellectual >= 70
+    && emotional <= 35;
+}
+
+function isLowReserveWindow(result: Record<string, unknown> | null): boolean {
+  if (!result) return false;
+
+  const physical = readPercentage(result.physical);
+  const emotional = readPercentage(result.emotional);
+
+  return physical !== null && emotional !== null && physical <= 35 && emotional <= 35;
+}
+
+function getEngineResult(
+  outputs: SelemeneEngineOutput[],
+  engineId: string,
+): Record<string, unknown> | null {
+  const match = outputs.find((output) => output.engine_id === engineId);
+  return match && match.result && typeof match.result === 'object'
+    ? match.result as Record<string, unknown>
+    : null;
+}
+
+function pickPreferredQuestion(outputs: SelemeneEngineOutput[]): string {
+  const preferredOrder = ['biorhythm', 'vedic-clock', 'panchanga', 'numerology', 'transits'];
+
+  for (const engineId of preferredOrder) {
+    const match = outputs.find((output) => output.engine_id === engineId);
+    const question = pickQuestionSentence(match?.witness_prompt);
+    if (question) return question;
+  }
+
+  for (const output of outputs) {
+    const question = pickQuestionSentence(output.witness_prompt);
+    if (question) return question;
+  }
+
+  return '';
+}
+
+function buildReadingTitle(
+  response: string | null,
+  synthesis: string | null,
+  outputs: SelemeneEngineOutput[],
+): string | null {
+  const biorhythm = getEngineResult(outputs, 'biorhythm');
+  const vedicClock = getEngineResult(outputs, 'vedic-clock');
+
+  if (isHighCapacityLowReserve(biorhythm) && isBreathFirstWindow(vedicClock)) {
+    return 'Body ready, regulation first';
+  }
+  if (isHighCapacityLowReserve(biorhythm)) {
+    return 'Capacity high, pace first';
+  }
+  if (isLowReserveWindow(biorhythm)) {
+    return 'Restoration before force';
+  }
+  if (isBreathFirstWindow(vedicClock)) {
+    return 'Breath sets the pace';
+  }
+
+  const candidates = [response, synthesis];
+  for (const candidate of candidates) {
+    const blocks = splitWitnessBlocks(candidate);
+    const firstBlock = blocks[0];
+    if (!firstBlock) continue;
+
+    const normalized = normalizeWitnessText(firstBlock);
+    if (GENERIC_READING_TITLES.has(normalized)) continue;
+    if (firstBlock.length <= 72 && !firstBlock.endsWith('?')) return firstBlock;
+
+    const firstSentence = firstWitnessSentence(firstBlock).replace(/[.!?]+$/, '').trim();
+    if (firstSentence && firstSentence.length <= 72 && !GENERIC_READING_TITLES.has(normalizeWitnessText(firstSentence))) {
+      return firstSentence;
+    }
+  }
+
+  return null;
+}
+
+function buildReadingSummary(
+  title: string | null,
+  response: string | null,
+  synthesis: string | null,
+): string | null {
+  const responseBlocks = splitWitnessBlocks(response);
+  const titleNormalized = normalizeWitnessText(title);
+
+  if (responseBlocks.length > 1 && titleNormalized && normalizeWitnessText(responseBlocks[0]) === titleNormalized) {
+    const secondBlockSentence = firstWitnessSentence(responseBlocks[1]);
+    if (secondBlockSentence && !secondBlockSentence.endsWith('?')) return secondBlockSentence;
+  }
+
+  const candidates = [response, synthesis];
+  for (const candidate of candidates) {
+    const sentence = firstWitnessSentence(candidate);
+    if (!sentence || sentence.endsWith('?')) continue;
+    if (titleNormalized && normalizeWitnessText(sentence) === titleNormalized) continue;
+    return sentence;
+  }
+
+  return null;
+}
+
+function buildReadingConvergences(outputs: SelemeneEngineOutput[]): string[] {
+  const biorhythm = getEngineResult(outputs, 'biorhythm');
+  const vedicClock = getEngineResult(outputs, 'vedic-clock');
+  const panchanga = getEngineResult(outputs, 'panchanga');
+  const transits = getEngineResult(outputs, 'transits');
+
+  return dedupeText([
+    isHighCapacityLowReserve(biorhythm) && isBreathFirstWindow(vedicClock)
+      ? 'Capacity is high, and breath keeps returning as the stabilizing lever.'
+      : null,
+    isHighCapacityLowReserve(biorhythm) && panchanga
+      ? 'Body readiness and timing both favor deliberate movement over force.'
+      : null,
+    isBreathFirstWindow(vedicClock) && panchanga
+      ? 'Symbolic timing and body rhythm both point toward steadier pacing.'
+      : null,
+    Array.isArray((transits as Record<string, unknown> | null)?.active_transits)
+      ? 'Outer pressure and inner timing are both pushing the reading toward review before reaction.'
+      : null,
+  ]).slice(0, 3);
+}
+
+function buildReadingFrictions(outputs: SelemeneEngineOutput[]): string[] {
+  const biorhythm = getEngineResult(outputs, 'biorhythm');
+  const vedicClock = getEngineResult(outputs, 'vedic-clock');
+
+  return dedupeText([
+    isHighCapacityLowReserve(biorhythm)
+      ? 'Emotional reserve is lower than physical and mental readiness.'
+      : null,
+    isLowReserveWindow(biorhythm)
+      ? 'The system is asking for restoration before expansion.'
+      : null,
+    isVataWindow(vedicClock)
+      ? 'Movement is available, but pace decides whether it becomes clarity or scatter.'
+      : null,
+  ]).slice(0, 3);
+}
+
+function buildReadingPractice(
+  outputs: SelemeneEngineOutput[],
+  pichet: WitnessInterpretation['pichet'] | null,
+): string[] {
+  const biorhythm = getEngineResult(outputs, 'biorhythm');
+  const vedicClock = getEngineResult(outputs, 'vedic-clock');
+  const criticalWindow = describeCriticalWindow(biorhythm);
+
+  return dedupeText([
+    isBreathFirstWindow(vedicClock) ? 'Take three slower breaths before the first major decision.' : null,
+    isHighCapacityLowReserve(biorhythm)
+      ? 'Choose one meaningful action instead of spreading effort across many fronts.'
+      : null,
+    isLowReserveWindow(biorhythm) ? 'Choose restoration before expansion today.' : null,
+    criticalWindow,
+    firstWitnessSentence(pichet?.perspective),
+  ]).slice(0, 3);
+}
+
+function buildReadingQuestion(
+  outputs: SelemeneEngineOutput[],
+  pichet: WitnessInterpretation['pichet'] | null,
+): string | null {
+  const promptQuestion = pickPreferredQuestion(outputs);
+  if (promptQuestion) return promptQuestion;
+
+  const biorhythm = getEngineResult(outputs, 'biorhythm');
+  const vedicClock = getEngineResult(outputs, 'vedic-clock');
+
+  if (isHighCapacityLowReserve(biorhythm)) {
+    return 'What part of you is already ready, and what part still needs steadiness?';
+  }
+  if (isLowReserveWindow(biorhythm)) {
+    return 'What changes when you stop treating restoration as a delay?';
+  }
+  if (isBreathFirstWindow(vedicClock)) {
+    return 'What changes when breath sets the pace instead of urgency?';
+  }
+
+  const perspectiveQuestion = pickQuestionSentence(pichet?.perspective);
+  return perspectiveQuestion || null;
+}
+
+function buildEvidenceContribution(
+  output: SelemeneEngineOutput,
+  outputs: SelemeneEngineOutput[],
+): WitnessEvidence['contributions'][number] | null {
+  const result = output.result && typeof output.result === 'object'
+    ? output.result as Record<string, unknown>
+    : null;
+  const biorhythm = getEngineResult(outputs, 'biorhythm');
+  const vedicClock = getEngineResult(outputs, 'vedic-clock');
+
+  switch (output.engine_id) {
+    case 'biorhythm':
+      if (!result) return null;
+      if (isHighCapacityLowReserve(result)) {
+        return {
+          engine_id: output.engine_id,
+          signal: 'Physical and intellectual readiness are high while emotional reserve is thinner.',
+          impact: 'This establishes the central action-versus-regulation tension in the reading.',
+        };
+      }
+      if (isLowReserveWindow(result)) {
+        return {
+          engine_id: output.engine_id,
+          signal: 'Energy and feeling are both running low.',
+          impact: 'This makes restoration the primary constraint on what the day can cleanly hold.',
+        };
+      }
+      return {
+        engine_id: output.engine_id,
+        signal: firstWitnessSentence(output.witness_prompt) || 'The body cycle is the clearest daily signal.',
+        impact: 'This grounds the reading in what the system can realistically hold today.',
+      };
+    case 'vedic-clock': {
+      const organ = result?.current_organ as Record<string, unknown> | undefined;
+      const organName = typeof organ?.organ === 'string' ? organ.organ : null;
+      if (isBreathFirstWindow(result)) {
+        return {
+          engine_id: output.engine_id,
+          signal: organName ? `${organName} rhythm and breath regulation are foregrounded.` : 'Breath regulation is foregrounded.',
+          impact: 'This gives the reading its most reliable stabilizing lever.',
+        };
+      }
+      return {
+        engine_id: output.engine_id,
+        signal: organName ? `${organName} timing is carrying the strongest temporal signal.` : 'The body clock is carrying the strongest temporal signal.',
+        impact: 'This shapes when action will feel coherent instead of forced.',
+      };
+    }
+    case 'panchanga':
+      return {
+        engine_id: output.engine_id,
+        signal: 'Symbolic timing supports intentional rather than forceful movement.',
+        impact: 'This reframes action as ordered expression rather than raw push.',
+      };
+    case 'transits': {
+      const activeTransits = Array.isArray(result?.active_transits)
+        ? result.active_transits.filter((entry): entry is { name?: unknown } => typeof entry === 'object' && entry !== null)
+        : [];
+      const firstName = activeTransits
+        .map((entry) => typeof entry.name === 'string' ? entry.name : '')
+        .find(Boolean);
+
+      return {
+        engine_id: output.engine_id,
+        signal: firstName ? `${firstName} is the loudest external weather line.` : 'The external weather line is demanding review.',
+        impact: 'This gives the reading its outer pressure and review context.',
+      };
+    }
+    default:
+      return {
+        engine_id: output.engine_id,
+        signal: firstWitnessSentence(output.witness_prompt) || `The ${output.engine_id} signal remained active in the reading.`,
+        impact: isHighCapacityLowReserve(biorhythm) && isBreathFirstWindow(vedicClock)
+          ? 'It reinforces the reading’s broader call for paced, regulated movement.'
+          : 'It reinforces the broader pattern already being described.',
+      };
+  }
+}
+
+function buildReadingEvidence(
+  outputs: SelemeneEngineOutput[],
+  seededEvidence?: WitnessInterpretation['evidence'],
+): WitnessEvidence | null {
+  if (seededEvidence?.engines_used?.length || seededEvidence?.contributions?.length) {
+    return seededEvidence;
+  }
+
+  const contributions = outputs
+    .map((output) => buildEvidenceContribution(output, outputs))
+    .filter((entry): entry is WitnessEvidence['contributions'][number] => Boolean(entry));
+
+  if (!contributions.length) return null;
+
+  return {
+    engines_used: contributions.map((entry) => entry.engine_id as SelemeneEngineId),
+    contributions,
+  };
+}
+
+function buildReportPayload(
+  interpretation: WitnessInterpretation | null,
+  outputs: SelemeneEngineOutput[],
+): WitnessReportPayload {
+  const title = interpretation?.title ?? buildReadingTitle(
+    interpretation?.response ?? null,
+    interpretation?.synthesis ?? null,
+    outputs,
+  );
+  const summary = interpretation?.summary ?? buildReadingSummary(
+    title,
+    interpretation?.response ?? null,
+    interpretation?.synthesis ?? null,
+  );
+  const convergences = interpretation?.convergences?.length
+    ? interpretation.convergences
+    : buildReadingConvergences(outputs);
+  const frictions = interpretation?.frictions?.length
+    ? interpretation.frictions
+    : buildReadingFrictions(outputs);
+  const practice = interpretation?.practice?.length
+    ? interpretation.practice
+    : buildReadingPractice(outputs, interpretation?.pichet ?? null);
+  const question = interpretation?.question ?? buildReadingQuestion(outputs, interpretation?.pichet ?? null);
+
+  return {
+    title: title || null,
+    summary: summary || null,
+    convergences: convergences.length ? convergences : null,
+    frictions: frictions.length ? frictions : null,
+    practice: practice.length ? practice : null,
+    question: question || null,
+  };
+}
+
+function buildReadingSubject(
+  birthData: BirthData,
+  body: Record<string, unknown>,
+): WitnessReadingSubject {
+  const requestBirthData = body.birth_data && typeof body.birth_data === 'object'
+    ? body.birth_data as Record<string, unknown>
+    : null;
+
+  return {
+    name: birthData.name,
+    birth_date: birthData.date,
+    birth_time: birthData.time,
+    timezone: birthData.timezone,
+    latitude: birthData.latitude,
+    longitude: birthData.longitude,
+    location_label: requestBirthData && typeof requestBirthData.location_label === 'string'
+      ? requestBirthData.location_label
+      : null,
+  };
+}
+
+function buildReadingId(
+  workflowId: string,
+  createdAt: string,
+  userHash: string,
+): string {
+  const timestampPart = createdAt.replace(/\D/g, '').slice(0, 14) || Date.now().toString();
+  return `rdg_${timestampPart}_${workflowId}_${userHash.slice(0, 8)}`;
+}
+
+function buildReadingUrl(readingId: string): string | null {
+  const base = (process.env.WITNESS_READING_BASE_URL || '').trim().replace(/\/+$/, '');
+  return base ? `${base}/${readingId}` : null;
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // API HANDLER FACTORY
 // ═══════════════════════════════════════════════════════════════════════
@@ -201,6 +744,30 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
   const rateLimit = config.rate_limit_per_hour || 30;
   const knowledgePath = config.knowledge_path ?? DEFAULT_KNOWLEDGE_PATH;
   const proxyTier = STANDALONE_TO_CORE_TIER[config.tier ?? 'witness-initiate'];
+  const providerChoice = config.llm_provider_instance
+    ? (config.llm_provider_instance.id === 'nvidia' || config.llm_provider_instance.id === 'openrouter'
+      ? config.llm_provider_instance.id
+      : null)
+    : resolveProviderChoice({
+      provider: config.llm_provider,
+      openrouter_api_key: config.openrouter_api_key,
+      nvidia_api_key: config.nvidia_api_key,
+    });
+  let pipelineProvider = config.llm_provider_instance;
+  if (!pipelineProvider && providerChoice) {
+    try {
+      pipelineProvider = createLLMProvider({
+        provider: providerChoice,
+        openrouter_api_key: config.openrouter_api_key,
+        nvidia_api_key: config.nvidia_api_key,
+        site_url: 'https://48.tryambakam.space',
+        site_name: 'Witness Agents',
+        timeout_ms: config.llm_timeout_ms,
+      });
+    } catch (err) {
+      console.warn('[StandaloneAPI] LLM provider unavailable for workflow enrichment, continuing without it:', err);
+    }
+  }
   const pipeline = new InterpretationPipeline({
     selemene: {
       base_url: config.selemene_url,
@@ -208,6 +775,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
       timeout_ms: 15_000,
     },
     knowledge_path: knowledgePath,
+    llm_provider: pipelineProvider,
   });
   let pipelineReady: Promise<InterpretationPipeline> | null = null;
 
@@ -260,11 +828,13 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
       aletheios: null,
       pichet: null,
       synthesis: null,
+      inference: null,
       routing_mode: null,
       response_cadence: null,
       kosha_depth: null,
       clifford_level: null,
       tier: null,
+      ...getPromoMetadata(),
     };
   }
 
@@ -368,6 +938,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
   function buildDyadPayload(
     interpretation: WitnessInterpretation | null,
   ): WitnessDyadPayload {
+    const promo = getPromoMetadata();
     if (!interpretation) return emptyDyadPayload();
 
     return {
@@ -375,11 +946,13 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
       aletheios: interpretation.aletheios ?? null,
       pichet: interpretation.pichet ?? null,
       synthesis: interpretation.synthesis ?? null,
+      inference: interpretation.inference ?? null,
       routing_mode: interpretation.routing_mode,
       response_cadence: interpretation.response_cadence,
       kosha_depth: interpretation.kosha_depth,
       clifford_level: interpretation.clifford_level,
       tier: interpretation.tier,
+      ...promo,
     };
   }
 
@@ -414,6 +987,10 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     outputs: SelemeneEngineOutput[],
     witnessContext: ProxyWitnessContext,
     body: Record<string, unknown>,
+    options?: {
+      enableInference?: boolean;
+      inferenceMode?: 'full-dyad' | 'synthesis-only';
+    },
   ): Promise<WitnessInterpretation | null> {
     if (witnessContext.maxLayer < 2 || outputs.length === 0) {
       return null;
@@ -423,7 +1000,11 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     return activePipeline.processResolvedOutputs(
       buildProxyQuery(kind, id, witnessContext, outputs, body),
       outputs,
-      { record_usage: false },
+      {
+        record_usage: false,
+        enable_inference: options?.enableInference,
+        inference_mode: options?.inferenceMode,
+      },
     );
   }
 
@@ -432,16 +1013,24 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     rawResult: Record<string, unknown>,
     witnessContext: ProxyWitnessContext,
     requestBody: Record<string, unknown>,
+    options?: {
+      enableInference?: boolean;
+      inferenceMode?: 'full-dyad' | 'synthesis-only';
+    },
   ): Promise<{
     response: string | null;
     aletheios: WitnessInterpretation['aletheios'] | null;
     pichet: WitnessInterpretation['pichet'] | null;
     synthesis: string | null;
+    inference: WitnessInterpretation['inference'] | null;
     routing_mode: RoutingMode | null;
     response_cadence: WitnessInterpretation['response_cadence'] | null;
     kosha_depth: WitnessInterpretation['kosha_depth'] | null;
     clifford_level: WitnessInterpretation['clifford_level'] | null;
     tier: WitnessInterpretation['tier'] | null;
+    promo_active: boolean;
+    promo_label: string | null;
+    promo_expires_at: string | null;
     decoder_state: ReturnType<typeof summarizeDecoderState>;
     max_layer_unlocked: number;
     engine_role: string | null;
@@ -449,7 +1038,17 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     const isWitnessEngine = STANDALONE_ENGINES.includes(engineId as StandaloneEngineId);
     const engineOutput = coerceEngineOutput(rawResult);
     const interpretation = engineOutput
-      ? await buildInterpretation('engine', engineId, [engineOutput], witnessContext, requestBody)
+      ? await buildInterpretation(
+        'engine',
+        engineId,
+        [engineOutput],
+        witnessContext,
+        requestBody,
+        {
+          enableInference: options?.enableInference,
+          inferenceMode: options?.inferenceMode,
+        },
+      )
       : null;
 
     return {
@@ -487,12 +1086,17 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
      * GET / — Product info and available engines
      */
     async info(): Promise<{ status: number; body: unknown }> {
+      const promo = getPromoMetadata();
       return {
         status: 200,
         body: {
           name: 'The Daily Witness',
           version: '0.1.0',
           tagline: 'Four mirrors. Three layers. Your body\'s architecture, daily.',
+          witness_tier: config.tier ?? 'witness-initiate',
+          witness_llm_provider: providerChoice,
+          witness_llm_enabled: !!pipelineProvider,
+          ...promo,
           engines: STANDALONE_ENGINES.map(id => ({
             id,
             role: id === 'biorhythm' ? 'somatic-pulse' :
@@ -704,6 +1308,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
      */
     async healthLive(): Promise<{ status: number; body: unknown }> {
       const deployment = getWitnessDeploymentInfo();
+      const promo = getPromoMetadata();
       try {
         const selemeneUrl = config.selemene_url;
         const resp = await fetch(`${selemeneUrl}/health/live`, {
@@ -719,6 +1324,10 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
             witness_version: WITNESS_VERSION,
             witness_build_id: deployment.build_id,
             witness_build: deployment,
+            witness_tier: config.tier ?? 'witness-initiate',
+            witness_llm_provider: providerChoice,
+            witness_llm_enabled: !!pipelineProvider,
+            ...promo,
           },
         };
       } catch {
@@ -730,6 +1339,10 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
             witness_version: WITNESS_VERSION,
             witness_build_id: deployment.build_id,
             witness_build: deployment,
+            witness_tier: config.tier ?? 'witness-initiate',
+            witness_llm_provider: providerChoice,
+            witness_llm_enabled: !!pipelineProvider,
+            ...promo,
             engines_loaded: STANDALONE_ENGINES.length,
             workflows_loaded: 0,
             uptime_seconds: Math.floor(process.uptime()),
@@ -812,6 +1425,9 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
               rawResult,
               witnessContext,
               requestBody,
+              {
+                inferenceMode: 'synthesis-only',
+              },
             ),
           },
         };
@@ -876,6 +1492,10 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
                 engineResult,
                 witnessContext,
                 requestBody,
+                {
+                  enableInference: false,
+                  inferenceMode: 'synthesis-only',
+                },
               ),
             },
           ] as const)),
@@ -889,6 +1509,9 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
           workflowOutputs,
           witnessContext,
           requestBody,
+          {
+            inferenceMode: 'synthesis-only',
+          },
         );
 
         const enrichedEngineIds = enrichedEntries
@@ -898,13 +1521,36 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
           })
           .filter((engineId): engineId is string => Boolean(engineId));
 
+        const createdAt = workflowInterpretation?.timestamp ?? new Date().toISOString();
+        const readingId = buildReadingId(workflowId, createdAt, witnessContext.userHash);
+        const reportPayload = workflowInterpretation
+          ? buildReportPayload(workflowInterpretation, workflowOutputs)
+          : {
+            title: null,
+            summary: null,
+            convergences: null,
+            frictions: null,
+            practice: null,
+            question: null,
+          };
+        const evidence = workflowInterpretation
+          ? buildReadingEvidence(workflowOutputs, workflowInterpretation.evidence)
+          : null;
+
         return {
           status: 200,
           body: {
             ...rawResult,
+            reading_id: readingId,
+            reading_url: buildReadingUrl(readingId),
+            workflow_id: workflowId,
+            created_at: createdAt,
+            subject: buildReadingSubject(witnessContext.birthData, requestBody),
             engine_results: Object.fromEntries(enrichedEntries),
+            evidence,
             witness_layer: {
               ...buildDyadPayload(workflowInterpretation),
+              ...reportPayload,
               workflow_id: workflowId,
               decoder_state: summarizeDecoderState(witnessContext.decoderState),
               max_layer_unlocked: witnessContext.maxLayer,

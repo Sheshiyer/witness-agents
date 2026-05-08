@@ -3,6 +3,8 @@
 // Typed schemas matching REAL Selemene Engine output (Rust crates + TS bridges)
 // Source: Selemene-engine/crates/*/src/models.rs + ts-engines/src/engines/*/engine.ts
 
+import { BILLING_TO_WITNESS_TIER } from '../config/witness-capabilities.js';
+
 // ═══════════════════════════════════════════════════════════════════════
 // ENGINE IDENTIFIERS — Selemene API IDs ↔ WitnessOS Names
 // ═══════════════════════════════════════════════════════════════════════
@@ -584,12 +586,7 @@ export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'enterprise';
 export type ConsciousnessLevel = 0 | 1 | 2 | 3 | 4 | 5;
 
 /** Maps Supabase plan_catalog.code → WitnessOS tier names */
-export const SUPABASE_TIER_MAP: Record<SubscriptionTier, import('./interpretation.js').Tier> = {
-  'free': 'free',
-  'basic': 'subscriber',
-  'premium': 'enterprise',
-  'enterprise': 'initiate',
-};
+export const SUPABASE_TIER_MAP: Record<SubscriptionTier, import('./interpretation.js').Tier> = BILLING_TO_WITNESS_TIER;
 
 export interface SupabaseUser {
   id: string;

@@ -769,6 +769,51 @@ import {
   createStandaloneHandlers,
   _resetRateLimiter,
 } from '../src/standalone/standalone-api.js';
+import { DEFAULT_NVIDIA_ROUTING } from '../src/inference/nvidia-routing.js';
+import type { InferenceRequest, InferenceResponse, LLMProvider } from '../src/inference/types.js';
+
+function createMockLLMProvider(options?: {
+  fail?: boolean;
+  roleContent?: Partial<Record<'aletheios' | 'pichet' | 'synthesis', string>>;
+  onComplete?: (request: InferenceRequest) => void;
+}): LLMProvider {
+  return {
+    id: 'nvidia',
+    resolveModel(tier, role) {
+      return DEFAULT_NVIDIA_ROUTING[tier][role];
+    },
+    async complete(request: InferenceRequest): Promise<InferenceResponse> {
+      return this.completeWithRetry(request);
+    },
+    async completeWithRetry(request: InferenceRequest): Promise<InferenceResponse> {
+      if (options?.fail) {
+        throw new Error('mock llm unavailable');
+      }
+      options?.onComplete?.(request);
+      const content = options?.roleContent?.[request.model_role as 'aletheios' | 'pichet' | 'synthesis']
+        ?? `[${request.model_role}] NVIDIA witness output`;
+      return {
+        content,
+        model_used: `nvidia/mock-${request.model_role}`,
+        provider: 'nvidia',
+        usage: {
+          prompt_tokens: 120,
+          completion_tokens: 80,
+          total_tokens: 200,
+        },
+        latency_ms: 42,
+        finish_reason: 'stop',
+        cost_estimate_usd: 0,
+      };
+    },
+    getRouting() {
+      return DEFAULT_NVIDIA_ROUTING;
+    },
+    setModelPreference() {
+      // no-op for tests
+    },
+  };
+}
 
 describe('Standalone API', () => {
   const originalFetch = globalThis.fetch;
@@ -790,6 +835,67 @@ describe('Standalone API', () => {
     assert.ok(body.engines);
     assert.ok(body.layers);
     assert.equal(body.full_platform, 'https://tryambakam.space');
+  });
+
+  it('info endpoint exposes witness tier and llm provider metadata', async () => {
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+      llm_provider_instance: createMockLLMProvider(),
+    });
+
+    const result = await handlers.info();
+    assert.equal(result.status, 200);
+
+    const body = result.body as Record<string, unknown>;
+    assert.equal(body.witness_tier, 'witness-initiate');
+    assert.equal(body.witness_llm_provider, 'nvidia');
+    assert.equal(body.witness_llm_enabled, true);
+  });
+
+  it('info and health expose enterprise promo metadata when witness-enterprise is active', async () => {
+    const previousPromoLabel = process.env.WITNESS_PROMO_LABEL;
+    const previousPromoExpiresAt = process.env.WITNESS_PROMO_EXPIRES_AT;
+    const previousPromoActive = process.env.WITNESS_PROMO_ACTIVE;
+
+    process.env.WITNESS_PROMO_LABEL = 'Enterprise Promo';
+    process.env.WITNESS_PROMO_EXPIRES_AT = '2026-05-26T23:59:59Z';
+    process.env.WITNESS_PROMO_ACTIVE = 'true';
+
+    globalThis.fetch = (async () => {
+      throw new Error('upstream offline');
+    }) as typeof fetch;
+
+    try {
+      const handlers = createStandaloneHandlers({
+        selemene_url: 'https://example.com',
+        selemene_api_key: 'test',
+        tier: 'witness-enterprise',
+        llm_provider_instance: createMockLLMProvider(),
+      });
+
+      const info = await handlers.info();
+      const infoBody = info.body as Record<string, unknown>;
+      assert.equal(infoBody.witness_tier, 'witness-enterprise');
+      assert.equal(infoBody.promo_active, true);
+      assert.equal(infoBody.promo_label, 'Enterprise Promo');
+      assert.equal(infoBody.promo_expires_at, '2026-05-26T23:59:59Z');
+
+      const health = await handlers.healthLive();
+      const healthBody = health.body as Record<string, unknown>;
+      assert.equal(healthBody.witness_tier, 'witness-enterprise');
+      assert.equal(healthBody.promo_active, true);
+      assert.equal(healthBody.promo_label, 'Enterprise Promo');
+      assert.equal(healthBody.promo_expires_at, '2026-05-26T23:59:59Z');
+    } finally {
+      if (previousPromoLabel === undefined) delete process.env.WITNESS_PROMO_LABEL;
+      else process.env.WITNESS_PROMO_LABEL = previousPromoLabel;
+      if (previousPromoExpiresAt === undefined) delete process.env.WITNESS_PROMO_EXPIRES_AT;
+      else process.env.WITNESS_PROMO_EXPIRES_AT = previousPromoExpiresAt;
+      if (previousPromoActive === undefined) delete process.env.WITNESS_PROMO_ACTIVE;
+      else process.env.WITNESS_PROMO_ACTIVE = previousPromoActive;
+    }
   });
 
   it('healthLive exposes deploy-proof metadata', async () => {
@@ -1022,9 +1128,18 @@ describe('Standalone API', () => {
     const body = result.body as Record<string, unknown>;
     const workflowWitness = body.witness_layer as Record<string, unknown>;
     const engineResults = body.engine_results as Record<string, Record<string, unknown>>;
+    const subject = body.subject as Record<string, unknown>;
     const bioWitness = engineResults.biorhythm.witness_layer as Record<string, unknown>;
     const transitsWitness = engineResults.transits.witness_layer as Record<string, unknown>;
 
+    assert.match(body.reading_id as string, /^rdg_/);
+    assert.equal(body.reading_url, null);
+    assert.match(body.created_at as string, /^\d{4}-\d{2}-\d{2}T/);
+    assert.equal(body.workflow_id, 'daily-practice');
+    assert.equal(subject.birth_date, '1991-08-13');
+    assert.equal(subject.birth_time, '13:19');
+    assert.equal(subject.timezone, 'Asia/Kolkata');
+    assert.equal(subject.location_label, null);
     assert.equal(workflowWitness.workflow_id, 'daily-practice');
     assert.equal(workflowWitness.max_layer_unlocked, 3);
     assert.deepEqual(workflowWitness.enriched_engines, ['biorhythm']);
@@ -1036,6 +1151,13 @@ describe('Standalone API', () => {
     assert.ok(workflowWitness.pichet);
     assert.equal(workflowWitness.routing_mode, 'pichet-primary');
     assert.equal(workflowWitness.response_cadence, 'immediate');
+    assert.equal(Object.prototype.hasOwnProperty.call(workflowWitness, 'title'), true);
+    assert.equal(Object.prototype.hasOwnProperty.call(workflowWitness, 'summary'), true);
+    assert.equal(Object.prototype.hasOwnProperty.call(workflowWitness, 'convergences'), true);
+    assert.equal(Object.prototype.hasOwnProperty.call(workflowWitness, 'frictions'), true);
+    assert.equal(Object.prototype.hasOwnProperty.call(workflowWitness, 'practice'), true);
+    assert.equal(Object.prototype.hasOwnProperty.call(workflowWitness, 'question'), true);
+    assert.ok('evidence' in body);
     assert.equal('witness_question' in workflowWitness, false);
     assert.equal(bioWitness.engine_role, 'somatic-pulse');
     assert.equal(typeof bioWitness.response, 'string');
@@ -1356,6 +1478,574 @@ describe('Standalone API', () => {
     assert.match(response, /Start in the chest with three slower breaths, then take one clean action/i);
     assert.ok(nonEmptyLines.length <= 3);
     assert.doesNotMatch(response, /Let timing organize the day|Body rhythm and time-of-day rhythm are reinforcing/i);
+    assert.equal(body.reading_url, null);
+    assert.equal(witnessLayer.title, 'Body ready, regulation first');
+    assert.match(witnessLayer.summary as string, /regulation needs to set the pace/i);
+    assert.deepEqual(witnessLayer.convergences, [
+      'Capacity is high, and breath keeps returning as the stabilizing lever.',
+      'Body readiness and timing both favor deliberate movement over force.',
+      'Symbolic timing and body rhythm both point toward steadier pacing.',
+    ]);
+    assert.deepEqual(witnessLayer.frictions, [
+      'Emotional reserve is lower than physical and mental readiness.',
+      'Movement is available, but pace decides whether it becomes clarity or scatter.',
+    ]);
+    assert.deepEqual(witnessLayer.practice, [
+      'Take three slower breaths before the first major decision.',
+      'Choose one meaningful action instead of spreading effort across many fronts.',
+      'Protect the next critical window: 2026-05-05 to 2026-05-06.',
+    ]);
+    assert.equal(
+      witnessLayer.question,
+      'What part of you is already ready, and what part still needs steadiness?',
+    );
+
+    const evidence = body.evidence as Record<string, any>;
+    assert.deepEqual(evidence.engines_used, ['panchanga', 'vedic-clock', 'biorhythm']);
+    assert.deepEqual(evidence.contributions, [
+      {
+        engine_id: 'panchanga',
+        signal: 'Symbolic timing supports intentional rather than forceful movement.',
+        impact: 'This reframes action as ordered expression rather than raw push.',
+      },
+      {
+        engine_id: 'vedic-clock',
+        signal: 'Lung rhythm and breath regulation are foregrounded.',
+        impact: 'This gives the reading its most reliable stabilizing lever.',
+      },
+      {
+        engine_id: 'biorhythm',
+        signal: 'Physical and intellectual readiness are high while emotional reserve is thinner.',
+        impact: 'This establishes the central action-versus-regulation tension in the reading.',
+      },
+    ]);
+  });
+
+  it('workflow execute exposes reading_url when a reading base URL is configured', async () => {
+    const previousReadingBaseUrl = process.env.WITNESS_READING_BASE_URL;
+    process.env.WITNESS_READING_BASE_URL = 'https://readings.tryambakam.space/reading';
+
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      workflow_id: 'daily-practice',
+      engine_results: {
+        biorhythm: {
+          engine_id: 'biorhythm',
+          result: {
+            physical: { percentage: 88, phase: 'Peak', is_critical: false },
+            emotional: { percentage: 24, phase: 'Rising', is_critical: false },
+            intellectual: { percentage: 79, phase: 'Peak', is_critical: false },
+            overall_energy: 64,
+          },
+          witness_prompt: 'Capacity is present.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 5,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    try {
+      const handlers = createStandaloneHandlers({
+        selemene_url: 'https://example.com',
+        selemene_api_key: 'test',
+        tier: 'witness-initiate',
+      });
+
+      const result = await handlers.apiWorkflowExecute('daily-practice', {
+        birth_data: {
+          date: '1991-08-13',
+          time: '13:19',
+          latitude: 12.97,
+          longitude: 77.59,
+          timezone: 'Asia/Kolkata',
+          location_label: 'Bengaluru, India',
+        },
+        current_time: '2026-04-26T00:00:00.000Z',
+        precision: 'Standard',
+        options: {},
+      });
+
+      assert.equal(result.status, 200);
+      const body = result.body as Record<string, any>;
+      assert.match(body.reading_id, /^rdg_/);
+      assert.equal(body.reading_url, `https://readings.tryambakam.space/reading/${body.reading_id}`);
+      assert.equal(body.subject.location_label, 'Bengaluru, India');
+    } finally {
+      if (previousReadingBaseUrl === undefined) delete process.env.WITNESS_READING_BASE_URL;
+      else process.env.WITNESS_READING_BASE_URL = previousReadingBaseUrl;
+    }
+  });
+
+  it('workflow execute runs llm inference and exposes model trace metadata when provider is configured', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      workflow_id: 'daily-practice',
+      engine_results: {
+        panchanga: {
+          engine_id: 'panchanga',
+          result: {
+            tithi_name: 'Chaturthi (Shukla)',
+            nakshatra_name: 'Uttara Phalguni',
+            yoga_name: 'Siddha',
+          },
+          witness_prompt: 'Symbolic timing is active.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 3,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        'vedic-clock': {
+          engine_id: 'vedic-clock',
+          result: {
+            current_dosha: {
+              dosha: 'Vata',
+              qualities: ['Movement', 'Creativity'],
+            },
+            current_organ: {
+              organ: 'Lung',
+              element: 'Metal',
+              time_window: '3 AM - 5 AM',
+              associated_emotion: 'Grief (imbalanced) / Inspiration (balanced)',
+              recommended_activities: ['Deep breathing exercises', 'Meditation'],
+            },
+            recommendation: {
+              activities: [
+                { activity: 'Deep breathing exercises' },
+                { activity: 'Meditation' },
+              ],
+            },
+          },
+          witness_prompt: 'Breath steadies the field.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        biorhythm: {
+          engine_id: 'biorhythm',
+          result: {
+            physical: { percentage: 88, phase: 'Peak', is_critical: false },
+            emotional: { percentage: 24, phase: 'Rising', is_critical: false },
+            intellectual: { percentage: 79, phase: 'Peak', is_critical: false },
+            overall_energy: 64,
+            critical_days: ['2026-05-05', '2026-05-06'],
+          },
+          witness_prompt: 'Capacity is present.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 5,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+      llm_provider_instance: createMockLLMProvider({
+        roleContent: {
+          aletheios: 'NVIDIA Aletheios sees coordinated movement with emotional drag.',
+          pichet: 'NVIDIA Pichet says begin in the chest and move at the speed of breath.',
+          synthesis: 'NVIDIA synthesis: capacity is real, but regulation should lead the day.',
+        },
+      }),
+    });
+
+    const result = await handlers.apiWorkflowExecute('daily-practice', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const witnessLayer = body.witness_layer as Record<string, any>;
+
+    assert.match(witnessLayer.response as string, /NVIDIA synthesis: capacity is real/i);
+    assert.equal(witnessLayer.inference.provider, 'nvidia');
+    assert.equal(witnessLayer.inference.roles.synthesis.model_used, 'nvidia/mock-synthesis');
+    assert.equal(witnessLayer.inference.roles.aletheios, undefined);
+    assert.equal(witnessLayer.inference.roles.pichet, undefined);
+    assert.equal(witnessLayer.aletheios.provider, undefined);
+    assert.equal(witnessLayer.pichet.model_used, undefined);
+  });
+
+  it('workflow execute returns enterprise promo witness metadata without initiate-only layer bypass', async () => {
+    const previousPromoLabel = process.env.WITNESS_PROMO_LABEL;
+    const previousPromoExpiresAt = process.env.WITNESS_PROMO_EXPIRES_AT;
+    const previousPromoActive = process.env.WITNESS_PROMO_ACTIVE;
+
+    process.env.WITNESS_PROMO_LABEL = 'Enterprise Promo';
+    process.env.WITNESS_PROMO_EXPIRES_AT = '2026-05-26T23:59:59Z';
+    process.env.WITNESS_PROMO_ACTIVE = 'true';
+
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      workflow_id: 'daily-practice',
+      engine_results: {
+        biorhythm: {
+          engine_id: 'biorhythm',
+          result: {
+            physical: { percentage: 88, phase: 'Peak', is_critical: false },
+            emotional: { percentage: 24, phase: 'Rising', is_critical: false },
+            intellectual: { percentage: 79, phase: 'Peak', is_critical: false },
+            overall_energy: 64,
+            critical_days: ['2026-05-05', '2026-05-06'],
+          },
+          witness_prompt: 'Capacity is present.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 5,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        'vedic-clock': {
+          engine_id: 'vedic-clock',
+          result: {
+            current_dosha: {
+              dosha: 'Vata',
+              qualities: ['Movement', 'Creativity'],
+            },
+            current_organ: {
+              organ: 'Lung',
+              element: 'Metal',
+              time_window: '3 AM - 5 AM',
+              associated_emotion: 'Grief (imbalanced) / Inspiration (balanced)',
+              recommended_activities: ['Deep breathing exercises', 'Meditation'],
+            },
+            recommendation: {
+              activities: [
+                { activity: 'Deep breathing exercises' },
+                { activity: 'Meditation' },
+              ],
+            },
+          },
+          witness_prompt: 'Breath steadies the field.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    try {
+      const handlers = createStandaloneHandlers({
+        selemene_url: 'https://example.com',
+        selemene_api_key: 'test',
+        tier: 'witness-enterprise',
+        llm_provider_instance: createMockLLMProvider({
+          roleContent: {
+            aletheios: 'NVIDIA Aletheios sees a strong capacity window.',
+            pichet: 'NVIDIA Pichet says let breath regulate the pace of movement.',
+            synthesis: 'NVIDIA synthesis: move cleanly, but let regulation lead.',
+          },
+        }),
+      });
+
+      const result = await handlers.apiWorkflowExecute('daily-practice', {
+        birth_data: {
+          date: '1991-08-13',
+          time: '13:19',
+          latitude: 12.97,
+          longitude: 77.59,
+          timezone: 'Asia/Kolkata',
+        },
+        current_time: '2026-04-26T00:00:00.000Z',
+        precision: 'Standard',
+        options: {},
+      });
+
+      assert.equal(result.status, 200);
+      const body = result.body as Record<string, unknown>;
+      const witnessLayer = body.witness_layer as Record<string, any>;
+
+      assert.equal(witnessLayer.tier, 'enterprise');
+      assert.equal(witnessLayer.promo_active, true);
+      assert.equal(witnessLayer.promo_label, 'Enterprise Promo');
+      assert.equal(witnessLayer.promo_expires_at, '2026-05-26T23:59:59Z');
+      assert.equal(witnessLayer.inference.provider, 'nvidia');
+      assert.equal(witnessLayer.max_layer_unlocked, 2);
+      assert.match(witnessLayer.response as string, /NVIDIA synthesis: move cleanly/i);
+    } finally {
+      if (previousPromoLabel === undefined) delete process.env.WITNESS_PROMO_LABEL;
+      else process.env.WITNESS_PROMO_LABEL = previousPromoLabel;
+      if (previousPromoExpiresAt === undefined) delete process.env.WITNESS_PROMO_EXPIRES_AT;
+      else process.env.WITNESS_PROMO_EXPIRES_AT = previousPromoExpiresAt;
+      if (previousPromoActive === undefined) delete process.env.WITNESS_PROMO_ACTIVE;
+      else process.env.WITNESS_PROMO_ACTIVE = previousPromoActive;
+    }
+  });
+
+  it('workflow execute keeps per-engine enrichment deterministic while using nvidia for the top-level witness layer', async () => {
+    const llmRoles: string[] = [];
+
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      workflow_id: 'daily-practice',
+      engine_results: {
+        biorhythm: {
+          engine_id: 'biorhythm',
+          result: {
+            physical: { percentage: 88, phase: 'Peak', is_critical: false },
+            emotional: { percentage: 24, phase: 'Rising', is_critical: false },
+            intellectual: { percentage: 79, phase: 'Peak', is_critical: false },
+            overall_energy: 64,
+            critical_days: ['2026-05-05', '2026-05-06'],
+          },
+          witness_prompt: 'Capacity is present.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 5,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        'vedic-clock': {
+          engine_id: 'vedic-clock',
+          result: {
+            current_dosha: {
+              dosha: 'Vata',
+              qualities: ['Movement', 'Creativity'],
+            },
+            current_organ: {
+              organ: 'Lung',
+              element: 'Metal',
+              time_window: '3 AM - 5 AM',
+              associated_emotion: 'Grief (imbalanced) / Inspiration (balanced)',
+              recommended_activities: ['Deep breathing exercises', 'Meditation'],
+            },
+            recommendation: {
+              activities: [
+                { activity: 'Deep breathing exercises' },
+                { activity: 'Meditation' },
+              ],
+            },
+          },
+          witness_prompt: 'Breath steadies the field.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-enterprise',
+      llm_provider_instance: createMockLLMProvider({
+        onComplete(request) {
+          llmRoles.push(request.model_role);
+        },
+        roleContent: {
+          aletheios: 'NVIDIA Aletheios sees a strong capacity window.',
+          pichet: 'NVIDIA Pichet says let breath regulate the pace of movement.',
+          synthesis: 'NVIDIA synthesis: move cleanly, but let regulation lead.',
+        },
+      }),
+    });
+
+    const result = await handlers.apiWorkflowExecute('daily-practice', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    assert.deepEqual(llmRoles, ['synthesis']);
+
+    const body = result.body as Record<string, any>;
+    const workflowWitnessLayer = body.witness_layer as Record<string, any>;
+    const biorhythmWitnessLayer = body.engine_results.biorhythm.witness_layer as Record<string, any>;
+    const vedicWitnessLayer = body.engine_results['vedic-clock'].witness_layer as Record<string, any>;
+
+    assert.equal(workflowWitnessLayer.inference.provider, 'nvidia');
+    assert.equal(biorhythmWitnessLayer.inference, null);
+    assert.equal(vedicWitnessLayer.inference, null);
+  });
+
+  it('workflow execute falls back to deterministic interpretation when llm inference fails', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      workflow_id: 'daily-practice',
+      engine_results: {
+        panchanga: {
+          engine_id: 'panchanga',
+          result: {
+            tithi_name: 'Chaturthi (Shukla)',
+            nakshatra_name: 'Uttara Phalguni',
+            yoga_name: 'Siddha',
+          },
+          witness_prompt: 'A pattern of alignment is asking for attention.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 3,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        'vedic-clock': {
+          engine_id: 'vedic-clock',
+          result: {
+            current_dosha: {
+              dosha: 'Vata',
+              qualities: ['Movement', 'Creativity'],
+            },
+            current_organ: {
+              organ: 'Lung',
+              element: 'Metal',
+              time_window: '3 AM - 5 AM',
+              associated_emotion: 'Grief (imbalanced) / Inspiration (balanced)',
+              recommended_activities: ['Deep breathing exercises', 'Meditation'],
+            },
+            recommendation: {
+              activities: [
+                { activity: 'Deep breathing exercises' },
+                { activity: 'Meditation' },
+              ],
+            },
+          },
+          witness_prompt: 'Breath and rhythm are speaking first.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        biorhythm: {
+          engine_id: 'biorhythm',
+          result: {
+            physical: { percentage: 99.88, phase: 'Peak', is_critical: false },
+            emotional: { percentage: 4.95, phase: 'Rising', is_critical: false },
+            intellectual: { percentage: 98.59, phase: 'Peak', is_critical: false },
+            overall_energy: 67.8,
+            critical_days: ['2026-05-05', '2026-05-06'],
+          },
+          witness_prompt: 'The body is ready but the heart needs gentleness.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 5,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+      llm_provider_instance: createMockLLMProvider({ fail: true }),
+    });
+
+    const result = await handlers.apiWorkflowExecute('daily-practice', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const witnessLayer = body.witness_layer as Record<string, any>;
+
+    assert.doesNotMatch(witnessLayer.response as string, /NVIDIA synthesis:/i);
+    assert.equal(witnessLayer.inference, null);
+    assert.match(witnessLayer.response as string, /regulation needs to set the pace/i);
   });
 
   it('engine calculate preserves non-JSON upstream error bodies', async () => {

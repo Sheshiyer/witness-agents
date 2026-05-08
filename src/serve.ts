@@ -22,6 +22,7 @@ const llmProviderForced =
   llmProviderEnv === 'nvidia' || llmProviderEnv === 'openrouter'
     ? (llmProviderEnv as 'nvidia' | 'openrouter')
     : undefined;
+const llmTimeoutMs = parseInt(process.env.WITNESS_LLM_TIMEOUT_MS || '', 10);
 const tier = (process.env.WITNESS_TIER || 'witness-initiate') as StandaloneTier;
 const deploymentInfo = getWitnessDeploymentInfo();
 const knowledgePath = process.env.WITNESS_KNOWLEDGE_PATH
@@ -45,6 +46,9 @@ console.log(`[WitnessAgents] Version: ${WITNESS_VERSION}`);
 console.log(`[WitnessAgents] Selemene API: ${selemeneUrl}`);
 console.log(`[WitnessAgents] Port: ${port}`);
 console.log(`[WitnessAgents] LLM: ${llmStatus}`);
+if (Number.isFinite(llmTimeoutMs) && llmTimeoutMs > 0) {
+  console.log(`[WitnessAgents] LLM timeout: ${llmTimeoutMs}ms`);
+}
 console.log(`[WitnessAgents] Tier: ${tier}`);
 console.log(`[WitnessAgents] Knowledge path: ${knowledgePath}`);
 console.log(`[WitnessAgents] Deployment: ${JSON.stringify(deploymentInfo)}`);
@@ -56,6 +60,7 @@ createStandaloneServer({
   openrouter_api_key: openrouterKey,
   nvidia_api_key: nvidiaKey,
   llm_provider: llmProviderForced,
+  llm_timeout_ms: Number.isFinite(llmTimeoutMs) && llmTimeoutMs > 0 ? llmTimeoutMs : undefined,
   tier,
   knowledge_path: knowledgePath,
   rhythm: {

@@ -134,6 +134,20 @@ export class DyadInferenceEngine {
     return this.callAgent(agent, tier, userState, userMessage, engineOutputs, interpretation);
   }
 
+  /**
+   * Run only the synthesis pass using already-determined dyad perspectives.
+   * This keeps the public proxy path fast while still letting the LLM shape
+   * the final witness response.
+   */
+  async inferSynthesis(
+    tier: Tier,
+    userState: UserState,
+    aletheiosInsight: string,
+    pichetInsight: string,
+  ): Promise<InferenceResponse> {
+    return this.callSynthesis(tier, userState, aletheiosInsight, pichetInsight);
+  }
+
   // ─── Private: Agent LLM Call ──────────────────────────────────────
 
   private async callAgent(

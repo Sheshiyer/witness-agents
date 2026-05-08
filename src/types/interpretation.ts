@@ -1,8 +1,9 @@
 // ─── Witness Agents — Interpretation Types ────────────────────────────
 // The output types: what the dyad produces after interpreting engine results
 
-import type { SelemeneEngineId, RoutingMode, SelemeneEngineOutput, SubscriptionTier } from './engine.js';
+import type { SelemeneEngineId, RoutingMode, SelemeneEngineOutput } from './engine.js';
 import type { AgentId } from './agent.js';
+import { WITNESS_CAPABILITY_PROFILES } from '../config/witness-capabilities.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // KOSHA / CLIFFORD / TIER
@@ -23,24 +24,24 @@ export const KOSHA_CLIFFORD: Record<Kosha, CliffordLevel> = {
 };
 
 export const TIER_MAX_KOSHA: Record<Tier, Kosha> = {
-  free: 'annamaya',
-  subscriber: 'manomaya',
-  enterprise: 'vijnanamaya',
-  initiate: 'anandamaya',
+  free: WITNESS_CAPABILITY_PROFILES.free.max_kosha,
+  subscriber: WITNESS_CAPABILITY_PROFILES.subscriber.max_kosha,
+  enterprise: WITNESS_CAPABILITY_PROFILES.enterprise.max_kosha,
+  initiate: WITNESS_CAPABILITY_PROFILES.initiate.max_kosha,
 };
 
 export const TIER_MAX_CLIFFORD: Record<Tier, CliffordLevel> = {
-  free: 0,
-  subscriber: 2,
-  enterprise: 3,
-  initiate: 7,
+  free: WITNESS_CAPABILITY_PROFILES.free.max_clifford,
+  subscriber: WITNESS_CAPABILITY_PROFILES.subscriber.max_clifford,
+  enterprise: WITNESS_CAPABILITY_PROFILES.enterprise.max_clifford,
+  initiate: WITNESS_CAPABILITY_PROFILES.initiate.max_clifford,
 };
 
 export const TIER_RATE_LIMITS: Record<Tier, number> = {
-  free: 10,
-  subscriber: 100,
-  enterprise: Infinity,
-  initiate: Infinity,
+  free: WITNESS_CAPABILITY_PROFILES.free.rate_limit_per_day,
+  subscriber: WITNESS_CAPABILITY_PROFILES.subscriber.rate_limit_per_day,
+  enterprise: WITNESS_CAPABILITY_PROFILES.enterprise.rate_limit_per_day,
+  initiate: WITNESS_CAPABILITY_PROFILES.initiate.rate_limit_per_day,
 };
 
 /** Maps Selemene consciousness_level (0-5) to max Kosha depth */
@@ -87,6 +88,46 @@ export interface AgentInterpretation {
   confidence: number;           // 0.0-1.0
   somatic_note?: string;        // Pichet adds body-awareness notes
   pattern_note?: string;        // Aletheios adds pattern-recognition notes
+  provider?: 'openrouter' | 'nvidia' | 'anthropic' | 'openai' | 'local';
+  model_used?: string;
+}
+
+export interface WitnessInferenceRoleTrace {
+  provider: 'openrouter' | 'nvidia' | 'anthropic' | 'openai' | 'local';
+  model_used: string;
+  latency_ms: number;
+  cost_estimate_usd?: number;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
+export interface WitnessInferenceTrace {
+  provider: 'openrouter' | 'nvidia' | 'anthropic' | 'openai' | 'local';
+  roles: Partial<Record<'aletheios' | 'pichet' | 'synthesis', WitnessInferenceRoleTrace>>;
+}
+
+export interface WitnessReadingSubject {
+  name?: string;
+  birth_date: string;
+  birth_time?: string;
+  timezone?: string;
+  latitude?: number;
+  longitude?: number;
+  location_label?: string | null;
+}
+
+export interface WitnessEvidenceContribution {
+  engine_id: string;
+  signal: string;
+  impact: string;
+}
+
+export interface WitnessEvidence {
+  engines_used: SelemeneEngineId[];
+  contributions: WitnessEvidenceContribution[];
 }
 
 export interface WitnessInterpretation {
@@ -114,6 +155,14 @@ export interface WitnessInterpretation {
   // ─── User-Facing Response ─────────────────────
   response: string;               // The final response delivered to user
   response_cadence: 'immediate' | 'measured' | 'slow';  // Timing for delivery
+  inference?: WitnessInferenceTrace;
+  title?: string;
+  summary?: string;
+  convergences?: string[];
+  frictions?: string[];
+  practice?: string[];
+  question?: string;
+  evidence?: WitnessEvidence;
 
   // ─── Safety & Growth ──────────────────────────
   overwhelm_flag: boolean;

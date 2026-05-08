@@ -10,6 +10,7 @@
     "start": "node dist/serve.js",
     "dev": "node --import tsx src/serve.ts",
     "test": "node --import tsx --test tests/*.test.ts",
+    "probe:nvidia-routing": "node --import tsx scripts/probe-active-nvidia-routing.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

@@ -146,11 +146,16 @@ export const DECODER_THRESHOLDS = {
 // ═══════════════════════════════════════════════════════════════════════
 
 /** Standalone pricing tiers (subset of full system) */
-export type StandaloneTier = 'witness-free' | 'witness-subscriber' | 'witness-initiate';
+export type StandaloneTier =
+  | 'witness-free'
+  | 'witness-subscriber'
+  | 'witness-enterprise'
+  | 'witness-initiate';
 
 export const STANDALONE_TO_CORE_TIER: Record<StandaloneTier, Tier> = {
   'witness-free': 'free',
   'witness-subscriber': 'subscriber',
+  'witness-enterprise': 'enterprise',
   'witness-initiate': 'initiate',
 };
 
@@ -172,6 +177,13 @@ export const STANDALONE_TIER_FEATURES: Record<StandaloneTier, {
   'witness-subscriber': {
     layer_2_immediate: true,
     layer_3_immediate: false,     // Still requires 7 days — earned, not bought
+    llm_interpretation: true,
+    hourly_vedic: true,
+    all_engines_parallel: true,
+  },
+  'witness-enterprise': {
+    layer_2_immediate: true,
+    layer_3_immediate: false,     // Promo unlocks dyad access, not earned Layer 3 bypass
     llm_interpretation: true,
     hourly_vedic: true,
     all_engines_parallel: true,
