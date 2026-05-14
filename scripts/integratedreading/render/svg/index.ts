@@ -13,6 +13,7 @@ import type { TopologyKey } from '../../modes/parser.js';
 import { renderCompositeResonance, type CompositeResonanceData } from './composite-resonance.js';
 import { renderCompositeTriad, type CompositeTriadData } from './composite-triad.js';
 import { renderCompositePenta, type CompositePentaData } from './composite-penta.js';
+import { renderTeamWeb, type TeamWebData } from './team-web.js';
 
 // ────────────────────────────────────────────────────────────────────────
 // Renderer function shape
@@ -45,10 +46,6 @@ class NotImplementedError extends Error {
   }
 }
 
-function webGraphStub(_data: any, _opts?: RendererOpts): string {
-  throw new NotImplementedError('web-graph', 'issue #53 (P5.2)');
-}
-
 // ────────────────────────────────────────────────────────────────────────
 // Registry
 // ────────────────────────────────────────────────────────────────────────
@@ -57,7 +54,7 @@ export const TOPOLOGY_RENDERERS: Record<TopologyKey, RendererFn<any>> = {
   'dyad-arc': renderCompositeResonance as RendererFn<CompositeResonanceData>,
   'triad-triangle': renderCompositeTriad as RendererFn<CompositeTriadData>,
   'pentagon': renderCompositePenta as RendererFn<CompositePentaData>,
-  'web-graph': webGraphStub,
+  'web-graph': renderTeamWeb as RendererFn<TeamWebData>,
 };
 
 // ────────────────────────────────────────────────────────────────────────
@@ -99,3 +96,4 @@ export type { TopologyKey } from '../../modes/parser.js';
 export { renderCompositeResonance, type CompositeResonanceData } from './composite-resonance.js';
 export { renderCompositeTriad, type CompositeTriadData, type TriadSubject } from './composite-triad.js';
 export { renderCompositePenta, type CompositePentaData, type PentaSubject } from './composite-penta.js';
+export { renderTeamWeb, type TeamWebData, type TeamMember, type CriticalPathEdge, type RoleCluster } from './team-web.js';

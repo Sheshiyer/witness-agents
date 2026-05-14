@@ -350,10 +350,18 @@ describe('SVG renderer-dispatcher', () => {
     assert.match(svg, /LINEAGE/);
   });
 
-  it('web-graph topology throws NotImplementedError pointing to issue #53', () => {
-    assert.throws(
-      () => renderByTopology('web-graph', {}),
-      /not yet implemented.*#53/,
-    );
+  it('web-graph topology renders (P5.2 #53 landed)', () => {
+    // After PR #53, web-graph is a real renderer. Smoke-test it returns SVG.
+    const fakeTeam = {
+      members: Array.from({ length: 5 }, (_, i) => ({
+        name: `M${i}`,
+        role_cluster: (['visionaries', 'operators', 'integrators', 'connectors'] as const)[i % 4],
+      })),
+      critical_path_edges: [{ a: 0, b: 1, weight: 0.8 }],
+      shared_keys: [],
+    } as any;
+    const svg = renderByTopology('web-graph', fakeTeam, { width: 880 });
+    assert.match(svg, /<svg xmlns/);
+    assert.match(svg, /JOINT/);
   });
 });
