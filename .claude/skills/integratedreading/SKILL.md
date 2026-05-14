@@ -125,6 +125,34 @@ Per-engine routing for Phase 3:
 
 ---
 
+## Autoresearch Contract (Mandatory, Hardened 2026-05-13)
+
+The lessons in the routing table above are HARDENED in code, not just in prose. Any new autoresearch pass-runner targeting the integratedreading pipeline MUST import shared constants from `scripts/autoresearch-integratedreading/defaults.ts`. Re-declaring `JUDGE_MODEL`, `BRAND_SYSTEM`, or the cache-runDir helper inside a new runner is a contract violation.
+
+| Contract item | Canonical source | Why hardened |
+|---|---|---|
+| `JUDGE_MODEL` | `defaults.ts` (currently `openai/gpt-oss-20b`) | nemotron-120b returned 0/40 parse-fail in both 2026-05-10 Pass 3 cross-judge runs AND 2026-05-13 Pass 1 model-bake-off (23/23 parse-fail). gpt-oss-120b had 30% timeout rate at 180s. gpt-oss-20b returns reliable JSON in 400ms–2s. |
+| `BANNED_JUDGE_MODELS` | `defaults.ts` ban list + `assertJudgeAllowed()` runtime check | Compile-friction against the broken-judge trap. If a runner tries to use a banned judge, `assertJudgeAllowed()` throws immediately. |
+| `SYNTH_MODELS.PRIMARY` | `defaults.ts` → `openai/gpt-oss-120b` | Pass 1 baseline winner: 1342w / 74 cross-refs / 22s on C1 dyad-aletheios fixture. Robust across all 5 pipeline contexts. |
+| `SYNTH_MODELS.DENSITY_CHAMPION` | `defaults.ts` → `moonshotai/kimi-k2.6` | Pass 1 finding: 83 cross-refs / 1127w on C1 — highest cross-reference density per word among all candidates. 256K context window also unlocks single-pass long-form alternatives. |
+| `findOrCreateCachedRunDir()` | `defaults.ts` shared helper | Three runners (full / composite / triad) had identical buggy `--use-cache` code (Codex P1+P2 on PR #26). Centralized so the bug can only exist in one place. |
+| `AUTORESEARCH_BRAND_SYSTEM` | `defaults.ts` constant | Voice rules can't drift across experiments. Mirrors `ANATOMIST_PERSONA` in `scripts/integratedreading/system-prompts.ts` but trimmed for short-form fixtures. |
+| `countCrossRefs()` | `defaults.ts` shared function | Cross-reference density metric is defined once. No more "what counts as a cross-reference?" debates between Pass 1 and Pass 3. |
+
+**Rule:** Before writing a new pass-runner, read `scripts/autoresearch-integratedreading/defaults.ts`. If a constant you need is there, import it. If it isn't, add it there first and update this table. Never duplicate.
+
+**Banned patterns (will be flagged in code review):**
+- ❌ `const JUDGE = 'nvidia/nemotron-3-super-120b-a12b'` — banned by `BANNED_JUDGE_MODELS`
+- ❌ Re-implementing `--use-cache` runDir scanning inline (use the helper)
+- ❌ Defining a private `BRAND_SYSTEM` constant in a runner (import `AUTORESEARCH_BRAND_SYSTEM`)
+- ❌ Defining a private cross-ref regex set (import `countCrossRefs`)
+
+**Update protocol:** When a new autoresearch pass produces a clearer winner for a context, update the constant in `defaults.ts` AND update the routing table above in this SKILL.md. Both must change together — drift between them is a contract violation.
+
+Workspace for ongoing experiments: `~/.claude/MEMORY/WORK/autoresearch-integratedreading-*/`. Runners there import from this contract — do NOT re-declare constants in workspace runners either.
+
+---
+
 ## Workflow Phases
 
 ### Phase 0 — Preflight

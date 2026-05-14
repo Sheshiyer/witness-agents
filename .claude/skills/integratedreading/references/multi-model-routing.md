@@ -133,3 +133,32 @@ Concrete rules:
 - **Pichet V3-anti-pattern-explicit prompt > baseline** (30/40 vs 27.5/40) — only clean comparison, both scored validly. **APPLIED to production**: pichetPillarPrompt now includes explicit anti-pattern list + GOOD/BAD examples.
 - **Synthesis Variant rankings inconclusive** — baseline kimi-k2-instruct two-pass scored 0/40 due to judge timeout corruption. Voice inspection of variants shows kimi two-pass is genuinely best (most aphoristic, least wordy, no Eigenwelt/Mitwelt/Umwelt label-leakage).
 - **Chunking ranking inconclusive** — both gpt-oss-20b and regex returned judge-timeout zeros. Production stays on minimax-best-effort + regex V2 fallback.
+
+---
+
+## Pass 1 Model × Context Bake-off — 2026-05-13 Raw Findings
+
+Workspace: `~/.claude/MEMORY/WORK/autoresearch-integratedreading-15k-2026-05-13/`. Fixture C1 (Aletheios pillar decoding, full WitnessAlchemist chart). 5 of 6 candidates returned valid responses (`z-ai/glm4.7` timed out 180s+ — confirms "GLM-4.7 unstable" warning above). Judge phase initially failed because the runner used `nvidia/nemotron-3-super-120b-a12b` as judge — the exact model banned in SKILL.md line 100. The new `defaults.ts` contract module bans that model at runtime to prevent re-tripping.
+
+**Raw word + cross-reference data (direct measurement on the prose):**
+
+| Model | Latency | Words | Cross-refs | Xref/100w | Verdict |
+|---|---:|---:|---:|---:|---|
+| `openai/gpt-oss-120b` | 14.7s / 21.8s | 861 / 1342 | 61 / 74 | 7.1 / 5.5 | **Primary** — best balance |
+| `moonshotai/kimi-k2.6` | 212.3s | 1127 | **83** | **7.4** | **Density champion** — highest absolute + per-word xref count; 256K context window unlocks single-pass alternatives; latency too high for primary |
+| `nvidia/nemotron-120b` | 76.9s / 153.7s | 555 / 991 | 66 / 55 | 11.9 / 5.6 | High density on short outputs; too slow for primary routing |
+| `meta/llama-3.3-70b-instruct` | 10.3s / 103.7s | 472 / 735 | 44 / 28 | 9.3 / 3.8 | Mid-tier; density falls off on longer outputs |
+| `openai/gpt-oss-20b` | 20.1s / 34.4s | 670 / 201 | 32 / 7 | 4.8 / 3.5 | Too short for synthesis. **Keep as JUDGE only.** |
+| `z-ai/glm4.7` | TIMEOUT 180s+ | — | — | — | 100% failure on synthesis. Math/astro only, with gpt-oss-120b fallback. |
+
+**Decisions hardened into `scripts/autoresearch-integratedreading/defaults.ts`:**
+- `SYNTH_MODELS.PRIMARY = 'openai/gpt-oss-120b'` (best balance, 74 xrefs / 1342w on depth context, ~22s)
+- `SYNTH_MODELS.DENSITY_CHAMPION = 'moonshotai/kimi-k2.6'` (when xref density is the metric, ~210s latency)
+- `SYNTH_MODELS.FAST = 'openai/gpt-oss-20b'` (judge + chunking only — output too short for synthesis)
+- `JUDGE_MODEL = 'openai/gpt-oss-20b'` (re-tripped the nemotron-120b trap, fix is now contractual)
+- `BANNED_JUDGE_MODELS = ['nvidia/nemotron-3-super-120b-a12b']` with runtime `assertJudgeAllowed()` guard
+
+**Open questions for Pass 2 + Pass 3** (to be re-run against the corrected judge):
+1. Does hierarchical decomposition (outline + 4 expansion passes) beat 5-pass linear on coherence at 15k-word scale?
+2. Does mandatory 4-way triangulation scaffold (P2_weave_explicit: Selemene × Kosha × Tarot/GeneKey × timeline-anchor) beat free-form on cross-ref density?
+3. Does Kimi K2.6's 256K context window allow a single-pass 15k-meaningful-word output that beats multi-pass on narrative coherence?

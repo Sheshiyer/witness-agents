@@ -18,6 +18,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
+import { findOrCreateCachedRunDir } from './autoresearch-integratedreading/defaults.js';
 
 import { NvidiaClient, MODELS } from './integratedreading/nvidia-client.js';
 import {
@@ -125,21 +126,15 @@ async function main() {
 
   await mkdir(outputDir, { recursive: true });
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const runsRoot = join(outputDir, '.runs');
-  await mkdir(runsRoot, { recursive: true });
-  // For --use-cache, find the most recent prior run that contains a cached
-  // composite synthesis so we can reuse it. Otherwise create a fresh run.
-  const compositeCacheName = `08_composite_${dyadSlug}.md`;
-  let priorRunDir: string | undefined;
-  if (useCache && existsSync(runsRoot)) {
-    const candidates = readdirSync(runsRoot)
-      .filter((d) => /^\d{4}-\d{2}-\d{2}T/.test(d))
-      .sort()
-      .reverse();
-    priorRunDir = candidates.find((d) => existsSync(join(runsRoot, d, compositeCacheName)));
-  }
-  const runDir = join(runsRoot, priorRunDir ?? ts);
-  await mkdir(runDir, { recursive: true });
+  // Cache-aware run-dir: shared helper. Reuses prior run that has the
+  // composite cache file present; otherwise creates a fresh ts dir.
+  const { runDir, reusedPrior } = findOrCreateCachedRunDir({
+    outputDir,
+    freshTs: ts,
+    useCache,
+    cacheFileName: `08_composite_${dyadSlug}.md`,
+  });
+  if (reusedPrior) console.log(`  ↻ Reusing prior run dir for --use-cache`);
 
   console.log('═══ integratedreading-composite ═══');
   console.log(`  Subject A: ${cfgA.subject}`);

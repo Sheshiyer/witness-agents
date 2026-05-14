@@ -11,10 +11,11 @@
 //   node --import tsx scripts/integratedreading-full.ts <config.json>
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
+import { findOrCreateCachedRunDir } from './autoresearch-integratedreading/defaults.js';
 
 import { NvidiaClient, MODELS } from './integratedreading/nvidia-client.js';
 import {
@@ -328,21 +329,14 @@ async function main() {
   await mkdir(cfg.output_dir, { recursive: true });
   const slug = cfg.subject.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const runsRoot = join(cfg.output_dir, '.runs');
-  await mkdir(runsRoot, { recursive: true });
-  // If --use-cache is set and a prior run exists, reuse the most recent one;
-  // otherwise create a fresh timestamped run dir. Filter to ts-shaped names
-  // so stray files in .runs/ don't get picked up.
-  let priorRunDir: string | undefined;
-  if (useCache && existsSync(runsRoot)) {
-    const candidates = readdirSync(runsRoot)
-      .filter((d) => /^\d{4}-\d{2}-\d{2}T/.test(d))
-      .sort()
-      .reverse();
-    priorRunDir = candidates[0];
-  }
-  const runDir = join(runsRoot, priorRunDir ?? ts);
-  await mkdir(runDir, { recursive: true });
+  // Cache-aware run-dir: shared helper from autoresearch-integratedreading/defaults.ts.
+  // Reuses most recent prior ts-shaped subdir when --use-cache; otherwise fresh ts dir.
+  const { runDir, reusedPrior } = findOrCreateCachedRunDir({
+    outputDir: cfg.output_dir,
+    freshTs: ts,
+    useCache,
+  });
+  if (reusedPrior) console.log(`  ↻ Reusing prior run dir for --use-cache`);
   console.log(`  Run:     ${runDir}`);
 
   const nvidiaKey = loadNvidiaKey();
