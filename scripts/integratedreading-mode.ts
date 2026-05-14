@@ -574,6 +574,8 @@ async function main() {
       svgString = renderByTopology(topology, buildDyadSvgData(subjects), { width: 640 });
     } else if (topology === 'triad-triangle' && subjects.length === 3) {
       svgString = renderByTopology(topology, buildTriadSvgData(subjects), { width: 720 });
+    } else if (topology === 'pentagon' && subjects.length === 5) {
+      svgString = renderByTopology(topology, buildPentaSvgData(subjects), { width: 720 });
     } else {
       console.log(`  (SVG topology '${topology}' renderer not yet available — emitting placeholder)`);
     }
@@ -704,6 +706,29 @@ function buildTriadSvgData(subjects: SubjectConfig[]) {
       next_mahadasha_lord: s.mahadasha?.next_lord,
       next_mahadasha_iso: s.mahadasha?.current_ends_iso,
     })),
+    shared_keys: [],
+  };
+}
+
+function buildPentaSvgData(subjects: SubjectConfig[]) {
+  // Convention: positions 1+2 = roots (warm tones), 3-5 = branches (cool tones)
+  const colors = [
+    '#F0EDE3', // root-1: parchment (warm)
+    '#C5A017', // root-2: sacred-gold (warm)
+    '#10B5A7', // branch-1: coherence-emerald
+    '#0B50FB', // branch-2: flow-indigo
+    '#2D0050', // branch-3: witness-violet
+  ];
+  return {
+    subjects: subjects.slice(0, 5).map((s, i) => ({
+      name: s.subject,
+      arc_color: colors[i],
+      role: i < 2 ? 'root' as const : 'branch' as const,
+      current_mahadasha_lord: s.mahadasha?.current_lord,
+      next_mahadasha_lord: s.mahadasha?.next_lord,
+      next_mahadasha_iso: s.mahadasha?.current_ends_iso,
+    })) as [any, any, any, any, any],
+    dominant_pairs: [[0, 1]] as Array<[number, number]>,  // root-pair always dominant
     shared_keys: [],
   };
 }

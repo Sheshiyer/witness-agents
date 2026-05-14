@@ -12,6 +12,7 @@
 import type { TopologyKey } from '../../modes/parser.js';
 import { renderCompositeResonance, type CompositeResonanceData } from './composite-resonance.js';
 import { renderCompositeTriad, type CompositeTriadData } from './composite-triad.js';
+import { renderCompositePenta, type CompositePentaData } from './composite-penta.js';
 
 // ────────────────────────────────────────────────────────────────────────
 // Renderer function shape
@@ -44,10 +45,6 @@ class NotImplementedError extends Error {
   }
 }
 
-function pentagonStub(_data: any, _opts?: RendererOpts): string {
-  throw new NotImplementedError('pentagon', 'issue #50 (P4.2)');
-}
-
 function webGraphStub(_data: any, _opts?: RendererOpts): string {
   throw new NotImplementedError('web-graph', 'issue #53 (P5.2)');
 }
@@ -59,7 +56,7 @@ function webGraphStub(_data: any, _opts?: RendererOpts): string {
 export const TOPOLOGY_RENDERERS: Record<TopologyKey, RendererFn<any>> = {
   'dyad-arc': renderCompositeResonance as RendererFn<CompositeResonanceData>,
   'triad-triangle': renderCompositeTriad as RendererFn<CompositeTriadData>,
-  'pentagon': pentagonStub,
+  'pentagon': renderCompositePenta as RendererFn<CompositePentaData>,
   'web-graph': webGraphStub,
 };
 
@@ -101,3 +98,4 @@ export function renderByTopology(
 export type { TopologyKey } from '../../modes/parser.js';
 export { renderCompositeResonance, type CompositeResonanceData } from './composite-resonance.js';
 export { renderCompositeTriad, type CompositeTriadData, type TriadSubject } from './composite-triad.js';
+export { renderCompositePenta, type CompositePentaData, type PentaSubject } from './composite-penta.js';

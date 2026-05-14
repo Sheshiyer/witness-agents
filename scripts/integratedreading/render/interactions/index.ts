@@ -223,10 +223,12 @@ export const INTERACTION_MODULES: Record<TopologyKey, InteractionModule> = {
 
 import { partnerSynastryModule } from './partner-synastry.js';
 import { businessPartnersModule } from './business-partners.js';
+import { familyPentaModule } from './family-penta.js';
 
 export const MODE_INTERACTION_MODULES: Record<string, InteractionModule> = {
   'partner-synastry': partnerSynastryModule,
   'business-partners': businessPartnersModule,
+  'family-penta': familyPentaModule,
 };
 
 // ────────────────────────────────────────────────────────────────────────

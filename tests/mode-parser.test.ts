@@ -338,11 +338,16 @@ describe('SVG renderer-dispatcher', () => {
     assert.match(svg, /ALICE/);
   });
 
-  it('pentagon topology throws NotImplementedError pointing to issue #50', () => {
-    assert.throws(
-      () => renderByTopology('pentagon', {}),
-      /not yet implemented.*#50/,
-    );
+  it('pentagon topology renders (P4.2 #50 landed)', () => {
+    // After PR #50, pentagon is a real renderer. Smoke-test it returns SVG.
+    const fakeFive = {
+      subjects: Array.from({ length: 5 }, (_, i) => ({ name: `S${i}`, arc_color: '#10B5A7' })),
+      dominant_pairs: [[0, 1]],
+      shared_keys: [],
+    } as any;
+    const svg = renderByTopology('pentagon', fakeFive, { width: 720 });
+    assert.match(svg, /<svg xmlns/);
+    assert.match(svg, /LINEAGE/);
   });
 
   it('web-graph topology throws NotImplementedError pointing to issue #53', () => {
