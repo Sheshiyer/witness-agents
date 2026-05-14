@@ -280,6 +280,12 @@ export function renderInteractiveHTMLPage(opts: {
   cover: CoverData;
   topology: string;
   parts: PartBlock[];
+  /** Mode name (e.g. "partner-synastry") — layers mode-keyed interactions
+   *  on top of topology-keyed interactions when provided. */
+  mode?: string;
+  /** Mode-specific bridge mandate, embedded as data-attr for interaction
+   *  modules (e.g. synastry tooltip composition). */
+  bridge_mandate?: string;
   opening_html?: string;
   fig_index_html?: string;
   is_composite?: boolean;
@@ -294,8 +300,8 @@ export function renderInteractiveHTMLPage(opts: {
     ? `<div class="cover-svg-wrap">${opts.cover.cover_mandala_svg}</div>`
     : '';
 
-  // Topology-specific interaction layer (inlined)
-  const interaction = buildInteractionPayload(opts.topology);
+  // Topology + mode-keyed interaction layer (inlined)
+  const interaction = buildInteractionPayload(opts.topology, opts.mode);
 
   // TOC rail entries — generated from parts list
   const tocRailHtml = `
@@ -338,8 +344,8 @@ ${STYLES}
 ${interaction.css}
 </style>
 </head>
-<body>
-<div class="canvas interactive">
+<body${opts.bridge_mandate ? ` data-bridge-mandate="${opts.bridge_mandate.replace(/"/g, '&quot;')}"` : ''}>
+<div class="canvas interactive"${opts.mode ? ` data-mode="${opts.mode}"` : ''}>
   <!-- ───────────── COVER PAGE ───────────── -->
   <section class="cover">
     <header>

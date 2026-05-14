@@ -610,6 +610,8 @@ async function main() {
         cover_mandala_svg: svgString,
       },
       topology,
+      mode: doc.frontmatter.mode,
+      bridge_mandate: doc.frontmatter.bridge_mandates[0],
       parts: partBlocks,
       fig_index_html: renderFigIndex(figs.list()),
       is_composite: subjects.length >= 2,
