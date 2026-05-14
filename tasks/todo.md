@@ -15,6 +15,112 @@
 - [x] Verify locally, redeploy via `railway up`, and confirm the live service exposes the new deploy-proof metadata.
 - [x] Write the Step 3 Dyad wiring plan with exact integration points, risks, and verification steps.
 
+## 2026-05-14 Engine Upgrade Leverage Audit
+
+### Plan
+- [x] Audit the newer engine/result surfaces that can enrich readings and product features, with emphasis on `nadabrahman`, `sigil-forge`, `sacred-geometry`, and adjacent practice-oriented outputs.
+- [x] Compare those richer engine capabilities against the current reading-object/report derivation path to identify where the backend is still under-leveraging them.
+- [x] Produce a concrete leverage map for:
+  - report-layer upgrades
+  - frontend/product features
+  - backend contract additions or workflow changes
+- [x] Sequence the leverage work into immediate, near-term, and later phases so implementation can stay additive and low-risk.
+
+### Review
+- What already exists:
+  - `daily-practice` already includes `nadabrahman` in `WORKFLOW_ENGINES`.
+  - `creative-expression` already groups `sigil-forge`, `sacred-geometry`, `nadabrahman`, and `numerology`.
+  - the type system already exposes rich result objects for:
+    - `NadaBrahmanAnalysis` with `primary_raga`, secondary ragas, chakra frequency, dosha recommendation, and rasa mapping
+    - `SacredGeometryResult` with named form, symbolism, meditation prompt, and SVG preview status
+    - `SigilForgeResult` with intention, method, charging suggestions, guidance, next steps, and SVG preview status
+- Current under-leverage:
+  - the reading/report derivation path in `src/standalone/standalone-api.ts` is still centered on `biorhythm`, `vedic-clock`, `panchanga`, and to a lesser extent `transits`
+  - `buildReadingPractice`, `buildReadingQuestion`, `buildReadingConvergences`, `buildReadingFrictions`, and `buildReadingEvidenceContribution` have no first-class logic for `nadabrahman`, `sigil-forge`, or `sacred-geometry`
+  - those newer engines therefore only surface through generic witness-prompt fallback rather than through explicit report semantics
+- Important drift:
+  - `src/pipeline/interpreter.ts` still appears to extract older/legacy field shapes for some newer engines
+  - examples:
+    - `nadabrahman` extraction checks `fundamental_tone` / `harmonic`, while the current type exposes `time_recommendation.primary_raga`, recommendations, and chakra/rasa fields
+    - `sacred-geometry` extraction checks `primary_form`, while the current type exposes `form.name`, `form.symbolism`, and `meditation`
+    - `sigil-forge` extraction checks `result.sigil.intent` / `glyph`, while the current type exposes `intention`, `method`, `charging_suggestions`, and `guidance`
+  - that means some of the leverage work is not just presentation. Part of it is type-to-prompt/type-to-report alignment.
+- Immediate leverage opportunities:
+  - add explicit evidence/report contributions for `nadabrahman` in `daily-practice`
+  - use `primary_raga`, `dosha_recommendation`, and `rasa_mapping` to enrich:
+    - `practice`
+    - `question`
+    - evidence/trust copy
+  - expose a report-side `resonance` or `attunement` block instead of leaving sonic guidance buried in generic engine text
+  - fix interpreter extraction for `nadabrahman`, `sacred-geometry`, and `sigil-forge` so witness text is grounded in the current result shapes
+- Near-term feature opportunities:
+  - for `creative-expression`, emit additive fields like:
+    - `artifact`
+    - `ritual`
+    - `attunement`
+    - `visual_seed`
+  - allow report payloads to carry structured renderables such as:
+    - `sigil` metadata
+    - `sacred_geometry.form`
+    - `meditation.prompt`
+    - `svg_preview.status`
+  - this would support a frontend that can show a usable creative ritual rather than only prose
+- Later product opportunities:
+  - introduce workflow-specific report modules rather than forcing every workflow through one generic reading shape
+  - examples:
+    - `daily-practice`: truth, action, regulation, resonance
+    - `creative-expression`: symbol, form, tone, charging practice
+    - `birth-blueprint`: constitution, pattern, developmental arc
+- Recommended sequence:
+  - Phase 1: align backend extraction logic with current engine result shapes
+  - Phase 2: add additive report/evidence semantics for `nadabrahman` inside `daily-practice`
+  - Phase 3: define a first-class `creative-expression` reading object using `sigil-forge` + `sacred-geometry` + `nadabrahman`
+  - Phase 4: add frontend renderers for symbolic/ritual artifacts, not just prose
+
+## 2026-05-14 Resonance + Creative Surface Implementation
+
+### Plan
+- [x] Phase 1: align backend extraction and witness text generation with the current `nadabrahman`, `sacred-geometry`, and `sigil-forge` result shapes.
+- [x] Phase 1: add regression tests that lock the newer engine extraction against current typed results rather than legacy placeholders.
+- [x] Phase 2: extend the reading-object/report contract additively for `daily-practice` so resonance/raaga guidance becomes a first-class block rather than generic fallback prose.
+- [x] Phase 2: update report/evidence derivation so `nadabrahman` explicitly contributes to `practice`, `question`, and trust surfaces.
+- [x] Phase 3: define a first-class `creative-expression` report object in the backend with artifact/ritual/attunement semantics derived from `sigil-forge`, `sacred-geometry`, `nadabrahman`, and `numerology`.
+- [x] Phase 3: update the intro-web reading surface so it becomes workflow-aware and can render symbolic/ritual artifact sections for `creative-expression` without breaking `daily-practice`.
+- [x] Verify backend locally, verify frontend build and browser behavior for both workflows, and record the results.
+
+### Review
+- Backend:
+  - aligned `src/pipeline/interpreter.ts` with the current result shapes for:
+    - `nadabrahman`
+    - `sacred-geometry`
+    - `sigil-forge`
+  - extended `src/types/interpretation.ts` additively with:
+    - `resonance`
+    - `creative_surface`
+    - typed sub-objects for raga/attunement, sigil, geometry, and numerology
+  - updated `src/standalone/standalone-api.ts` so:
+    - `daily-practice` emits a first-class `resonance` block
+    - `nadabrahman` can shape `practice`, `question`, and evidence/trust copy
+    - `creative-expression` emits a first-class `creative_surface` object
+    - evidence contribution language is workflow-aware for `nadabrahman`, `sigil-forge`, `sacred-geometry`, and `numerology`
+- Tests:
+  - added engine-level regression coverage for current `nadabrahman`, `sacred-geometry`, and `sigil-forge` result shapes
+  - added a workflow test proving the `daily-practice` resonance block
+  - added a workflow test proving the `creative-expression` surface object
+- Verification:
+  - `npm run typecheck`
+  - `node --import tsx --test tests/standalone.test.ts`
+  - `npm run build` in `witness-agents-intro-web`
+  - Playwright browser verification on `http://127.0.0.1:5113/reading.html` with seeded stored readings for:
+    - `daily-practice` at desktop width
+    - `creative-expression` at desktop width
+    - `creative-expression` at mobile width
+  - confirmed:
+    - `daily-practice` shows the standalone `Attunement` section and keeps `creative_expression` surfaces hidden
+    - `creative-expression` shows `Creative Surface` and hides the standalone resonance panel
+    - `creative-expression` switches the practice language to ritual/rehearsal framing
+    - both flows stay free of horizontal overflow in browser verification
+
 ## Review
 - `railway up` was the real deploy path. GitHub `main` push alone did not roll `48.tryambakam.space` because the service is deployed from Railway CLI, not from a GitHub-connected source.
 - Railway deployment `87d793a7-3a68-48f5-8d9d-34bfc8c3b8ca` completed successfully on 2026-04-28 and cleared the stale-deploy blocker.

@@ -1364,6 +1364,223 @@ describe('Standalone API', () => {
     assert.doesNotMatch(response, /Physical 100% \(Peak\), Emotional 5% \(Rising\)/);
   });
 
+  it('engine calculate derives nadabrahman witness text from the current resonance shape', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      engine_id: 'nadabrahman',
+      result: {
+        time_recommendation: {
+          prahar_name: 'Second Prahar',
+          prahar_number: 2,
+          time_range: '9 AM - 12 PM',
+          primary_raga: {
+            raga_number: 12,
+            raga_name: 'Bilawal',
+            reason: 'Stabilizes scattered movement into clearer steadiness.',
+            score: 0.91,
+          },
+          secondary_ragas: [],
+          dosha_dominance: 'Vata',
+          energy_quality: 'clarifying',
+        },
+        recommendations: [],
+        chakra_frequency: {
+          chakra_name: 'Heart',
+          solfeggio_hz: 639,
+          binaural_target_hz: 7.83,
+        },
+        dosha_recommendation: 'Keep the nervous system warm and steady.',
+        rasa_mapping: 'Shanta',
+      },
+      witness_prompt: '',
+      consciousness_level: 1,
+      metadata: {
+        calculation_time_ms: 4,
+        backend: 'typescript',
+        precision_achieved: 'exact',
+        cached: false,
+        timestamp: '2026-04-26T00:00:00.000Z',
+        engine_version: '1.0.0',
+      },
+      envelope_version: '1',
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+    });
+
+    const result = await handlers.apiEngineCalculate('nadabrahman', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const witnessLayer = body.witness_layer as Record<string, unknown>;
+    const response = witnessLayer.response as string;
+
+    assert.match(response, /Primary raga: Bilawal/);
+    assert.match(response, /Window: 9 AM - 12 PM/);
+    assert.match(response, /Rasa: Shanta/);
+    assert.match(response, /Keep the nervous system warm and steady\./);
+    assert.doesNotMatch(response, /Fundamental tone:/);
+  });
+
+  it('engine calculate derives sacred geometry witness text from the current form shape', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      engine_id: 'sacred-geometry',
+      result: {
+        form: {
+          id: 'hexagon',
+          name: 'Hexagon',
+          description: 'A balanced six-sided vessel.',
+          symbolism: 'coherent boundaries and balanced exchange',
+          elements: ['Air', 'Earth'],
+          numerology: 6,
+        },
+        meditation: {
+          prompt: 'Place the form at eye level and soften the gaze until the boundary feels breathable.',
+          duration_suggestion: '9 minutes',
+        },
+        intention: 'clear speech',
+        svg_preview: {
+          status: 'accepted',
+        },
+        seed: 42,
+      },
+      witness_prompt: '',
+      consciousness_level: 2,
+      metadata: {
+        calculation_time_ms: 4,
+        backend: 'typescript',
+        precision_achieved: 'exact',
+        cached: false,
+        timestamp: '2026-04-26T00:00:00.000Z',
+        engine_version: '1.0.0',
+      },
+      envelope_version: '1',
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+    });
+
+    const result = await handlers.apiEngineCalculate('sacred-geometry', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const witnessLayer = body.witness_layer as Record<string, unknown>;
+    const response = witnessLayer.response as string;
+
+    assert.match(response, /Primary form: Hexagon/);
+    assert.match(response, /Symbolism: coherent boundaries and balanced exchange/);
+    assert.match(response, /Meditation: Place the form at eye level and soften the gaze until the boundary feels breathable\./);
+    assert.doesNotMatch(response, /Primary form: undefined/);
+  });
+
+  it('engine calculate derives sigil witness text from the current sigil-forge shape', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      engine_id: 'sigil-forge',
+      result: {
+        intention: 'clear speech',
+        method: {
+          id: 'word-elimination',
+          name: 'Word Elimination',
+          description: 'Reduce the phrase to its surviving letters.',
+          steps: ['Write the phrase', 'Remove repeated letters', 'Sketch the remaining mark'],
+        },
+        processing: {
+          type: 'word_elimination',
+          original: 'clear speech',
+          remaining_letters: 'clrspch',
+          letter_count: 7,
+        },
+        charging_suggestions: [
+          { name: 'Breath', description: 'Exhale into the sigil three times.' },
+        ],
+        guidance: {
+          note: 'Keep the sigil close for seven days.',
+          next_steps: ['Trace it each morning.'],
+        },
+        svg_preview: {
+          status: 'accepted',
+        },
+        seed: 17,
+      },
+      witness_prompt: '',
+      consciousness_level: 2,
+      metadata: {
+        calculation_time_ms: 4,
+        backend: 'typescript',
+        precision_achieved: 'exact',
+        cached: false,
+        timestamp: '2026-04-26T00:00:00.000Z',
+        engine_version: '1.0.0',
+      },
+      envelope_version: '1',
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+    });
+
+    const result = await handlers.apiEngineCalculate('sigil-forge', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, unknown>;
+    const witnessLayer = body.witness_layer as Record<string, unknown>;
+    const response = witnessLayer.response as string;
+
+    assert.match(response, /Intention: clear speech/);
+    assert.match(response, /Method: Word Elimination/);
+    assert.match(response, /Keep the sigil close for seven days\./);
+    assert.doesNotMatch(response, /Glyph: ◉/);
+  });
+
   it('workflow execute leads with dominant tension instead of engine counts', async () => {
     globalThis.fetch = (async () => new Response(JSON.stringify({
       workflow_id: 'daily-practice',
@@ -1519,6 +1736,392 @@ describe('Standalone API', () => {
         impact: 'This establishes the central action-versus-regulation tension in the reading.',
       },
     ]);
+  });
+
+  it('workflow execute exposes a first-class resonance block for daily-practice', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      workflow_id: 'daily-practice',
+      engine_results: {
+        panchanga: {
+          engine_id: 'panchanga',
+          result: {
+            tithi_name: 'Shashthi',
+            nakshatra_name: 'Hasta',
+            yoga_name: 'Dhruva',
+          },
+          witness_prompt: 'Today asks for steadier patterning.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 3,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        'vedic-clock': {
+          engine_id: 'vedic-clock',
+          result: {
+            current_dosha: {
+              dosha: 'Kapha',
+              qualities: ['Grounding', 'Stability'],
+            },
+            current_organ: {
+              organ: 'Spleen',
+              element: 'Earth',
+              time_window: '9 AM - 11 AM',
+              associated_emotion: 'Trust',
+              recommended_activities: ['Steady walking'],
+            },
+            recommendation: {
+              activities: [
+                { activity: 'Steady walking' },
+              ],
+            },
+          },
+          witness_prompt: 'Stay with what is already stable.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        biorhythm: {
+          engine_id: 'biorhythm',
+          result: {
+            physical: { percentage: 62, phase: 'Rising', is_critical: false },
+            emotional: { percentage: 58, phase: 'Balanced', is_critical: false },
+            intellectual: { percentage: 55, phase: 'Balanced', is_critical: false },
+            overall_energy: 58,
+            critical_days: [],
+          },
+          witness_prompt: 'Stay steady enough to hear what is already working.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 5,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        nadabrahman: {
+          engine_id: 'nadabrahman',
+          result: {
+            time_recommendation: {
+              prahar_name: 'Second Prahar',
+              prahar_number: 2,
+              time_range: '9 AM - 12 PM',
+              primary_raga: {
+                raga_number: 12,
+                raga_name: 'Bilawal',
+                reason: 'Stabilizes scattered movement into clearer steadiness.',
+                score: 0.91,
+              },
+              secondary_ragas: [
+                {
+                  raga_number: 65,
+                  raga_name: 'Yaman',
+                  reason: 'Supports clarity without force.',
+                  score: 0.73,
+                },
+              ],
+              dosha_dominance: 'Vata',
+              energy_quality: 'clarifying',
+            },
+            recommendations: [],
+            chakra_frequency: {
+              chakra_name: 'Heart',
+              solfeggio_hz: 639,
+              binaural_target_hz: 7.83,
+            },
+            dosha_recommendation: 'Keep the nervous system warm and steady.',
+            rasa_mapping: 'Shanta',
+          },
+          witness_prompt: 'Listen for the quieter tone beneath the rush.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+    });
+
+    const result = await handlers.apiWorkflowExecute('daily-practice', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, any>;
+    const witnessLayer = body.witness_layer as Record<string, any>;
+    const resonance = witnessLayer.resonance as Record<string, any>;
+
+    assert.equal(body.workflow_id, 'daily-practice');
+    assert.equal(resonance.listening_window, 'Second Prahar · 9 AM - 12 PM');
+    assert.equal(resonance.primary_raga.raga_name, 'Bilawal');
+    assert.equal(resonance.primary_raga.reason, 'Stabilizes scattered movement into clearer steadiness.');
+    assert.deepEqual(
+      resonance.supporting_ragas.map((entry: Record<string, unknown>) => entry.raga_name),
+      ['Yaman'],
+    );
+    assert.equal(resonance.dosha_dominance, 'Vata');
+    assert.equal(resonance.energy_quality, 'clarifying');
+    assert.equal(resonance.dosha_guidance, 'Keep the nervous system warm and steady.');
+    assert.equal(resonance.rasa, 'Shanta');
+    assert.deepEqual(resonance.chakra_attunement, {
+      chakra_name: 'Heart',
+      solfeggio_hz: 639,
+      binaural_target_hz: 7.83,
+    });
+
+    assert.ok(
+      (witnessLayer.practice as string[]).some((entry) => /Bilawal/.test(entry)),
+      'expected practice to include a Bilawal attunement step',
+    );
+    assert.equal(
+      witnessLayer.question,
+      'What changes when you let Bilawal teach the pace instead of urgency?',
+    );
+
+    const evidence = body.evidence as Record<string, any>;
+    assert.ok(evidence.engines_used.includes('nadabrahman'));
+    assert.ok(
+      evidence.contributions.some((entry: Record<string, unknown>) =>
+        entry.engine_id === 'nadabrahman'
+        && /Bilawal/.test(String(entry.signal))
+        && /sonic way to regulate pace/i.test(String(entry.impact))),
+    );
+  });
+
+  it('workflow execute emits a creative-expression surface from sigil, geometry, resonance, and numerology', async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({
+      workflow_id: 'creative-expression',
+      engine_results: {
+        'sigil-forge': {
+          engine_id: 'sigil-forge',
+          result: {
+            intention: 'clear speech',
+            method: {
+              id: 'word-elimination',
+              name: 'Word Elimination',
+              description: 'Reduce the phrase to its surviving letters.',
+              steps: ['Write the phrase', 'Remove repeated letters', 'Sketch the remaining mark'],
+            },
+            processing: {
+              type: 'word_elimination',
+              original: 'clear speech',
+              remaining_letters: 'clrspch',
+              letter_count: 7,
+            },
+            charging_suggestions: [
+              { name: 'Breath', description: 'Exhale into the sigil three times.' },
+              { name: 'Candle', description: 'Hold it by a steady flame for a few breaths.' },
+            ],
+            guidance: {
+              note: 'Keep the sigil close for seven days.',
+              next_steps: ['Trace it each morning.', 'Carry it before difficult conversations.'],
+            },
+            svg_preview: {
+              status: 'accepted',
+            },
+            seed: 17,
+          },
+          witness_prompt: 'Distill the intention until it becomes portable.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        'sacred-geometry': {
+          engine_id: 'sacred-geometry',
+          result: {
+            form: {
+              id: 'hexagon',
+              name: 'Hexagon',
+              description: 'A balanced six-sided vessel.',
+              symbolism: 'coherent boundaries and balanced exchange',
+              elements: ['Air', 'Earth'],
+              numerology: 6,
+            },
+            meditation: {
+              prompt: 'Place the form at eye level and soften the gaze until the boundary feels breathable.',
+              duration_suggestion: '9 minutes',
+            },
+            intention: 'clear speech',
+            svg_preview: {
+              status: 'accepted',
+            },
+            seed: 42,
+          },
+          witness_prompt: 'Give the intention a form that can hold it.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        nadabrahman: {
+          engine_id: 'nadabrahman',
+          result: {
+            time_recommendation: {
+              prahar_name: 'Fourth Prahar',
+              prahar_number: 4,
+              time_range: '6 PM - 9 PM',
+              primary_raga: {
+                raga_number: 65,
+                raga_name: 'Yaman',
+                reason: 'Lets the symbol settle into a calmer, clearer atmosphere.',
+                score: 0.88,
+              },
+              secondary_ragas: [],
+              dosha_dominance: 'Vata',
+              energy_quality: 'luminous',
+            },
+            recommendations: [],
+            chakra_frequency: {
+              chakra_name: 'Throat',
+              solfeggio_hz: 741,
+              binaural_target_hz: 8,
+            },
+            dosha_recommendation: 'Stay warm enough that clarity does not become sharpness.',
+            rasa_mapping: 'Shanta',
+          },
+          witness_prompt: 'Tone the field before you ask the symbol to carry it.',
+          consciousness_level: 2,
+          metadata: {
+            calculation_time_ms: 4,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+        numerology: {
+          engine_id: 'numerology',
+          result: {
+            value: 6,
+            percentage: 82,
+            phase: 'Peak',
+            days_until_peak: 0,
+            days_until_critical: 4,
+            is_critical: false,
+            cycle_day: 15,
+          },
+          witness_prompt: 'The pulse is steady enough to repeat the work.',
+          consciousness_level: 0,
+          metadata: {
+            calculation_time_ms: 3,
+            backend: 'typescript',
+            precision_achieved: 'exact',
+            cached: false,
+            timestamp: '2026-04-26T00:00:00.000Z',
+            engine_version: '1.0.0',
+          },
+          envelope_version: '1',
+        },
+      },
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })) as typeof fetch;
+
+    const handlers = createStandaloneHandlers({
+      selemene_url: 'https://example.com',
+      selemene_api_key: 'test',
+      tier: 'witness-initiate',
+    });
+
+    const result = await handlers.apiWorkflowExecute('creative-expression', {
+      birth_data: {
+        date: '1991-08-13',
+        time: '13:19',
+        latitude: 12.97,
+        longitude: 77.59,
+        timezone: 'Asia/Kolkata',
+      },
+      current_time: '2026-04-26T00:00:00.000Z',
+      precision: 'Standard',
+      options: {},
+    });
+
+    assert.equal(result.status, 200);
+    const body = result.body as Record<string, any>;
+    const witnessLayer = body.witness_layer as Record<string, any>;
+    const creativeSurface = witnessLayer.creative_surface as Record<string, any>;
+
+    assert.equal(body.workflow_id, 'creative-expression');
+    assert.equal(witnessLayer.title, 'Hexagon for clear speech');
+    assert.match(witnessLayer.summary as string, /give clear speech a shape you can return to/i);
+    assert.equal(creativeSurface.intention, 'clear speech');
+    assert.equal(creativeSurface.sigil.method_name, 'Word Elimination');
+    assert.equal(creativeSurface.geometry.form_name, 'Hexagon');
+    assert.equal(creativeSurface.geometry.symbolism, 'coherent boundaries and balanced exchange');
+    assert.equal(creativeSurface.resonance.primary_raga.raga_name, 'Yaman');
+    assert.equal(creativeSurface.numerology.value, 6);
+    assert.ok(
+      (creativeSurface.ritual as string[]).some((entry) => /Write the phrase/.test(entry)),
+      'expected ritual to include sigil method steps',
+    );
+    assert.ok(
+      (creativeSurface.ritual as string[]).some((entry) => /Yaman/.test(entry)),
+      'expected ritual to include the resonance attunement',
+    );
+    assert.deepEqual(
+      body.evidence.engines_used,
+      ['sigil-forge', 'sacred-geometry', 'nadabrahman', 'numerology'],
+    );
+    assert.ok(
+      body.evidence.contributions.some((entry: Record<string, unknown>) =>
+        entry.engine_id === 'sacred-geometry'
+        && /Hexagon/.test(String(entry.signal))
+        && /visual container/i.test(String(entry.impact))),
+    );
   });
 
   it('workflow execute exposes reading_url when a reading base URL is configured', async () => {

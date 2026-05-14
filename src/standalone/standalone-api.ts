@@ -41,8 +41,14 @@ import type {
   PipelineQuery,
   Tier,
   UserState,
+  WitnessCreativeGeometry,
+  WitnessCreativeNumerology,
+  WitnessCreativeSigil,
+  WitnessCreativeSurface,
   WitnessEvidence,
   WitnessInterpretation,
+  WitnessRagaReference,
+  WitnessResonance,
   WitnessReadingSubject,
 } from '../types/interpretation.js';
 import { CONSCIOUSNESS_TO_KOSHA } from '../types/interpretation.js';
@@ -109,6 +115,8 @@ type WitnessReportPayload = {
   frictions: string[] | null;
   practice: string[] | null;
   question: string | null;
+  resonance: WitnessResonance | null;
+  creative_surface: WitnessCreativeSurface | null;
 };
 
 interface ProxyWitnessContext {
@@ -336,6 +344,262 @@ function normalizeActivities(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readNumber(value: unknown): number | null {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readBoolean(value: unknown): boolean | null {
+  return typeof value === 'boolean' ? value : null;
+}
+
+function parseRagaReference(value: unknown): WitnessRagaReference | null {
+  if (!isRecord(value)) return null;
+
+  const ragaName = cleanWitnessText(value.raga_name);
+  if (!ragaName) return null;
+
+  return {
+    raga_number: readNumber(value.raga_number) ?? undefined,
+    raga_name: ragaName,
+    reason: cleanWitnessText(value.reason) || null,
+    score: readNumber(value.score),
+  };
+}
+
+function dedupeRagaReferences(items: WitnessRagaReference[]): WitnessRagaReference[] {
+  const seen = new Set<string>();
+
+  return items.filter((item) => {
+    const key = normalizeWitnessText(item.raga_name);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function buildResonancePayload(
+  result: Record<string, unknown> | null,
+): WitnessResonance | null {
+  if (!result) return null;
+
+  const timeRecommendation = isRecord(result.time_recommendation) ? result.time_recommendation : null;
+  const chakraFrequency = isRecord(result.chakra_frequency) ? result.chakra_frequency : null;
+  const primaryRaga = parseRagaReference(timeRecommendation?.primary_raga);
+  const supportingRagas = dedupeRagaReferences([
+    ...(Array.isArray(timeRecommendation?.secondary_ragas)
+      ? timeRecommendation.secondary_ragas.map((entry) => parseRagaReference(entry)).filter((entry): entry is WitnessRagaReference => Boolean(entry))
+      : []),
+    ...(Array.isArray(result.recommendations)
+      ? result.recommendations.map((entry) => parseRagaReference(entry)).filter((entry): entry is WitnessRagaReference => Boolean(entry))
+      : []),
+  ]).filter((entry) => normalizeWitnessText(entry.raga_name) !== normalizeWitnessText(primaryRaga?.raga_name));
+
+  const listeningWindow = dedupeText([
+    [
+      cleanWitnessText(timeRecommendation?.prahar_name),
+      cleanWitnessText(timeRecommendation?.time_range),
+    ].filter(Boolean).join(' · '),
+  ])[0] ?? null;
+
+  const payload: WitnessResonance = {
+    listening_window: listeningWindow,
+    primary_raga: primaryRaga,
+    supporting_ragas: supportingRagas,
+    dosha_dominance: cleanWitnessText(timeRecommendation?.dosha_dominance) || null,
+    energy_quality: cleanWitnessText(timeRecommendation?.energy_quality) || null,
+    dosha_guidance: cleanWitnessText(result.dosha_recommendation) || null,
+    rasa: cleanWitnessText(result.rasa_mapping) || null,
+    chakra_attunement: chakraFrequency
+      ? {
+        chakra_name: cleanWitnessText(chakraFrequency.chakra_name),
+        solfeggio_hz: readNumber(chakraFrequency.solfeggio_hz) ?? 0,
+        binaural_target_hz: readNumber(chakraFrequency.binaural_target_hz) ?? 0,
+      }
+      : null,
+  };
+
+  const hasSignal = Boolean(
+    payload.listening_window
+      || payload.primary_raga
+      || payload.supporting_ragas.length
+      || payload.dosha_dominance
+      || payload.energy_quality
+      || payload.dosha_guidance
+      || payload.rasa
+      || payload.chakra_attunement,
+  );
+
+  if (!hasSignal) return null;
+  if (payload.chakra_attunement && !payload.chakra_attunement.chakra_name) {
+    payload.chakra_attunement = null;
+  }
+  return payload;
+}
+
+function buildCreativeNumerology(
+  result: Record<string, unknown> | null,
+): WitnessCreativeNumerology | null {
+  if (!result) return null;
+
+  const value = readNumber(result.value);
+  if (value === null) return null;
+
+  return {
+    value,
+    phase: cleanWitnessText(result.phase) || null,
+    percentage: readNumber(result.percentage),
+    cycle_day: readNumber(result.cycle_day),
+    is_critical: readBoolean(result.is_critical) ?? false,
+  };
+}
+
+function buildCreativeSigil(
+  result: Record<string, unknown> | null,
+): WitnessCreativeSigil | null {
+  if (!result) return null;
+
+  const method = isRecord(result.method) ? result.method : null;
+  const guidance = isRecord(result.guidance) ? result.guidance : null;
+  const svgPreview = isRecord(result.svg_preview) ? result.svg_preview : null;
+  const chargingSuggestions = Array.isArray(result.charging_suggestions)
+    ? result.charging_suggestions
+      .filter((entry): entry is Record<string, unknown> => isRecord(entry))
+      .map((entry) => ({
+        name: cleanWitnessText(entry.name),
+        description: cleanWitnessText(entry.description),
+      }))
+      .filter((entry) => entry.name || entry.description)
+    : [];
+  const methodSteps = Array.isArray(method?.steps)
+    ? method.steps.map((entry) => cleanWitnessText(entry)).filter(Boolean)
+    : [];
+  const nextSteps = Array.isArray(guidance?.next_steps)
+    ? guidance.next_steps.map((entry) => cleanWitnessText(entry)).filter(Boolean)
+    : [];
+
+  const payload: WitnessCreativeSigil = {
+    intention: cleanWitnessText(result.intention) || null,
+    method_name: cleanWitnessText(method?.name) || null,
+    method_description: cleanWitnessText(method?.description) || null,
+    method_steps: methodSteps,
+    charging_suggestions: chargingSuggestions,
+    note: cleanWitnessText(guidance?.note) || null,
+    next_steps: nextSteps,
+    svg_status: cleanWitnessText(svgPreview?.status) || null,
+  };
+
+  const hasSignal = Boolean(
+    payload.intention
+      || payload.method_name
+      || payload.method_description
+      || payload.method_steps.length
+      || payload.charging_suggestions.length
+      || payload.note
+      || payload.next_steps.length,
+  );
+
+  return hasSignal ? payload : null;
+}
+
+function buildCreativeGeometry(
+  result: Record<string, unknown> | null,
+): WitnessCreativeGeometry | null {
+  if (!result) return null;
+
+  const form = isRecord(result.form) ? result.form : null;
+  const meditation = isRecord(result.meditation) ? result.meditation : null;
+  const svgPreview = isRecord(result.svg_preview) ? result.svg_preview : null;
+  const elements = Array.isArray(form?.elements)
+    ? form.elements.map((entry) => cleanWitnessText(entry)).filter(Boolean)
+    : [];
+
+  const payload: WitnessCreativeGeometry = {
+    form_name: cleanWitnessText(form?.name) || null,
+    description: cleanWitnessText(form?.description) || null,
+    symbolism: cleanWitnessText(form?.symbolism) || null,
+    elements,
+    numerology: readNumber(form?.numerology),
+    meditation_prompt: cleanWitnessText(meditation?.prompt) || null,
+    duration_suggestion: cleanWitnessText(meditation?.duration_suggestion) || null,
+    intention: cleanWitnessText(result.intention) || null,
+    svg_status: cleanWitnessText(svgPreview?.status) || null,
+  };
+
+  const hasSignal = Boolean(
+    payload.form_name
+      || payload.description
+      || payload.symbolism
+      || payload.elements.length
+      || payload.meditation_prompt
+      || payload.intention,
+  );
+
+  return hasSignal ? payload : null;
+}
+
+function buildCreativeSurface(
+  outputs: SelemeneEngineOutput[],
+): WitnessCreativeSurface | null {
+  const sigil = buildCreativeSigil(getEngineResult(outputs, 'sigil-forge'));
+  const geometry = buildCreativeGeometry(getEngineResult(outputs, 'sacred-geometry'));
+  const resonance = buildResonancePayload(getEngineResult(outputs, 'nadabrahman'));
+  const numerology = buildCreativeNumerology(getEngineResult(outputs, 'numerology'));
+  const intention = dedupeText([
+    sigil?.intention,
+    geometry?.intention,
+  ])[0] ?? null;
+
+  const ritual = dedupeText([
+    ...(sigil?.method_steps ?? []),
+    ...(geometry?.meditation_prompt
+      ? [
+        geometry.duration_suggestion
+          ? `Sit with ${geometry.form_name || 'the form'} for ${geometry.duration_suggestion}. ${geometry.meditation_prompt}`
+          : geometry.meditation_prompt,
+      ]
+      : []),
+    ...(resonance?.primary_raga?.raga_name
+      ? [
+        resonance.listening_window
+          ? `Let ${resonance.primary_raga.raga_name} hold the ritual during ${resonance.listening_window}.`
+          : `Let ${resonance.primary_raga.raga_name} hold the ritual while the symbol settles.`,
+      ]
+      : []),
+    ...(sigil?.charging_suggestions ?? [])
+      .slice(0, 2)
+      .map((entry) => {
+        const lead = entry.name ? `Charge it through ${entry.name.toLowerCase()}` : 'Charge the mark';
+        return entry.description ? `${lead}: ${entry.description}` : lead;
+      }),
+    ...(sigil?.next_steps ?? []),
+  ]).slice(0, 5);
+
+  const payload: WitnessCreativeSurface = {
+    intention,
+    numerology,
+    resonance,
+    sigil,
+    geometry,
+    ritual,
+  };
+
+  const hasSignal = Boolean(
+    payload.intention
+      || payload.numerology
+      || payload.resonance
+      || payload.sigil
+      || payload.geometry
+      || payload.ritual.length,
+  );
+
+  return hasSignal ? payload : null;
+}
+
 function isBreathFirstWindow(result: Record<string, unknown> | null): boolean {
   if (!result) return false;
 
@@ -413,6 +677,110 @@ function pickPreferredQuestion(outputs: SelemeneEngineOutput[]): string {
   return '';
 }
 
+function shortenTitleIntent(value: string | null | undefined): string | null {
+  const text = cleanWitnessText(value);
+  if (!text) return null;
+
+  if (text.length <= 42) return text;
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= 7) return text;
+  return `${words.slice(0, 7).join(' ')}…`;
+}
+
+function buildCreativeExpressionTitle(
+  creativeSurface: WitnessCreativeSurface | null,
+): string | null {
+  if (!creativeSurface) return null;
+
+  const geometryName = creativeSurface.geometry?.form_name;
+  const intention = shortenTitleIntent(creativeSurface.intention);
+
+  if (geometryName && intention) return `${geometryName} for ${intention}`;
+  if (intention) return `A mark for ${intention}`;
+  if (geometryName) return `${geometryName} field`;
+  if (creativeSurface.resonance?.primary_raga?.raga_name) {
+    return `${creativeSurface.resonance.primary_raga.raga_name} attunement`;
+  }
+
+  return null;
+}
+
+function buildCreativeExpressionSummary(
+  creativeSurface: WitnessCreativeSurface | null,
+  response: string | null,
+  synthesis: string | null,
+): string | null {
+  if (creativeSurface) {
+    const lines = dedupeText([
+      creativeSurface.intention
+        ? `This reading wants to give ${creativeSurface.intention.toLowerCase()} a shape you can return to.`
+        : null,
+      creativeSurface.geometry?.form_name && creativeSurface.geometry?.symbolism
+        ? `${creativeSurface.geometry.form_name} holds the work through ${creativeSurface.geometry.symbolism}.`
+        : null,
+      creativeSurface.resonance?.primary_raga?.raga_name
+        ? `${creativeSurface.resonance.primary_raga.raga_name} keeps the tone steady while the symbol takes on charge.`
+        : null,
+    ]);
+    if (lines.length) return lines.join(' ');
+  }
+
+  return buildReadingSummary(null, response, synthesis);
+}
+
+function buildCreativeExpressionConvergences(
+  creativeSurface: WitnessCreativeSurface | null,
+): string[] {
+  if (!creativeSurface) return [];
+
+  return dedupeText([
+    creativeSurface.intention && creativeSurface.geometry?.form_name
+      ? `The mark and the form are aligned around ${creativeSurface.intention.toLowerCase()}.`
+      : null,
+    creativeSurface.sigil?.method_name && creativeSurface.resonance?.primary_raga?.raga_name
+      ? `${creativeSurface.sigil.method_name} and ${creativeSurface.resonance.primary_raga.raga_name} are reinforcing the same field rather than pulling in different directions.`
+      : null,
+    creativeSurface.geometry?.symbolism && creativeSurface.numerology
+      ? `The geometry and the current numerology pulse both give the expression a repeatable structure instead of a one-off mood.`
+      : null,
+  ]).slice(0, 3);
+}
+
+function buildCreativeExpressionFrictions(
+  creativeSurface: WitnessCreativeSurface | null,
+): string[] {
+  if (!creativeSurface) return [];
+
+  const dosha = normalizeWitnessText(creativeSurface.resonance?.dosha_dominance);
+
+  return dedupeText([
+    dosha.includes('vata')
+      ? 'The field can scatter if you keep changing the intention before it settles into repetition.'
+      : null,
+    creativeSurface.sigil?.next_steps.length
+      ? 'The symbol still needs repetition and charging before it becomes second nature.'
+      : null,
+    creativeSurface.numerology?.is_critical
+      ? 'The creative line is active, but it may feel sharper and less forgiving than usual.'
+      : null,
+  ]).slice(0, 3);
+}
+
+function buildCreativeExpressionQuestion(
+  creativeSurface: WitnessCreativeSurface | null,
+  pichet: WitnessInterpretation['pichet'] | null,
+): string | null {
+  if (creativeSurface?.intention) {
+    return `What would it mean to let this symbol hold ${creativeSurface.intention.toLowerCase()} even when your mood changes?`;
+  }
+  if (creativeSurface?.geometry?.form_name) {
+    return `How does your attention change when you sit inside ${creativeSurface.geometry.form_name} instead of only thinking about it?`;
+  }
+
+  const perspectiveQuestion = pickQuestionSentence(pichet?.perspective);
+  return perspectiveQuestion || null;
+}
+
 function buildReadingTitle(
   response: string | null,
   synthesis: string | null,
@@ -482,6 +850,7 @@ function buildReadingConvergences(outputs: SelemeneEngineOutput[]): string[] {
   const vedicClock = getEngineResult(outputs, 'vedic-clock');
   const panchanga = getEngineResult(outputs, 'panchanga');
   const transits = getEngineResult(outputs, 'transits');
+  const resonance = buildResonancePayload(getEngineResult(outputs, 'nadabrahman'));
 
   return dedupeText([
     isHighCapacityLowReserve(biorhythm) && isBreathFirstWindow(vedicClock)
@@ -493,6 +862,9 @@ function buildReadingConvergences(outputs: SelemeneEngineOutput[]): string[] {
     isBreathFirstWindow(vedicClock) && panchanga
       ? 'Symbolic timing and body rhythm both point toward steadier pacing.'
       : null,
+    resonance?.primary_raga && (isBreathFirstWindow(vedicClock) || isHighCapacityLowReserve(biorhythm) || Boolean(panchanga))
+      ? `The sound field agrees that ${resonance.primary_raga.raga_name} should steady the pace before action widens.`
+      : null,
     Array.isArray((transits as Record<string, unknown> | null)?.active_transits)
       ? 'Outer pressure and inner timing are both pushing the reading toward review before reaction.'
       : null,
@@ -502,6 +874,7 @@ function buildReadingConvergences(outputs: SelemeneEngineOutput[]): string[] {
 function buildReadingFrictions(outputs: SelemeneEngineOutput[]): string[] {
   const biorhythm = getEngineResult(outputs, 'biorhythm');
   const vedicClock = getEngineResult(outputs, 'vedic-clock');
+  const resonance = buildResonancePayload(getEngineResult(outputs, 'nadabrahman'));
 
   return dedupeText([
     isHighCapacityLowReserve(biorhythm)
@@ -513,6 +886,9 @@ function buildReadingFrictions(outputs: SelemeneEngineOutput[]): string[] {
     isVataWindow(vedicClock)
       ? 'Movement is available, but pace decides whether it becomes clarity or scatter.'
       : null,
+    resonance?.dosha_guidance && isVataWindow(vedicClock)
+      ? 'The tonal field wants steadier pacing even if the system feels ready to move faster.'
+      : null,
   ]).slice(0, 3);
 }
 
@@ -523,6 +899,14 @@ function buildReadingPractice(
   const biorhythm = getEngineResult(outputs, 'biorhythm');
   const vedicClock = getEngineResult(outputs, 'vedic-clock');
   const criticalWindow = describeCriticalWindow(biorhythm);
+  const resonance = buildResonancePayload(getEngineResult(outputs, 'nadabrahman'));
+  const resonanceLine = resonance?.primary_raga?.raga_name
+    ? (
+      resonance.listening_window
+        ? `Spend a few minutes with ${resonance.primary_raga.raga_name} during ${resonance.listening_window}.`
+        : `Let ${resonance.primary_raga.raga_name} set the tone before the day gets louder.`
+    )
+    : null;
 
   return dedupeText([
     isBreathFirstWindow(vedicClock) ? 'Take three slower breaths before the first major decision.' : null,
@@ -530,6 +914,7 @@ function buildReadingPractice(
       ? 'Choose one meaningful action instead of spreading effort across many fronts.'
       : null,
     isLowReserveWindow(biorhythm) ? 'Choose restoration before expansion today.' : null,
+    resonanceLine,
     criticalWindow,
     firstWitnessSentence(pichet?.perspective),
   ]).slice(0, 3);
@@ -539,11 +924,9 @@ function buildReadingQuestion(
   outputs: SelemeneEngineOutput[],
   pichet: WitnessInterpretation['pichet'] | null,
 ): string | null {
-  const promptQuestion = pickPreferredQuestion(outputs);
-  if (promptQuestion) return promptQuestion;
-
   const biorhythm = getEngineResult(outputs, 'biorhythm');
   const vedicClock = getEngineResult(outputs, 'vedic-clock');
+  const resonance = buildResonancePayload(getEngineResult(outputs, 'nadabrahman'));
 
   if (isHighCapacityLowReserve(biorhythm)) {
     return 'What part of you is already ready, and what part still needs steadiness?';
@@ -551,9 +934,15 @@ function buildReadingQuestion(
   if (isLowReserveWindow(biorhythm)) {
     return 'What changes when you stop treating restoration as a delay?';
   }
+  if (resonance?.primary_raga?.raga_name) {
+    return `What changes when you let ${resonance.primary_raga.raga_name} teach the pace instead of urgency?`;
+  }
   if (isBreathFirstWindow(vedicClock)) {
     return 'What changes when breath sets the pace instead of urgency?';
   }
+
+  const promptQuestion = pickPreferredQuestion(outputs);
+  if (promptQuestion) return promptQuestion;
 
   const perspectiveQuestion = pickQuestionSentence(pichet?.perspective);
   return perspectiveQuestion || null;
@@ -562,12 +951,19 @@ function buildReadingQuestion(
 function buildEvidenceContribution(
   output: SelemeneEngineOutput,
   outputs: SelemeneEngineOutput[],
+  workflowId: string | null = null,
 ): WitnessEvidence['contributions'][number] | null {
   const result = output.result && typeof output.result === 'object'
     ? output.result as Record<string, unknown>
     : null;
   const biorhythm = getEngineResult(outputs, 'biorhythm');
   const vedicClock = getEngineResult(outputs, 'vedic-clock');
+  const resonance = output.engine_id === 'nadabrahman'
+    ? buildResonancePayload(result)
+    : buildResonancePayload(getEngineResult(outputs, 'nadabrahman'));
+  const creativeSurface = workflowId === 'creative-expression'
+    ? buildCreativeSurface(outputs)
+    : null;
 
   switch (output.engine_id) {
     case 'biorhythm':
@@ -627,6 +1023,59 @@ function buildEvidenceContribution(
         impact: 'This gives the reading its outer pressure and review context.',
       };
     }
+    case 'nadabrahman':
+      if (workflowId === 'creative-expression' && resonance?.primary_raga?.raga_name) {
+        return {
+          engine_id: output.engine_id,
+          signal: resonance.listening_window
+            ? `${resonance.primary_raga.raga_name} is the tonal key, especially during ${resonance.listening_window}.`
+            : `${resonance.primary_raga.raga_name} is the tonal key holding the symbol together.`,
+          impact: 'This gives the form an audible atmosphere instead of leaving it as a purely visual idea.',
+        };
+      }
+      if (resonance?.primary_raga?.raga_name) {
+        return {
+          engine_id: output.engine_id,
+          signal: resonance.listening_window
+            ? `${resonance.primary_raga.raga_name} is the clearest attunement line, especially during ${resonance.listening_window}.`
+            : `${resonance.primary_raga.raga_name} is the clearest attunement line in the reading.`,
+          impact: 'This gives the day a sonic way to regulate pace rather than relying on force alone.',
+        };
+      }
+      return null;
+    case 'sigil-forge':
+      if (creativeSurface?.sigil?.method_name || creativeSurface?.sigil?.intention) {
+        return {
+          engine_id: output.engine_id,
+          signal: creativeSurface.sigil?.method_name && creativeSurface.sigil?.intention
+            ? `${creativeSurface.sigil.method_name} distilled the intention into a portable mark for ${creativeSurface.sigil.intention.toLowerCase()}.`
+            : firstWitnessSentence(output.witness_prompt) || 'The sigil engine distilled the intention into a portable mark.',
+          impact: 'This turns the reading into something you can rehearse, charge, and return to with your body.',
+        };
+      }
+      return null;
+    case 'sacred-geometry':
+      if (creativeSurface?.geometry?.form_name || creativeSurface?.geometry?.symbolism) {
+        return {
+          engine_id: output.engine_id,
+          signal: creativeSurface.geometry?.form_name && creativeSurface.geometry?.symbolism
+            ? `${creativeSurface.geometry.form_name} carries the field through ${creativeSurface.geometry.symbolism}.`
+            : firstWitnessSentence(output.witness_prompt) || 'The geometry engine supplied the form of the field.',
+          impact: 'This gives the work a visual container and a meditation posture instead of a loose concept.',
+        };
+      }
+      return null;
+    case 'numerology':
+      if (creativeSurface?.numerology) {
+        return {
+          engine_id: output.engine_id,
+          signal: creativeSurface.numerology.phase
+            ? `The numerology pulse is ${creativeSurface.numerology.value} in a ${creativeSurface.numerology.phase.toLowerCase()} phase.`
+            : `The numerology pulse is ${creativeSurface.numerology.value}.`,
+          impact: 'This gives the creative work a cadence for when to press, repeat, or refine.',
+        };
+      }
+      return null;
     default:
       return {
         engine_id: output.engine_id,
@@ -640,6 +1089,7 @@ function buildEvidenceContribution(
 
 function buildReadingEvidence(
   outputs: SelemeneEngineOutput[],
+  workflowId: string | null,
   seededEvidence?: WitnessInterpretation['evidence'],
 ): WitnessEvidence | null {
   if (seededEvidence?.engines_used?.length || seededEvidence?.contributions?.length) {
@@ -647,7 +1097,7 @@ function buildReadingEvidence(
   }
 
   const contributions = outputs
-    .map((output) => buildEvidenceContribution(output, outputs))
+    .map((output) => buildEvidenceContribution(output, outputs, workflowId))
     .filter((entry): entry is WitnessEvidence['contributions'][number] => Boolean(entry));
 
   if (!contributions.length) return null;
@@ -661,27 +1111,62 @@ function buildReadingEvidence(
 function buildReportPayload(
   interpretation: WitnessInterpretation | null,
   outputs: SelemeneEngineOutput[],
+  workflowId: string | null,
 ): WitnessReportPayload {
-  const title = interpretation?.title ?? buildReadingTitle(
+  const derivedResonance = interpretation?.resonance ?? buildResonancePayload(getEngineResult(outputs, 'nadabrahman'));
+  const derivedCreativeSurface = interpretation?.creative_surface ?? (
+    workflowId === 'creative-expression' ? buildCreativeSurface(outputs) : null
+  );
+  const genericTitle = buildReadingTitle(
     interpretation?.response ?? null,
     interpretation?.synthesis ?? null,
     outputs,
   );
-  const summary = interpretation?.summary ?? buildReadingSummary(
-    title,
-    interpretation?.response ?? null,
-    interpretation?.synthesis ?? null,
+  const title = interpretation?.title
+    ?? (workflowId === 'creative-expression' ? buildCreativeExpressionTitle(derivedCreativeSurface) : null)
+    ?? genericTitle;
+  const summary = interpretation?.summary ?? (
+    workflowId === 'creative-expression'
+      ? buildCreativeExpressionSummary(
+        derivedCreativeSurface,
+        interpretation?.response ?? null,
+        interpretation?.synthesis ?? null,
+      )
+      : buildReadingSummary(
+        title,
+        interpretation?.response ?? null,
+        interpretation?.synthesis ?? null,
+      )
   );
   const convergences = interpretation?.convergences?.length
     ? interpretation.convergences
-    : buildReadingConvergences(outputs);
+    : (
+      workflowId === 'creative-expression'
+        ? buildCreativeExpressionConvergences(derivedCreativeSurface)
+        : buildReadingConvergences(outputs)
+    );
   const frictions = interpretation?.frictions?.length
     ? interpretation.frictions
-    : buildReadingFrictions(outputs);
+    : (
+      workflowId === 'creative-expression'
+        ? buildCreativeExpressionFrictions(derivedCreativeSurface)
+        : buildReadingFrictions(outputs)
+    );
   const practice = interpretation?.practice?.length
     ? interpretation.practice
-    : buildReadingPractice(outputs, interpretation?.pichet ?? null);
-  const question = interpretation?.question ?? buildReadingQuestion(outputs, interpretation?.pichet ?? null);
+    : (
+      workflowId === 'creative-expression'
+        ? dedupeText([
+          ...(derivedCreativeSurface?.ritual ?? []),
+          firstWitnessSentence(interpretation?.pichet?.perspective),
+        ]).slice(0, 3)
+        : buildReadingPractice(outputs, interpretation?.pichet ?? null)
+    );
+  const question = interpretation?.question ?? (
+    workflowId === 'creative-expression'
+      ? buildCreativeExpressionQuestion(derivedCreativeSurface, interpretation?.pichet ?? null)
+      : buildReadingQuestion(outputs, interpretation?.pichet ?? null)
+  );
 
   return {
     title: title || null,
@@ -690,6 +1175,8 @@ function buildReportPayload(
     frictions: frictions.length ? frictions : null,
     practice: practice.length ? practice : null,
     question: question || null,
+    resonance: derivedResonance,
+    creative_surface: derivedCreativeSurface,
   };
 }
 
@@ -1524,7 +2011,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
         const createdAt = workflowInterpretation?.timestamp ?? new Date().toISOString();
         const readingId = buildReadingId(workflowId, createdAt, witnessContext.userHash);
         const reportPayload = workflowInterpretation
-          ? buildReportPayload(workflowInterpretation, workflowOutputs)
+          ? buildReportPayload(workflowInterpretation, workflowOutputs, workflowId)
           : {
             title: null,
             summary: null,
@@ -1532,9 +2019,11 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
             frictions: null,
             practice: null,
             question: null,
+            resonance: null,
+            creative_surface: null,
           };
         const evidence = workflowInterpretation
-          ? buildReadingEvidence(workflowOutputs, workflowInterpretation.evidence)
+          ? buildReadingEvidence(workflowOutputs, workflowId, workflowInterpretation.evidence)
           : null;
 
         return {

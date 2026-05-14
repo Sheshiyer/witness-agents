@@ -130,6 +130,75 @@ export interface WitnessEvidence {
   contributions: WitnessEvidenceContribution[];
 }
 
+export interface WitnessRagaReference {
+  raga_number?: number;
+  raga_name: string;
+  reason?: string | null;
+  score?: number | null;
+}
+
+export interface WitnessChakraAttunement {
+  chakra_name: string;
+  solfeggio_hz: number;
+  binaural_target_hz: number;
+}
+
+export interface WitnessResonance {
+  listening_window: string | null;
+  primary_raga: WitnessRagaReference | null;
+  supporting_ragas: WitnessRagaReference[];
+  dosha_dominance: string | null;
+  energy_quality: string | null;
+  dosha_guidance: string | null;
+  rasa: string | null;
+  chakra_attunement: WitnessChakraAttunement | null;
+}
+
+export interface WitnessCreativeNumerology {
+  value: number;
+  phase: string | null;
+  percentage: number | null;
+  cycle_day: number | null;
+  is_critical: boolean;
+}
+
+export interface WitnessCreativeSigilCharge {
+  name: string;
+  description: string;
+}
+
+export interface WitnessCreativeSigil {
+  intention: string | null;
+  method_name: string | null;
+  method_description: string | null;
+  method_steps: string[];
+  charging_suggestions: WitnessCreativeSigilCharge[];
+  note: string | null;
+  next_steps: string[];
+  svg_status: string | null;
+}
+
+export interface WitnessCreativeGeometry {
+  form_name: string | null;
+  description: string | null;
+  symbolism: string | null;
+  elements: string[];
+  numerology: number | null;
+  meditation_prompt: string | null;
+  duration_suggestion: string | null;
+  intention: string | null;
+  svg_status: string | null;
+}
+
+export interface WitnessCreativeSurface {
+  intention: string | null;
+  numerology: WitnessCreativeNumerology | null;
+  resonance: WitnessResonance | null;
+  sigil: WitnessCreativeSigil | null;
+  geometry: WitnessCreativeGeometry | null;
+  ritual: string[];
+}
+
 export interface WitnessInterpretation {
   // ─── Metadata ──────────────────────────────────
   id: string;
@@ -163,6 +232,8 @@ export interface WitnessInterpretation {
   practice?: string[];
   question?: string;
   evidence?: WitnessEvidence;
+  resonance?: WitnessResonance;
+  creative_surface?: WitnessCreativeSurface;
 
   // ─── Safety & Growth ──────────────────────────
   overwhelm_flag: boolean;

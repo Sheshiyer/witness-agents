@@ -740,8 +740,15 @@ export class InterpretationPipeline {
 
       // ─── Sacred Geometry / Geometric Resonance ────────
       case 'geometric-resonance': {
-        if (result?.primary_form) {
-          return `Primary form: ${result.primary_form}. ${result.resonance_note || ''}`.trim();
+        const form = result?.form;
+        const meditation = result?.meditation;
+        if (form?.name) {
+          const parts = [
+            `Primary form: ${form.name}`,
+            form.symbolism ? `Symbolism: ${form.symbolism}` : '',
+            meditation?.prompt ? `Meditation: ${meditation.prompt}` : '',
+          ].filter(Boolean);
+          return parts.join('. ') + '.';
         }
         break;
       }
@@ -765,16 +772,28 @@ export class InterpretationPipeline {
 
       // ─── Nadabrahman / Resonance Architecture ─────────
       case 'resonance-architecture': {
-        if (result?.fundamental_tone) {
-          return `Fundamental tone: ${result.fundamental_tone}. Harmonic: ${result.harmonic || 'calculating'}.`;
+        const timeRecommendation = result?.time_recommendation;
+        if (timeRecommendation?.primary_raga?.raga_name) {
+          const parts = [
+            `Primary raga: ${timeRecommendation.primary_raga.raga_name}`,
+            timeRecommendation.time_range ? `Window: ${timeRecommendation.time_range}` : '',
+            result?.rasa_mapping ? `Rasa: ${result.rasa_mapping}` : '',
+            result?.dosha_recommendation ? result.dosha_recommendation : '',
+          ].filter(Boolean);
+          return parts.join('. ') + '.';
         }
         break;
       }
 
       // ─── Sigil Forge ──────────────────────────────────
       case 'sigil-forge': {
-        if (result?.sigil) {
-          return `Sigil generated: ${result.sigil.intent || 'encoded'}. Glyph: ${result.sigil.glyph || '◉'}.`;
+        if (result?.intention || result?.method?.name) {
+          const parts = [
+            result.intention ? `Intention: ${result.intention}` : '',
+            result.method?.name ? `Method: ${result.method.name}` : '',
+            result.guidance?.note || '',
+          ].filter(Boolean);
+          return parts.join('. ') + '.';
         }
         break;
       }
