@@ -576,6 +576,8 @@ async function main() {
       svgString = renderByTopology(topology, buildTriadSvgData(subjects), { width: 720 });
     } else if (topology === 'pentagon' && subjects.length === 5) {
       svgString = renderByTopology(topology, buildPentaSvgData(subjects), { width: 720 });
+    } else if (topology === 'web-graph' && subjects.length >= 4 && subjects.length <= 12) {
+      svgString = renderByTopology(topology, buildTeamWebSvgData(subjects), { width: 880 });
     } else {
       console.log(`  (SVG topology '${topology}' renderer not yet available — emitting placeholder)`);
     }
@@ -729,6 +731,34 @@ function buildPentaSvgData(subjects: SubjectConfig[]) {
       next_mahadasha_iso: s.mahadasha?.current_ends_iso,
     })) as [any, any, any, any, any],
     dominant_pairs: [[0, 1]] as Array<[number, number]>,  // root-pair always dominant
+    shared_keys: [],
+  };
+}
+
+function buildTeamWebSvgData(subjects: SubjectConfig[]) {
+  // Default round-robin cluster assignment (outline pass will refine).
+  // In a live run the OUTLINE pass produces the actual role-cluster map;
+  // for the static SVG render we apply a deterministic default so the
+  // shape renders cleanly even before the cluster-reading pass writes back.
+  const clusters: Array<'visionaries' | 'operators' | 'integrators' | 'connectors'> = [
+    'visionaries', 'operators', 'integrators', 'connectors',
+  ];
+  return {
+    members: subjects.map((s, i) => ({
+      name: s.subject,
+      role_cluster: clusters[i % clusters.length],
+      current_mahadasha_lord: s.mahadasha?.current_lord,
+      next_mahadasha_lord: s.mahadasha?.next_lord,
+      next_mahadasha_iso: s.mahadasha?.current_ends_iso,
+    })),
+    // Default critical-path edges: first member of each cluster pair
+    // (replaced by outline-pass output when wired through P6 autoresearch)
+    critical_path_edges: subjects.length >= 4 ? [
+      { a: 0, b: 1, weight: 0.8 },
+      { a: 0, b: 2, weight: 0.6 },
+      { a: 1, b: 3, weight: 0.6 },
+    ] : [],
+    joint_operative_archetype: '',
     shared_keys: [],
   };
 }
