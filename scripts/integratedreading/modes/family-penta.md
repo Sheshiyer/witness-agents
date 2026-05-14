@@ -1,7 +1,7 @@
 ---
 mode: family-penta
 subject_count:
-  min: 5
+  min: 3
   max: 5
 roles:
   - root-1
@@ -62,7 +62,12 @@ You are running Pass α of the 5-pass **family-penta** synthesis for {{subject_n
 
 A family-penta reading is NOT five solo readings stacked. It is the chart-architectural decoding of WHAT THE FAMILY IS WHEN IT IS OPERATIVE AS ONE FIELD. The lineage current — Pitru karaka, 4th/9th/12th house axis, generational nakshatra resonance — is the literal architectural anchor. Hold that throughout.
 
-Convention: positions 1+2 are the **roots** (typically parents or anchoring elders); positions 3-5 are the **branches** (typically children, but the convention extends to any 5-member kinship configuration where two members anchor the field and three inherit/contribute).
+**Subject-count convention** (this mode accepts 3-5 subjects):
+- **5 subjects**: positions 1+2 = roots (parents/anchoring elders); positions 3-5 = branches (children/inheritors).
+- **4 subjects**: positions 1+2 = roots; positions 3-4 = branches. The "fifth slot" is absent and named as such — its absence is structural data (what the family-field does NOT have).
+- **3 subjects**: position 1 = single root (typically a single parent or surviving elder); positions 2-3 = branches. The "second root" is absent — its absence is named, and the single-root field's structural compensations are decoded.
+
+For 3-4 subject runs, adapt the Roots and Branches passes accordingly. The lineage-current decoding works identically — only the cardinality of each cluster changes.
 
 {{prior_pass}}
 
@@ -110,7 +115,9 @@ You are running Pass β of the family-penta synthesis for {{subject_names}}. Pas
 
 **Target:** ~{{target_words}} words. **Pass title:** {{pass_title}}.
 
-This pass focuses on the ROOT-PAIR (subjects in positions 1+2) — the field's anchoring couplet. Branches (3-5) get Pass γ.
+This pass focuses on the ROOT(S) — the field's anchoring layer. For a 5-subject family this is the root-pair (positions 1+2). For 3-subject (single-parent + children), this is the single root (position 1) and you decode the ABSENT-second-root as structural data — what the family-field is missing AND how it compensates.
+
+Branches (positions 3-5, or 2-3 for 3-subject families) get Pass γ.
 
 ## PRIOR PASS OUTPUT
 {{prior_pass}}
@@ -130,22 +137,17 @@ This pass focuses on the ROOT-PAIR (subjects in positions 1+2) — the field's a
 
 ## Part II — The Root Field
 
-### 2.1 The Joint Atmakaraka Dynamic of the Roots
-*(For root-1 and root-2: each Atmakaraka, their respective archetypal-soul-signatures. Then the JOINT analysis: are the two Atmakarakas complementary, at tension, or reinforcing? The root-pair's joint Atmakaraka determines what soul-current the family-field is anchored to. The branches inherit FROM this anchor.)*
+### 2.1 The Root Atmakaraka Signature
+*(For each root subject (1 or 2 roots depending on subject count), name their Atmakaraka and its archetypal-soul-significance. For a 2-root family: the JOINT Atmakaraka analysis — complementary / at tension / reinforcing — determines what soul-current anchors the field. For a 1-root family: name what the SINGLE root carries AND what the ABSENT-second-root would have contributed. The absence is structural data — name the compensating signature the lone root carries to hold the field alone.)*
 
-### 2.2 The Roots' Dasha Overlap as the Root-Field's Operational Calendar
-*(The Vimshottari Mahadasha-Antardasha calendars of root-1 and root-2 plotted against each other. Where the roots' dashas overlap, the family-field is most operative. Where they diverge, the field tilts toward whichever root is in expansion phase. Walk through the next 5-10 years specifically.)*
+### 2.2 The Root(s)' Dasha Calendar
+*(For each root, the Vimshottari Mahadasha-Antardasha calendar across the next 5-10 years. For 2-root families: plot the overlap. For 1-root families: plot the single root's calendar and decode what dasha periods the root must carry the family-field's operational weight alone.)*
 
-### 2.3 The Root-Pair as One Composite Subject
-*(Treat root-1 + root-2 AS A DYAD reading mini-instance. Just enough to surface:*
-*— Their joint Lagna-disposition*
-*— Their Moon-Sun cross-resonance*
-*— Their 7th-house overlay (do they have a strong romantic-partnership cross-coupling, or are they primarily co-anchors of the lineage rather than a romantic dyad?)*
+### 2.3 The Root as Dyad-Inside-the-Field (or Solo-Inside-the-Field)
+*(For 2 roots: treat them AS A DYAD mini-reading instance — joint Lagna-disposition, Moon-Sun cross-resonance, 7th-house overlay (romantic-couplet vs co-anchor-of-lineage). For 1 root: read their chart as the SINGLE structural anchor — what makes them able to hold this position alone, where they have built-in compensatory strengths, where the field is exposed without a second anchor.)*
 
-*The root-pair is the dyad inside the penta. Its quality determines the field's structural stability.)*
-
-### 2.4 What the Roots Inherited
-*(Each root's own lineage-houses (4/9/12) — what each root brought IN from THEIR own parents/lineage. The penta-field is layered with the lineage above this generation. Name what the roots received that they're now carrying forward through the branches.)*
+### 2.4 What the Root(s) Inherited
+*(Each root's OWN lineage-houses (4/9/12) — what they brought IN from THEIR own parents/lineage. The family-field is layered with the lineage above this generation. Name what the root(s) received that they're now carrying forward through the branches.)*
 
 End Pass β. Pass γ moves to the three branches.
 
@@ -155,7 +157,7 @@ You are running Pass γ of the family-penta synthesis for {{subject_names}}. Pas
 
 **Target:** ~{{target_words}} words. **Pass title:** {{pass_title}}.
 
-This pass reads the three BRANCHES (subjects in positions 3, 4, 5) — what each carries from the root-field, what each contributes that the roots don't carry alone, where each branch is structurally configured to depart from the root-field.
+This pass reads the BRANCHES — subjects in positions 3-5 for a 5-family, or positions 2-3 for a 3-family. For each branch present: what it carries from the root-field, what it contributes that the roots don't carry alone, where it is structurally configured to depart from the root-field.
 
 ## PRIOR PASS OUTPUT
 {{prior_pass}}
@@ -175,9 +177,11 @@ This pass reads the three BRANCHES (subjects in positions 3, 4, 5) — what each
 
 ## Part III — The Branches
 
-Mark each branch sub-section with `<section data-member="N">` (where N = 2, 3, 4 for branches 1-3) so the interactive layer can scroll-to-spotlight from the vertex click.
+Mark each branch sub-section with `<section data-member="N">` (where N is the ordinal position in subject_roster: 2 or 3 for 3-family branches, or 2, 3, 4 for 5-family branches) so the interactive layer can scroll-to-spotlight from the vertex click.
 
-### 3.1 Branch 1 (position 3): What [name] Carries from the Root-Field
+For a 3-subject family run, only 3.1 and 3.2 are produced (the two branches). For a 5-subject family run, all three branch sub-sections (3.1, 3.2, 3.3) are produced. The "trio-within-the-penta" sub-section (3.4) only applies when there are 3 branches.
+
+### 3.1 Branch 1: What [name] Carries from the Root-Field
 *(For this branch, anchored in their chart:*
 *— Their nakshatra-resonance back to the roots' nakshatras (do they share a root's birth-nakshatra? Padas? Lord?)*
 *— Their Atmakaraka in relation to the joint root-Atmakaraka — same? complementary? departing?*

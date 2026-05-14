@@ -576,6 +576,20 @@ async function main() {
       svgString = renderByTopology(topology, buildTriadSvgData(subjects), { width: 720 });
     } else if (topology === 'pentagon' && subjects.length === 5) {
       svgString = renderByTopology(topology, buildPentaSvgData(subjects), { width: 720 });
+    } else if (topology === 'pentagon' && subjects.length === 3) {
+      // Family-penta with 3 subjects (e.g., mother + 2 children) — fall back
+      // to triad-triangle layout while keeping family-penta mode prompts +
+      // interaction overlay. The mode-doc semantics carry the lineage-current
+      // decoding; the SVG just adapts to the actual vertex count.
+      console.log(`  (pentagon topology with 3 subjects — using triad-triangle SVG)`);
+      svgString = renderByTopology('triad-triangle', buildTriadSvgData(subjects), { width: 720 });
+    } else if (topology === 'pentagon' && subjects.length === 4) {
+      // 4-subject partial-pentagon: pad with a "virtual" 5th slot so the
+      // existing pentagon renderer works. The 5th node is omitted from
+      // prose narration but the geometry still reads.
+      console.log(`  (pentagon topology with 4 subjects — rendering with empty 5th vertex)`);
+      const padded = [...subjects, { subject: '(absent)', mahadasha: undefined } as any];
+      svgString = renderByTopology('pentagon', buildPentaSvgData(padded), { width: 720 });
     } else if (topology === 'web-graph' && subjects.length >= 4 && subjects.length <= 12) {
       svgString = renderByTopology(topology, buildTeamWebSvgData(subjects), { width: 880 });
     } else {

@@ -29,9 +29,9 @@ describe('family-penta mode doc (P4.1)', () => {
     assert.equal(doc.frontmatter.mode, 'family-penta');
   });
 
-  it('requires exactly 5 subjects', () => {
+  it('accepts 3-5 subjects (partial-family widening)', () => {
     const doc = parseModeDoc(path);
-    assert.equal(doc.frontmatter.subject_count.min, 5);
+    assert.equal(doc.frontmatter.subject_count.min, 3);
     assert.equal(doc.frontmatter.subject_count.max, 5);
   });
 
