@@ -1009,4 +1009,63 @@ table.table-wide td:first-child, table.table-wide th:first-child { padding-left:
   /* Hide footer separator (it's between Parts in print) */
   .doc-footer { page-break-before: always; }
 }
+
+/* ════ Interactive layer print flattening (P2.3 #44) ═══════════════════
+ * When this artifact is printed to PDF (or media print preview), strip
+ * all interactivity: animations off, sticky-positioned vizes collapse to
+ * flow position, hover-only tooltips hidden, scroll-snap disabled. The
+ * PDF is the static archive; the on-screen experience is the primary.
+ */
+@media print {
+  /* Strip all animations + transitions */
+  .canvas.interactive *,
+  .canvas.interactive *::before,
+  .canvas.interactive *::after {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  /* Cover elements appear immediately (no animated reveal) */
+  .cover .cover-svg-wrap svg,
+  .cover h1.cover-title,
+  .cover .cover-subject,
+  .cover .cover-tagline {
+    opacity: 1 !important;
+  }
+  /* Disable scroll-snap so plates flow naturally */
+  .canvas.interactive {
+    scroll-snap-type: none !important;
+    scroll-behavior: auto !important;
+  }
+  /* Body-page grid collapses to single column */
+  .body-page.interactive {
+    display: block !important;
+    grid-template-columns: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  /* Hide sticky TOC rail (table of contents page already serves this in print) */
+  .toc-rail { display: none !important; }
+  /* Per-Part sticky-viz column collapses to flow */
+  .part-block.has-viz {
+    display: block !important;
+    grid-template-columns: none !important;
+  }
+  .part-block.has-viz .part-viz-column {
+    position: static !important;
+    top: 0 !important;
+    max-height: none !important;
+    margin-top: 24px;
+  }
+  /* Plate sections lose viewport-min-height — let them size to content */
+  .viz-plate {
+    min-height: 0 !important;
+    scroll-snap-align: none !important;
+  }
+  /* Hover-only tooltips never appear in print */
+  #bridge-tooltip { display: none !important; }
+  /* Show all collapsed/filtered content (no mode-state in print) */
+  [data-filter-hidden],
+  [hidden][data-interactive] { display: revert !important; }
+}
 `;
