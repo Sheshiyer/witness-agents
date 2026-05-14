@@ -381,6 +381,106 @@ These were not nailed down in brainstorming and are explicit follow-ups during i
 
 ---
 
+## GitHub Issue Tree
+
+Created via swarm-architect `runbooks/plan-to-github.md` on 2026-05-14. Milestone: [Reading Modes — Synastry / Business / Family / Team](https://github.com/Sheshiyer/witness-agents/milestone/1).
+
+### Epics (7 phase-level)
+
+| Phase | Epic | Title |
+|---|---|---|
+| P0 Foundations | [#28](https://github.com/Sheshiyer/witness-agents/issues/28) | Foundations — mode-doc parser + renderer-dispatcher + schema doc |
+| P1 Orchestrator | [#29](https://github.com/Sheshiyer/witness-agents/issues/29) | Unified orchestrator + port existing composite/triad to mode docs |
+| P2 Rendering | [#30](https://github.com/Sheshiyer/witness-agents/issues/30) | Interactive HTML renderer (CSS scroll-timeline + GSAP + inline JS) |
+| P3 Relational | [#31](https://github.com/Sheshiyer/witness-agents/issues/31) | Partner-Synastry + Business-Partners modes |
+| P4 Family-Penta | [#32](https://github.com/Sheshiyer/witness-agents/issues/32) | Family-Penta mode + pentagon SVG topology |
+| P5 Team-Synergy | [#33](https://github.com/Sheshiyer/witness-agents/issues/33) | Team-Synergy mode + web-graph SVG topology |
+| P6 Autoresearch | [#34](https://github.com/Sheshiyer/witness-agents/issues/34) | Mode-specific autoresearch passes (parallel per mode) |
+
+### Atomic task issues (24 total)
+
+**Phase 0 — Foundations** (no parallelism dependencies)
+- [#35](https://github.com/Sheshiyer/witness-agents/issues/35) P0.1 — Build mode-doc parser
+- [#36](https://github.com/Sheshiyer/witness-agents/issues/36) P0.2 — Build SVG renderer-dispatcher
+- [#37](https://github.com/Sheshiyer/witness-agents/issues/37) P0.3 — Mode-doc frontmatter schema documentation
+
+**Phase 1 — Orchestrator**
+- [#38](https://github.com/Sheshiyer/witness-agents/issues/38) P1.1 — Build unified `integratedreading-mode.ts` orchestrator
+- [#39](https://github.com/Sheshiyer/witness-agents/issues/39) P1.2 — Port composite → `modes/composite-dyad.md` (4-pass)
+- [#40](https://github.com/Sheshiyer/witness-agents/issues/40) P1.3 — Port triad → `modes/composite-triad.md` (4-pass)
+- [#41](https://github.com/Sheshiyer/witness-agents/issues/41) P1.4 — Convert legacy runners to thin shims
+
+**Phase 2 — Rendering**
+- [#42](https://github.com/Sheshiyer/witness-agents/issues/42) P2.1 — Build `renderInteractiveHTMLPage()` scroll-narrative scaffold
+- [#43](https://github.com/Sheshiyer/witness-agents/issues/43) P2.2 — Build `render/interactions/` framework (GSAP + event handlers)
+- [#44](https://github.com/Sheshiyer/witness-agents/issues/44) P2.3 — Add `@media print` flattening + dyad/triad validation
+
+**Phase 3 — Relational** (synastry + business can parallelize)
+- [#45](https://github.com/Sheshiyer/witness-agents/issues/45) P3.1 — Write `modes/partner-synastry.md` (4-pass romantic)
+- [#46](https://github.com/Sheshiyer/witness-agents/issues/46) P3.2 — Partner-Synastry interaction module
+- [#47](https://github.com/Sheshiyer/witness-agents/issues/47) P3.3 — Write `modes/business-partners.md` (4-pass operating)
+- [#48](https://github.com/Sheshiyer/witness-agents/issues/48) P3.4 — Business-Partners interaction module
+
+**Phase 4 — Family-Penta**
+- [#49](https://github.com/Sheshiyer/witness-agents/issues/49) P4.1 — Write `modes/family-penta.md` (5-pass lineage)
+- [#50](https://github.com/Sheshiyer/witness-agents/issues/50) P4.2 — Build `render/svg/composite-penta.ts` (pentagon)
+- [#51](https://github.com/Sheshiyer/witness-agents/issues/51) P4.3 — Family-Penta interaction module
+
+**Phase 5 — Team-Synergy**
+- [#52](https://github.com/Sheshiyer/witness-agents/issues/52) P5.1 — Write `modes/team-synergy.md` (hierarchical 1+3)
+- [#53](https://github.com/Sheshiyer/witness-agents/issues/53) P5.2 — Build `render/svg/team-web.ts` (force-directed graph)
+- [#54](https://github.com/Sheshiyer/witness-agents/issues/54) P5.3 — Team-Synergy interaction module
+
+**Phase 6 — Autoresearch** (all four parallel, can start as soon as the respective mode lands)
+- [#55](https://github.com/Sheshiyer/witness-agents/issues/55) P6.1 — Autoresearch for `partner-synastry`
+- [#56](https://github.com/Sheshiyer/witness-agents/issues/56) P6.2 — Autoresearch for `business-partners`
+- [#57](https://github.com/Sheshiyer/witness-agents/issues/57) P6.3 — Autoresearch for `family-penta`
+- [#58](https://github.com/Sheshiyer/witness-agents/issues/58) P6.4 — Autoresearch for `team-synergy`
+
+### Wave dependencies (visual)
+
+```
+P0 Foundations (#28)
+    ├── #35 parser ──────┐
+    ├── #36 dispatcher ──┤
+    └── #37 schema ──────┤
+                          ↓
+P1 Orchestrator (#29)
+    ├── #38 orchestrator ─┐
+    ├── #39 dyad mode    ─┤
+    ├── #40 triad mode   ─┤
+    └── #41 shims        ─┤
+                          ↓
+P2 Rendering (#30)
+    ├── #42 page scaffold ─┐
+    ├── #43 interactions  ─┤
+    └── #44 print + valid ─┤
+                          ↓
+        ┌──────────────────┼──────────────────┐
+        ↓                  ↓                  ↓
+P3 Relational (#31)  P4 Family (#32)    P5 Team (#33)
+   ├── #45 synastry md   ├── #49 family md     ├── #52 team md
+   ├── #46 syn interact  ├── #50 pentagon svg  ├── #53 web-graph svg
+   ├── #47 biz md        └── #51 family interact └── #54 team interact
+   └── #48 biz interact
+
+        ↓                  ↓                  ↓
+P6 Autoresearch (#34) — all parallel
+   ├── #55 synastry  ├── #56 business
+   ├── #57 family    └── #58 team
+```
+
+### Owner / branch / worktree boundaries
+
+Each task issue declares its own `Execution envelope` block with:
+- single branch (`claude/<task-id>-<short-name>`)
+- allowed edit surface (specific files only)
+- explicit out-of-scope list
+
+No two task issues within a wave own the same edit surface. The swarm-architect `multi-agent-boundaries.md` rules are encoded in each issue body.
+
+---
+
 ## References
 
 - Predecessor PR: [#26 — editorial-grade dyad reading pipeline + autoresearch scaffolding](https://github.com/Sheshiyer/witness-agents/pull/26)
