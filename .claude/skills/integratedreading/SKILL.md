@@ -153,6 +153,18 @@ Workspace for ongoing experiments: `~/.claude/MEMORY/WORK/autoresearch-integrate
 
 ---
 
+## Reading Modes (Hardened 2026-05-14)
+
+Four new modes extend the pipeline beyond solo + composite-dyad + composite-triad: Partner-Synastry (2 subjects romantic), Business-Partners (2-3 co-founders), Family-Penta (5 kinship), Team-Synergy (4-12 team). Each delivers 12-15k meaningful words via the unified orchestrator `scripts/integratedreading-mode.ts`.
+
+**Mode-doc contract:** see [`scripts/integratedreading/modes/_schema.md`](../../../scripts/integratedreading/modes/_schema.md) for the full frontmatter contract + body section structure. One Markdown file per mode under `scripts/integratedreading/modes/<mode>.md`. The orchestrator parses this file via [`parser.ts`](../../../scripts/integratedreading/modes/parser.ts) (`parseModeDoc()`).
+
+**SVG topology routing:** mode docs declare `svg_topology: dyad-arc | triad-triangle | pentagon | web-graph`. The orchestrator dispatches via [`render/svg/index.ts`](../../../scripts/integratedreading/render/svg/index.ts) (`TOPOLOGY_RENDERERS` map). Adding a new topology = one entry in the map + one renderer module. Mode docs never name TypeScript files directly.
+
+**Design source:** [`docs/plans/2026-05-14-reading-modes-design.md`](../../../docs/plans/2026-05-14-reading-modes-design.md) — full design across 6 sections + 6-phase implementation plan tracked in milestone #1 + issues #28-#58.
+
+---
+
 ## Workflow Phases
 
 ### Phase 0 — Preflight
