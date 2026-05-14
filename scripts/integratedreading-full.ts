@@ -328,7 +328,20 @@ async function main() {
   await mkdir(cfg.output_dir, { recursive: true });
   const slug = cfg.subject.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const runDir = join(cfg.output_dir, '.runs', useCache ? (readdirSync(join(cfg.output_dir, '.runs') || '.').sort().pop() || ts) : ts);
+  const runsRoot = join(cfg.output_dir, '.runs');
+  await mkdir(runsRoot, { recursive: true });
+  // If --use-cache is set and a prior run exists, reuse the most recent one;
+  // otherwise create a fresh timestamped run dir. Filter to ts-shaped names
+  // so stray files in .runs/ don't get picked up.
+  let priorRunDir: string | undefined;
+  if (useCache && existsSync(runsRoot)) {
+    const candidates = readdirSync(runsRoot)
+      .filter((d) => /^\d{4}-\d{2}-\d{2}T/.test(d))
+      .sort()
+      .reverse();
+    priorRunDir = candidates[0];
+  }
+  const runDir = join(runsRoot, priorRunDir ?? ts);
   await mkdir(runDir, { recursive: true });
   console.log(`  Run:     ${runDir}`);
 

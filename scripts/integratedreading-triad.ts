@@ -127,7 +127,20 @@ async function main() {
 
   await mkdir(outputDir, { recursive: true });
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const runDir = join(outputDir, '.runs', ts);
+  const runsRoot = join(outputDir, '.runs');
+  await mkdir(runsRoot, { recursive: true });
+  // For --use-cache, find the most recent prior run that contains a cached
+  // triad synthesis so we can reuse it. Otherwise create a fresh run.
+  const triadCacheName = `08_triad_${triadSlug}.md`;
+  let priorRunDir: string | undefined;
+  if (useCache && existsSync(runsRoot)) {
+    const candidates = readdirSync(runsRoot)
+      .filter((d) => /^\d{4}-\d{2}-\d{2}T/.test(d))
+      .sort()
+      .reverse();
+    priorRunDir = candidates.find((d) => existsSync(join(runsRoot, d, triadCacheName)));
+  }
+  const runDir = join(runsRoot, priorRunDir ?? ts);
   await mkdir(runDir, { recursive: true });
 
   console.log('═══ integratedreading-triad ═══');
