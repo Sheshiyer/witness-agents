@@ -206,6 +206,30 @@ export const INTERACTION_MODULES: Record<TopologyKey, InteractionModule> = {
 };
 
 // ────────────────────────────────────────────────────────────────────────
+// Mode-keyed interactions (layered ON TOP of topology-keyed)
+//
+// Different modes can share an SVG topology but want different
+// affordances. E.g., both `partner-synastry` and `composite-dyad` use
+// `dyad-arc`, but synastry needs the four-way-bridge tooltip while the
+// generic composite uses the basic thread pulse. Mode-keyed modules
+// declare additional CSS/JS that gets COMPOSED with the topology base.
+//
+// Authoring contract:
+//   - mode-keyed modules layer ON TOP of topology-keyed modules
+//   - they do NOT replace topology modules
+//   - per-mode css/gsap/handlers are appended after topology equivalents
+//   - look up by mode name first, fall back to topology if no mode entry
+// ────────────────────────────────────────────────────────────────────────
+
+import { partnerSynastryModule } from './partner-synastry.js';
+import { businessPartnersModule } from './business-partners.js';
+
+export const MODE_INTERACTION_MODULES: Record<string, InteractionModule> = {
+  'partner-synastry': partnerSynastryModule,
+  'business-partners': businessPartnersModule,
+};
+
+// ────────────────────────────────────────────────────────────────────────
 // Shared base — scroll-narrative scaffold CSS + JS that EVERY interactive
 // page gets, regardless of topology. This drives the cover fade-in,
 // sticky TOC rail, plate scroll-snap, and per-Part sticky-viz columns.
@@ -482,25 +506,35 @@ export const BASE_INTERACTIVE_JS = `
 })();
 `;
 
-/** Convenience — assemble all three layers (CSS / GSAP / handlers) for a topology. */
-export function buildInteractionPayload(topology: string): {
+/**
+ * Convenience — assemble all three layers (CSS / GSAP / handlers).
+ *
+ * Composition order (bottom → top):
+ *   1. BASE_SCROLL_NARRATIVE_CSS + BASE_INTERACTIVE_JS (always)
+ *   2. Topology-keyed module (e.g., dyad-arc thread pulse)
+ *   3. Mode-keyed module if `mode` provided (e.g., synastry bridge tooltip)
+ *
+ * Pass only `topology` for the legacy single-arg call. Pass both for
+ * mode-aware composition.
+ */
+export function buildInteractionPayload(topology: string, mode?: string): {
   css: string;
   gsap: string;
   handlers: string;
 } {
-  const mod = INTERACTION_MODULES[topology as TopologyKey];
-  if (!mod) {
+  const topoMod = INTERACTION_MODULES[topology as TopologyKey];
+  if (!topoMod) {
     return {
       css: `/* unknown topology '${topology}' — no interaction module */`,
       gsap: `// unknown topology '${topology}'`,
       handlers: `// unknown topology '${topology}'`,
     };
   }
-  return {
-    css: BASE_SCROLL_NARRATIVE_CSS + '\n' + mod.scrollTimelineCss,
-    gsap: mod.gsapTimeline,
-    handlers: BASE_INTERACTIVE_JS + '\n' + mod.eventHandlers,
-  };
+  const modeMod = mode ? MODE_INTERACTION_MODULES[mode] : undefined;
+  const css = [BASE_SCROLL_NARRATIVE_CSS, topoMod.scrollTimelineCss, modeMod?.scrollTimelineCss].filter(Boolean).join('\n');
+  const gsap = [topoMod.gsapTimeline, modeMod?.gsapTimeline].filter(Boolean).join('\n');
+  const handlers = [BASE_INTERACTIVE_JS, topoMod.eventHandlers, modeMod?.eventHandlers].filter(Boolean).join('\n');
+  return { css, gsap, handlers };
 }
 
 export const GSAP_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js';
