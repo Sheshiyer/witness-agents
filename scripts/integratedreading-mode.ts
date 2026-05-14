@@ -26,6 +26,14 @@ import { homedir } from 'node:os';
 import { parseModeDoc, summarizeLessons, type ParsedModeDoc, type PassSpec } from './integratedreading/modes/parser.js';
 import { renderByTopology } from './integratedreading/render/svg/index.js';
 import {
+  renderInteractiveHTMLPage,
+  renderFigIndex,
+  createFigureRegistry,
+  renderVizPlate,
+  type PartBlock,
+} from './integratedreading/render/templates.js';
+import { execSync } from 'node:child_process';
+import {
   ANATOMIST_PERSONA,
   KOSHA_GRAMMAR,
   DYADIC_LOOP,
@@ -558,22 +566,61 @@ async function main() {
   await writeFile(metricPath, JSON.stringify(report, null, 2));
   console.log(`✓ Metrics:   ${metricPath}`);
 
-  // SVG (just verify dispatch works — full HTML render lands in P2)
+  // ─── SVG topology dispatch ───────────────────────────────────────
+  const topology = doc.frontmatter.svg_topology;
+  let svgString = '';
   try {
-    const topology = doc.frontmatter.svg_topology;
     if (topology === 'dyad-arc' && subjects.length === 2) {
-      const svg = renderByTopology(topology, buildDyadSvgData(subjects), { width: 640 });
-      await writeFile(join(runDir, `${runSlug}.svg`), svg);
-      console.log(`✓ SVG:       ${runSlug}.svg (dyad-arc)`);
+      svgString = renderByTopology(topology, buildDyadSvgData(subjects), { width: 640 });
     } else if (topology === 'triad-triangle' && subjects.length === 3) {
-      const svg = renderByTopology(topology, buildTriadSvgData(subjects), { width: 720 });
-      await writeFile(join(runDir, `${runSlug}.svg`), svg);
-      console.log(`✓ SVG:       ${runSlug}.svg (triad-triangle)`);
+      svgString = renderByTopology(topology, buildTriadSvgData(subjects), { width: 720 });
     } else {
-      console.log(`  (SVG topology '${topology}' renders in P2 interactive HTML phase — skipping standalone export)`);
+      console.log(`  (SVG topology '${topology}' renderer not yet available — emitting placeholder)`);
+    }
+    if (svgString) {
+      await writeFile(join(runDir, `${runSlug}.svg`), svgString);
+      console.log(`✓ SVG:       ${runSlug}.svg (${topology})`);
     }
   } catch (err: any) {
     console.warn(`  ⚠ SVG render skipped: ${err.message}`);
+  }
+
+  // ─── Interactive HTML render (P2.1 wired) ────────────────────────
+  try {
+    const figs = createFigureRegistry();
+    const partBlocks: PartBlock[] = report.pass_metrics.map((m, i) => ({
+      partNum: i + 1,
+      romanNumeral: toRoman(i + 1),
+      title: m.title,
+      subtitle: `~${m.words.toLocaleString()} words · ${m.xrefs} cross-references`,
+      contentHtml: mdToHtmlBlock(passes[i].content),
+      // Attach the SVG only to the first Part as a sticky-viz column anchor
+      vizHtml: i === 0 && svgString ? renderVizPlate({
+        figNo: figs.next(`${doc.frontmatter.mode} field`),
+        title: `${doc.frontmatter.mode === 'composite-dyad' ? 'Composite Dyad Field' : doc.frontmatter.mode === 'composite-triad' ? 'Triadic Field' : 'Field'}`,
+        svg: svgString,
+        caption: doc.frontmatter.bridge_mandates[0],
+      }) : undefined,
+    }));
+    const html = renderInteractiveHTMLPage({
+      title: `${doc.frontmatter.mode} — ${subjects.map((s) => s.subject).join(' × ')}`,
+      cover: {
+        subject: subjects.map((s) => s.subject).join(' × '),
+        birth_date: subjects[0].birth_date || '',
+        cover_mandala_svg: svgString,
+      },
+      topology,
+      parts: partBlocks,
+      fig_index_html: renderFigIndex(figs.list()),
+      is_composite: subjects.length >= 2,
+      composite_subject_a: subjects[0]?.subject,
+      composite_subject_b: subjects.slice(1).map((s) => s.subject).join(' × '),
+    });
+    const htmlPath = join(runDir, `${runSlug}.html`);
+    await writeFile(htmlPath, html);
+    console.log(`✓ HTML:      ${runSlug}.html (interactive, ${(html.length / 1024).toFixed(1)} KB)`);
+  } catch (err: any) {
+    console.warn(`  ⚠ Interactive HTML render skipped: ${err.message}`);
   }
 
   // ─── Summary ─────────────────────────────────────────────────────
@@ -584,6 +631,36 @@ async function main() {
   for (const m of report.pass_metrics) {
     const hit = m.words >= m.target_words * 0.8 ? '✓' : '⚠';
     console.log(`    ${hit} Pass ${m.id}: ${m.words}w / ${m.target_words}w target · ${m.xrefs} xrefs`);
+  }
+}
+
+// Roman numeral converter for Part headings
+function toRoman(n: number): string {
+  const map: Array<[number, string]> = [
+    [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'],
+    [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'],
+    [5, 'V'], [4, 'IV'], [1, 'I'],
+  ];
+  let s = ''; let r = n;
+  for (const [v, sym] of map) { while (r >= v) { s += sym; r -= v; } }
+  return s;
+}
+
+// Markdown → HTML via pandoc (fallback to minimal regex if pandoc absent)
+function mdToHtmlBlock(md: string): string {
+  if (!md.trim()) return '';
+  try {
+    return execSync('pandoc -f markdown -t html5 --syntax-highlighting=none', {
+      input: md,
+      encoding: 'utf-8',
+    });
+  } catch {
+    return md
+      .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .split(/\n\n+/).map((p) => p.startsWith('<') ? p : `<p>${p}</p>`).join('\n');
   }
 }
 

@@ -4,6 +4,11 @@
 // renderVizTrio so the figure-counter and figure-index stay coherent.
 
 import { STYLES, BRAND } from './styles.js';
+import {
+  buildInteractionPayload,
+  GSAP_CDN,
+  GSAP_SCROLLTRIGGER_CDN,
+} from './interactions/index.js';
 
 export interface CoverData {
   subject: string;
@@ -248,4 +253,146 @@ export function renderFigIndex(entries: FigureEntry[]): string {
       <div class="fig-index-title">Index of Plates</div>
       <ul>${items}</ul>
     </section>`;
+}
+
+// ─── INTERACTIVE HTML PAGE (P2.1 — scroll-narrative + animations) ────
+//
+// Alongside the existing renderHTMLPage() static renderer. Output is a
+// single self-contained HTML file: GSAP loaded via CDN script tag, all
+// other CSS/JS inlined. Mode-doc's svg_topology drives which interaction
+// module (dyad-arc / triad-triangle / pentagon / web-graph) gets inlined.
+//
+// Per design doc § 5 — interactive HTML primary, PDF derivative archive
+// via @media print flattening (added to styles.ts in P2.3).
+
+export interface PartBlock {
+  partNum: number;
+  romanNumeral: string;
+  title: string;
+  subtitle?: string;
+  contentHtml: string;
+  /** Optional SVG-bearing figure(s) for sticky-viz column (single-Part docs only). */
+  vizHtml?: string;
+}
+
+export function renderInteractiveHTMLPage(opts: {
+  title: string;
+  cover: CoverData;
+  topology: string;
+  parts: PartBlock[];
+  opening_html?: string;
+  fig_index_html?: string;
+  is_composite?: boolean;
+  composite_subject_a?: string;
+  composite_subject_b?: string;
+}): string {
+  const subtitle = opts.is_composite
+    ? `${opts.composite_subject_a} × ${opts.composite_subject_b}`
+    : opts.cover.subject;
+
+  const coverMandala = opts.cover.cover_mandala_svg
+    ? `<div class="cover-svg-wrap">${opts.cover.cover_mandala_svg}</div>`
+    : '';
+
+  // Topology-specific interaction layer (inlined)
+  const interaction = buildInteractionPayload(opts.topology);
+
+  // TOC rail entries — generated from parts list
+  const tocRailHtml = `
+    <nav class="toc-rail">
+      <div class="toc-rail-title">Contents</div>
+      <ol>
+        ${opts.parts.map((p) => `<li data-part="${p.partNum}"><a href="#part-${p.partNum}">${p.title}</a></li>`).join('\n        ')}
+      </ol>
+    </nav>`;
+
+  // Body parts assembly — each Part becomes a .part-block (with optional sticky viz column)
+  const partsHtml = opts.parts.map((p) => {
+    const hasViz = !!p.vizHtml;
+    const partInner = `
+      <section class="part-header" id="part-${p.partNum}">
+        <div class="part-eyebrow">Part ${p.romanNumeral}</div>
+        <h2 class="part-title">${p.title}</h2>
+        ${p.subtitle ? `<div class="part-subtitle">${p.subtitle}</div>` : ''}
+      </section>
+      <div class="part-prose">${p.contentHtml}</div>`;
+    if (hasViz) {
+      return `
+      <div class="part-block has-viz">
+        ${partInner}
+        <aside class="part-viz-column">${p.vizHtml}</aside>
+      </div>`;
+    }
+    return `<div class="part-block">${partInner}</div>`;
+  }).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${opts.title}</title>
+<style>
+${STYLES}
+
+${interaction.css}
+</style>
+</head>
+<body>
+<div class="canvas interactive">
+  <!-- ───────────── COVER PAGE ───────────── -->
+  <section class="cover">
+    <header>
+      <div class="cover-mark">Tryambakam Noesis · Integrated Reading</div>
+      <h1 class="cover-title">${opts.is_composite ? 'Composite Field' : 'Integrated Reading'}</h1>
+      <div class="cover-subject">${subtitle}</div>
+      <div class="cover-birth">
+        ${opts.cover.birth_date}${opts.cover.birth_time ? ' · ' + opts.cover.birth_time : ''}${opts.cover.birth_place ? ' · ' + opts.cover.birth_place : ''}
+      </div>
+      <p class="cover-tagline">
+        Self-Consciousness as Technology.<br/>
+        Body as Medium. Breath as Interface.
+      </p>
+    </header>
+    ${coverMandala}
+    <footer class="cover-footer">
+      <div class="cover-lineage">
+        Three-resolution decoding · own-world × cultural-archetypal × celestial-environmental.<br/>
+        Tsarion-anchored Tarot lineage. Anti-dependency telos.
+      </div>
+      <div class="cover-stamp">∴ NOESIS</div>
+    </footer>
+  </section>
+
+  <!-- ───────────── BODY w/ sticky TOC rail ───────────── -->
+  <article class="body-page interactive">
+    ${tocRailHtml}
+    <div class="body-content">
+      ${opts.opening_html ? `<section class="opening">${opts.opening_html}</section>` : ''}
+      ${partsHtml}
+      ${opts.fig_index_html ?? ''}
+      <footer class="doc-footer">
+        <div class="tagline">The Anatomist Who Sees Fractals</div>
+        <div>TRYAMBAKAM NOESIS · 1331.TRYAMBAKAM.SPACE</div>
+        <div class="quine">
+          This document is documentation of an instrument. The instrument is what you already are.
+          The Quine principle: the system succeeds when you no longer need it.
+        </div>
+      </footer>
+    </div>
+  </article>
+</div>
+
+<!-- GSAP + ScrollTrigger via CDN — only loaded for interactive mode -->
+<script src="${GSAP_CDN}"></script>
+<script src="${GSAP_SCROLLTRIGGER_CDN}"></script>
+
+<!-- Inline runtime: base scroll-narrative scaffold + topology-specific GSAP timelines + event handlers -->
+<script>
+${interaction.handlers}
+
+${interaction.gsap}
+</script>
+</body>
+</html>`;
 }
