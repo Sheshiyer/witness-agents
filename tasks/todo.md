@@ -121,6 +121,54 @@
     - `creative-expression` switches the practice language to ritual/rehearsal framing
     - both flows stay free of horizontal overflow in browser verification
 
+## 2026-05-14 Live Deployment Verification
+
+### Plan
+- [x] Verify the deployed `daily-practice` workflow response now includes the additive reading-object fields and live `resonance` block.
+- [x] Verify the deployed `creative-expression` workflow response now includes the additive `creative_surface` object and workflow-aware evidence.
+- [x] Confirm the local reading page can render the actual deployed payloads without seeded fixtures and record the result.
+
+### Review
+- Health/live check on `2026-05-14` confirmed a new Railway deployment is live:
+  - `witness_build_id`: `0884c363-c09e-4239-9b6a-efb313d4bf9b`
+  - `started_at`: `2026-05-14T03:53:37.874Z`
+  - `public_domain`: `48.tryambakam.space`
+- Live `daily-practice` verification:
+  - additive identity fields are live:
+    - `reading_id`
+    - `reading_url`
+    - `created_at`
+    - `subject`
+  - workflow report fields are only partially live:
+    - `summary`, `frictions`, `practice`, and `question` are present
+    - `title` was `null`
+    - `convergences` was `null`
+    - `resonance` was `null`
+  - live engine set was still:
+    - `biorhythm`
+    - `transits`
+    - `vedic-clock`
+    - `panchanga`
+  - `nadabrahman` was not present in the live workflow response, so the new resonance block could not materialize upstream.
+- Live `creative-expression` verification:
+  - additive identity fields are live
+  - `creative_surface` is live
+  - live engine set was:
+    - `sacred-geometry`
+    - `raaga`
+  - populated `creative_surface` currently contained:
+    - `geometry`
+    - `ritual`
+  - `sigil`, `numerology`, and nested `resonance` were `null` in the live response
+  - evidence currently referenced only `sacred-geometry`, not the fuller multi-engine creative contract from local tests
+- Frontend compatibility verification against actual live payloads passed on `http://127.0.0.1:5113/reading.html`:
+  - `daily-practice` rendered correctly without seeded fixtures and did not leak hidden richer sections
+  - `creative-expression` rendered the live geometry-only `creative_surface` correctly on desktop and mobile
+  - no horizontal overflow at the tested widths
+- Main conclusion:
+  - deployment succeeded
+  - the live backend contract is only partially at the intended Phase 2 / Phase 3 shape because the upstream workflow payloads are still not invoking or returning the richer engine set consistently
+
 ## Review
 - `railway up` was the real deploy path. GitHub `main` push alone did not roll `48.tryambakam.space` because the service is deployed from Railway CLI, not from a GitHub-connected source.
 - Railway deployment `87d793a7-3a68-48f5-8d9d-34bfc8c3b8ca` completed successfully on 2026-04-28 and cleared the stale-deploy blocker.
