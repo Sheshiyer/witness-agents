@@ -27,6 +27,34 @@ export interface PassSpec {
   model?: string;            // optional NVIDIA model override; falls back to SYNTH_MODELS.PRIMARY
 }
 
+// ── Consciousness-level register-variant schema (P1.2 #71) ─────────────
+// Optional. When present, the orchestrator uses the resolved level's
+// register band ('l1_l3' | 'l4_l5') to pick per-pass template overrides.
+// Mode docs without `register_variants` retain current L5 behavior
+// (backward-compat).
+
+export type RegisterBand = 'l1_l3' | 'l4_l5';
+
+export interface PassTemplateOverride {
+  pass_id: string;            // matches PassSpec.id
+  template: string;           // section anchor in this same mode doc
+}
+
+export interface RegisterVariantSpec {
+  /** Target word range for this register band — typically tighter for
+   *  L1-L3 (~9-11k) and wider for L4-L5 (~12-15k). */
+  target_words?: { min: number; max: number };
+  /** Per-pass template overrides. Each pass_id MUST exist in pass_plan;
+   *  the named template MUST resolve to a body section. Passes not
+   *  listed fall back to their pass_plan default template. */
+  overrides?: PassTemplateOverride[];
+}
+
+export interface RegisterVariants {
+  l1_l3?: RegisterVariantSpec;
+  l4_l5?: RegisterVariantSpec;
+}
+
 export interface ModeConfig {
   mode: string;
   subject_count: { min: number; max: number };
@@ -38,6 +66,8 @@ export interface ModeConfig {
   house_overlay: number[];
   bridge_mandates: string[];
   svg_topology: TopologyKey;
+  /** Optional. Absence = current L5 behavior (backward-compat). */
+  register_variants?: RegisterVariants;
 }
 
 export interface LessonsEntry {
@@ -259,6 +289,9 @@ export function parseModeDoc(path: string): ParsedModeDoc {
     }
   }
 
+  // register_variants (P1.2 #71) — validate any overrides
+  validateRegisterVariants(frontmatter, sections, path);
+
   return {
     frontmatter,
     sections,
@@ -277,3 +310,87 @@ export function summarizeLessons(lessons: LessonsEntry[], maxEntries = 5): strin
   });
   return `## Prior Autoresearch Findings\n\n${lines.join('\n')}`;
 }
+
+// ────────────────────────────────────────────────────────────────────────
+// Register-variant resolution (P1.2 #71)
+// ────────────────────────────────────────────────────────────────────────
+
+/**
+ * Resolve which body-section template to use for a given pass + register band.
+ *
+ * Resolution order:
+ *   1. If `register_variants[band].overrides` lists this pass_id, use that template
+ *   2. Otherwise fall back to the canonical pass_plan entry's `template`
+ *
+ * Returns the section content (raw markdown). Throws if the resolved
+ * template doesn't exist in the parsed sections map.
+ */
+export function getPassTemplate(
+  doc: ParsedModeDoc,
+  pass_id: string,
+  register: RegisterBand,
+): string {
+  const pass = doc.frontmatter.pass_plan.find((p) => p.id === pass_id);
+  if (!pass) {
+    throw new Error(`No pass with id '${pass_id}' in mode '${doc.frontmatter.mode}'`);
+  }
+
+  // Check for register-variant override first
+  const variant = doc.frontmatter.register_variants?.[register];
+  const override = variant?.overrides?.find((o) => o.pass_id === pass_id);
+  const templateName = override?.template ?? pass.template;
+
+  const content = doc.sections[templateName];
+  if (content === undefined) {
+    throw new Error(
+      `Pass '${pass_id}' (register ${register}) resolves to template '${templateName}' which has no matching '## ${templateName}' section in mode '${doc.frontmatter.mode}'`,
+    );
+  }
+  return content;
+}
+
+/**
+ * Get the resolved target_words range for a register band.
+ * Falls back to the canonical frontmatter `target_words` if the band
+ * doesn't declare its own.
+ */
+export function getTargetWordsForRegister(
+  doc: ParsedModeDoc,
+  register: RegisterBand,
+): { min: number; max: number } {
+  const variant = doc.frontmatter.register_variants?.[register];
+  return variant?.target_words ?? doc.frontmatter.target_words;
+}
+
+/**
+ * Validate that every override in register_variants points to a real
+ * pass_id + real body section. Called inside parseModeDoc when
+ * register_variants is present.
+ */
+function validateRegisterVariants(
+  fm: ModeConfig,
+  sections: Record<string, string>,
+  path: string,
+): void {
+  if (!fm.register_variants) return;
+  for (const band of ['l1_l3', 'l4_l5'] as RegisterBand[]) {
+    const variant = fm.register_variants[band];
+    if (!variant?.overrides) continue;
+    for (const ov of variant.overrides) {
+      const pass = fm.pass_plan.find((p) => p.id === ov.pass_id);
+      if (!pass) {
+        throw new Error(
+          `Mode doc ${path}: register_variants.${band}.overrides[].pass_id '${ov.pass_id}' has no matching pass in pass_plan`,
+        );
+      }
+      if (!sections[ov.template]) {
+        throw new Error(
+          `Mode doc ${path}: register_variants.${band}.overrides for pass '${ov.pass_id}' references template '${ov.template}' which has no '## ${ov.template}' section`,
+        );
+      }
+    }
+  }
+}
+
+// Re-export the validator for tests
+export { validateRegisterVariants };
