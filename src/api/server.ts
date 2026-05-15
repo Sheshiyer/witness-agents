@@ -13,6 +13,15 @@ import type {
   Kosha,
 } from '../types/interpretation.js';
 import type { SelemeneEngineId, BirthData } from '../types/engine.js';
+import type {
+  ConsciousnessLevel,
+  LevelSource,
+  RegisterBand,
+  ReadingErrorResponse,
+  CallerIdentity,
+} from '../types/reading-request.js';
+import { resolveLevel } from '../../scripts/integratedreading/level-resolver.js';
+import { deriveCallerIdentity, gateConsciousnessLevelOverride } from './auth.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // API TYPES
@@ -31,6 +40,11 @@ export interface InterpretRequest {
     longitude?: number;
     timezone?: string;
   };
+  /**
+   * Optional admin override (1-5). Gated server-side — non-admin callers
+   * receive HTTP 403 FORBIDDEN_LEVEL_OVERRIDE. See src/api/auth.ts.
+   */
+  consciousness_level?: ConsciousnessLevel;
 }
 
 export interface MobileInterpretation {
@@ -49,6 +63,10 @@ export interface MobileInterpretation {
   graduation_prompt?: string;
   // Somatic nudge (Pichet)
   somatic_nudge?: string;        // ≤140 chars body-awareness micro-prompt
+  // Resolved consciousness-level register (P2.4 / #77). Always present.
+  effective_consciousness_level?: ConsciousnessLevel;
+  level_source?: LevelSource;
+  register_band?: RegisterBand;
 }
 
 export interface HeartbeatResponse {
@@ -222,6 +240,15 @@ export interface ApiDependencies {
   getUserState: (userId: string) => Promise<UserState>;
   getTierForUser: (userId: string) => Promise<Tier>;
   processAkshara?: (req: MirrorRequest) => Promise<MirrorResponse>;
+  /**
+   * Optional user-DB stored consciousness_level lookup (P2.4 / #77).
+   * Returns the user's stored level (1-5) or undefined when not found.
+   * If not provided, the resolver falls back to `default_level` (1).
+   *
+   * TODO: Wire this to Selemene DB once user-profile schema lands;
+   * currently no central user-profile fetcher exists in this codebase.
+   */
+  getUserConsciousnessLevel?: (userId: string) => number | undefined;
 }
 
 /**
@@ -235,9 +262,37 @@ export function createApiHandlers(deps: ApiDependencies) {
   return {
     /**
      * POST /interpret
-     * Main interpretation endpoint — sends query through the full pipeline
+     * Main interpretation endpoint — sends query through the full pipeline.
+     *
+     * P2.5 (#78): Gates `consciousness_level` payload. Non-admin callers
+     *             passing the field receive 403 FORBIDDEN_LEVEL_OVERRIDE.
+     * P2.4 (#77): Resolves the effective consciousness_level and includes
+     *             it in the response (effective_consciousness_level,
+     *             level_source, register_band).
      */
-    async interpret(req: InterpretRequest): Promise<{ status: number; body: MobileInterpretation }> {
+    async interpret(
+      req: InterpretRequest,
+      caller?: CallerIdentity,
+    ): Promise<{ status: number; body: MobileInterpretation | ReadingErrorResponse }> {
+      // ── P2.5 gate ─────────────────────────────────────────────────
+      const callerId: CallerIdentity = caller ?? {
+        caller_id: req.user_id,
+        caller_tier: 'free',
+        caller_is_admin: false,
+      };
+      const gateBlock = gateConsciousnessLevelOverride(req, callerId);
+      if (gateBlock) return gateBlock;
+
+      // ── P2.4 level resolution ─────────────────────────────────────
+      const resolved = resolveLevel({
+        user_id: req.user_id,
+        admin_override: req.consciousness_level,
+        caller_tier: callerId.caller_tier,
+        caller_is_admin: callerId.caller_is_admin,
+        default_level: 1,
+        user_db_lookup: deps.getUserConsciousnessLevel,
+      });
+
       const userState = await deps.getUserState(req.user_id);
 
       const birthData: BirthData = req.birth_data
@@ -262,6 +317,11 @@ export function createApiHandlers(deps: ApiDependencies) {
 
       const interp = await deps.processPipeline(pipelineQuery);
       const mobile = condenser.condense(interp);
+
+      // Attach resolved level metadata to every response (P2.4)
+      mobile.effective_consciousness_level = resolved.effective_level;
+      mobile.level_source = resolved.source;
+      mobile.register_band = resolved.register_band;
 
       // Track heartbeat
       heartbeatState[req.user_id] = {
@@ -368,7 +428,12 @@ export async function createServer(config: ServerConfig): Promise<{
 
       if (path === '/interpret' && req.method === 'POST') {
         const body = await readBody(req);
-        const result = await config.handlers.interpret(body as InterpretRequest);
+        // Derive caller identity from headers (P2.5 / #78).
+        const caller = deriveCallerIdentity({
+          headers: req.headers as Record<string, string | string[] | undefined>,
+          env: process.env,
+        });
+        const result = await config.handlers.interpret(body as InterpretRequest, caller);
         res.writeHead(result.status);
         res.end(JSON.stringify(result.body));
       } else if (path === '/heartbeat' && req.method === 'GET') {

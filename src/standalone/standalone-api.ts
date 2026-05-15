@@ -55,6 +55,17 @@ import { CONSCIOUSNESS_TO_KOSHA } from '../types/interpretation.js';
 import { ENGINE_ROUTING } from '../types/engine.js';
 import { createLLMProvider, resolveProviderChoice } from '../inference/provider-factory.js';
 import type { LLMProvider } from '../inference/types.js';
+import type {
+  CallerIdentity,
+  ConsciousnessLevel,
+  LevelSource,
+  RegisterBand,
+} from '../types/reading-request.js';
+import {
+  resolveLevel,
+  ForbiddenLevelOverrideError,
+} from '../../scripts/integratedreading/level-resolver.js';
+import { deriveCallerIdentity, gateConsciousnessLevelOverride } from '../api/auth.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // API TYPES
@@ -67,6 +78,14 @@ export interface StandaloneApiConfig extends DailyMirrorConfig {
   knowledge_path?: string;       // Default: ../../knowledge from this module
   llm_timeout_ms?: number;       // Optional override for proxy LLM inference timeout
   llm_provider_instance?: LLMProvider; // Optional injection for tests / custom wiring
+  /**
+   * Optional user-DB stored consciousness_level lookup (P2.4 / #77).
+   * Returns the user's stored level (1-5) or undefined if not found.
+   *
+   * TODO: Wire to Selemene DB once user-profile schema lands. Until then
+   *       this is undefined and the resolver falls back to default 1.
+   */
+  get_user_consciousness_level?: (userId: string) => number | undefined;
   // Rhythm SSE server config (optional — rhythm endpoints disabled if not provided)
   rhythm?: {
     poll_interval_ms?: number;   // Default: 120_000 (2 min)
@@ -81,6 +100,27 @@ export interface ReadingRequest {
   latitude?: number;        // Default: 0
   longitude?: number;       // Default: 0
   timezone?: string;        // Default: 'UTC'
+  /**
+   * Optional admin override (1-5) per P2.4 (#77). Gated server-side —
+   * non-admin callers receive HTTP 403 FORBIDDEN_LEVEL_OVERRIDE.
+   * See src/api/auth.ts and scripts/integratedreading/level-resolver.ts.
+   */
+  consciousness_level?: ConsciousnessLevel;
+  /**
+   * Optional user_id used for stored-level lookup. When absent, the
+   * resolver falls back to `default_level` (1, uninitiated).
+   */
+  user_id?: string;
+}
+
+/**
+ * Resolved consciousness-level metadata attached to every successful
+ * reading response (P2.4 / #77).
+ */
+export interface ReadingLevelMeta {
+  effective_consciousness_level: ConsciousnessLevel;
+  level_source: LevelSource;
+  register_band: RegisterBand;
 }
 
 export interface ApiError {
@@ -227,6 +267,20 @@ function validateReadingRequest(body: unknown): ReadingRequest | ApiError {
     req.birth_time = timeStr;
   }
   
+  // consciousness_level: validate shape if present; gate happens later.
+  let consciousness_level: ConsciousnessLevel | undefined;
+  if (req.consciousness_level !== undefined && req.consciousness_level !== null) {
+    const v = req.consciousness_level;
+    if (typeof v !== 'number' || !Number.isInteger(v) || v < 1 || v > 5) {
+      return {
+        error: 'consciousness_level must be an integer 1-5',
+        code: 'INVALID_CONSCIOUSNESS_LEVEL',
+        hint: 'Allowed values: 1, 2, 3, 4, 5',
+      };
+    }
+    consciousness_level = v as ConsciousnessLevel;
+  }
+
   return {
     birth_date: req.birth_date as string,
     birth_time: req.birth_time as string | undefined,
@@ -234,6 +288,8 @@ function validateReadingRequest(body: unknown): ReadingRequest | ApiError {
     latitude: typeof req.latitude === 'number' ? req.latitude : 0,
     longitude: typeof req.longitude === 'number' ? req.longitude : 0,
     timezone: (req.timezone as string) || 'UTC',
+    consciousness_level,
+    user_id: typeof req.user_id === 'string' ? req.user_id : undefined,
   };
 }
 
@@ -1567,7 +1623,65 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     const maxLayer = computeMaxLayer(decoderState, config.tier);
     return { birthData, decoderState, maxLayer, userHash };
   }
-  
+
+  // ─── P2.5 / P2.4: consciousness_level gate + resolution helper ────
+  // Applies the auth gate to a validated reading request, then resolves
+  // the effective consciousness_level. Returns either a 403 gate response
+  // (caller should short-circuit) or the resolved ReadingLevelMeta.
+  function applyLevelGate(
+    validated: ReadingRequest,
+    caller: CallerIdentity,
+  ): { gate: { status: 403; body: ApiError } } | { meta: ReadingLevelMeta } {
+    const gateBlock = gateConsciousnessLevelOverride(
+      { consciousness_level: validated.consciousness_level },
+      caller,
+    );
+    if (gateBlock) {
+      return {
+        gate: {
+          status: 403,
+          body: {
+            error: gateBlock.body.error,
+            code: gateBlock.body.code,
+            hint: 'consciousness_level overrides require admin role or initiate tier.',
+          } satisfies ApiError,
+        },
+      };
+    }
+    try {
+      const resolved = resolveLevel({
+        user_id: validated.user_id ?? 'anonymous',
+        admin_override: validated.consciousness_level,
+        caller_tier: caller.caller_tier,
+        caller_is_admin: caller.caller_is_admin,
+        default_level: 1,
+        user_db_lookup: config.get_user_consciousness_level,
+      });
+      return {
+        meta: {
+          effective_consciousness_level: resolved.effective_level,
+          level_source: resolved.source,
+          register_band: resolved.register_band,
+        },
+      };
+    } catch (err) {
+      // Defense-in-depth — gate above should already have caught this,
+      // but the resolver throws on its own when bypassed in tests.
+      if (err instanceof ForbiddenLevelOverrideError) {
+        return {
+          gate: {
+            status: 403,
+            body: {
+              error: err.message,
+              code: 'FORBIDDEN_LEVEL_OVERRIDE',
+            } satisfies ApiError,
+          },
+        };
+      }
+      throw err;
+    }
+  }
+
   return {
     /**
      * GET / — Product info and available engines
@@ -1605,13 +1719,30 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     
     /**
      * POST /reading — Generate daily reading (primary engine selected by rotation)
+     *
+     * P2.5 (#78): Gates `consciousness_level` payload field — non-admin
+     *             callers receive 403 FORBIDDEN_LEVEL_OVERRIDE.
+     * P2.4 (#77): Resolves effective level + includes meta in response.
      */
-    async reading(body: unknown, clientKey?: string): Promise<{ status: number; body: unknown }> {
+    async reading(
+      body: unknown,
+      clientKey?: string,
+      caller?: CallerIdentity,
+    ): Promise<{ status: number; body: unknown }> {
       const validated = validateReadingRequest(body);
       if ('error' in validated) {
         return { status: 400, body: validated };
       }
-      
+
+      const effectiveCaller: CallerIdentity = caller ?? {
+        caller_id: validated.user_id ?? 'anonymous',
+        caller_tier: 'free',
+        caller_is_admin: false,
+      };
+      const gated = applyLevelGate(validated, effectiveCaller);
+      if ('gate' in gated) return gated.gate;
+      const levelMeta = gated.meta;
+
       const limitKey = clientKey || validated.birth_date;
       if (!checkRateLimit(limitKey, rateLimit)) {
         return {
@@ -1623,15 +1754,16 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
           } satisfies ApiError,
         };
       }
-      
+
       try {
         const birthData = toBirthData(validated);
         const reading = await mirror.generateReading(birthData);
-        
+
         return {
           status: 200,
           body: {
             reading,
+            ...levelMeta,
             next_reading_available: getNextMidnight(),
             full_platform_url: 'https://tryambakam.space',
           },
@@ -1655,6 +1787,7 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
       engineId: string,
       body: unknown,
       clientKey?: string,
+      caller?: CallerIdentity,
     ): Promise<{ status: number; body: unknown }> {
       // Validate engine ID
       if (!STANDALONE_ENGINES.includes(engineId as StandaloneEngineId)) {
@@ -1667,12 +1800,21 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
           } satisfies ApiError,
         };
       }
-      
+
       const validated = validateReadingRequest(body);
       if ('error' in validated) {
         return { status: 400, body: validated };
       }
-      
+
+      const effectiveCaller: CallerIdentity = caller ?? {
+        caller_id: validated.user_id ?? 'anonymous',
+        caller_tier: 'free',
+        caller_is_admin: false,
+      };
+      const gated = applyLevelGate(validated, effectiveCaller);
+      if ('gate' in gated) return gated.gate;
+      const levelMeta = gated.meta;
+
       const limitKey = clientKey || validated.birth_date;
       if (!checkRateLimit(limitKey, rateLimit)) {
         return {
@@ -1680,15 +1822,15 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
           body: { error: 'Rate limit exceeded', code: 'RATE_LIMITED' } satisfies ApiError,
         };
       }
-      
+
       try {
         const birthData = toBirthData(validated);
         const reading = await mirror.generateEngineReading(
           birthData,
           engineId as StandaloneEngineId,
         );
-        
-        return { status: 200, body: { reading } };
+
+        return { status: 200, body: { reading, ...levelMeta } };
       } catch (err) {
         return {
           status: 500,
@@ -1704,23 +1846,39 @@ export function createStandaloneHandlers(config: StandaloneApiConfig) {
     async *readingStream(
       body: unknown,
       clientKey?: string,
+      caller?: CallerIdentity,
     ): AsyncGenerator<string, void, unknown> {
       const validated = validateReadingRequest(body);
       if ('error' in validated) {
         yield `event: error\ndata: ${JSON.stringify(validated)}\n\n`;
         return;
       }
-      
+
+      const effectiveCaller: CallerIdentity = caller ?? {
+        caller_id: validated.user_id ?? 'anonymous',
+        caller_tier: 'free',
+        caller_is_admin: false,
+      };
+      const gated = applyLevelGate(validated, effectiveCaller);
+      if ('gate' in gated) {
+        yield `event: error\ndata: ${JSON.stringify(gated.gate.body)}\n\n`;
+        return;
+      }
+      const levelMeta = gated.meta;
+
       const limitKey = clientKey || validated.birth_date;
       if (!checkRateLimit(limitKey, rateLimit)) {
         yield `event: error\ndata: ${JSON.stringify({ error: 'Rate limit exceeded', code: 'RATE_LIMITED' })}\n\n`;
         return;
       }
-      
+
       try {
         const birthData = toBirthData(validated);
         const reading = await mirror.generateReading(birthData);
-        
+
+        // Send resolved level meta first so clients know the register.
+        yield `event: level\ndata: ${JSON.stringify(levelMeta)}\n\n`;
+
         // Send Layer 1 immediately
         yield `event: layer1\ndata: ${JSON.stringify({ primary_reading: reading.primary_reading, all_readings: reading.all_readings })}\n\n`;
         
@@ -2178,25 +2336,37 @@ export async function createStandaloneServer(config: StandaloneApiConfig): Promi
         
       } else if (path === '/reading' && req.method === 'POST') {
         const body = await readBody(req);
-        const result = await handlers.reading(body);
+        const caller = deriveCallerIdentity({
+          headers: req.headers as Record<string, string | string[] | undefined>,
+          env: process.env,
+        });
+        const result = await handlers.reading(body, undefined, caller);
         res.writeHead(result.status);
         res.end(JSON.stringify(result.body));
-        
+
       } else if (path === '/reading/stream' && req.method === 'POST') {
         const body = await readBody(req);
+        const caller = deriveCallerIdentity({
+          headers: req.headers as Record<string, string | string[] | undefined>,
+          env: process.env,
+        });
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
         res.writeHead(200);
-        for await (const event of handlers.readingStream(body)) {
+        for await (const event of handlers.readingStream(body, undefined, caller)) {
           res.write(event);
         }
         res.end();
-        
+
       } else if (path.startsWith('/reading/') && req.method === 'POST') {
         const engineId = path.split('/')[2];
         const body = await readBody(req);
-        const result = await handlers.engineReading(engineId, body);
+        const caller = deriveCallerIdentity({
+          headers: req.headers as Record<string, string | string[] | undefined>,
+          env: process.env,
+        });
+        const result = await handlers.engineReading(engineId, body, undefined, caller);
         res.writeHead(result.status);
         res.end(JSON.stringify(result.body));
         
