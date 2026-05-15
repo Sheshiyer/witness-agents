@@ -247,6 +247,159 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   scroll-behavior: smooth;
 }
 
+/* ════ v2 P1 — Orbital cover + constellation backdrop + La Arc fade ════ */
+
+/* Constellation-grid backdrop — fixed full-viewport SVG, drifts subtly */
+svg.constellation-grid {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.55;
+  animation: constellation-drift 240s linear infinite;
+  transform-origin: 50% 50%;
+}
+@keyframes constellation-drift {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@media (max-width: 720px) {
+  svg.constellation-grid { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  svg.constellation-grid { animation: none; }
+}
+
+/* Cover stage — full viewport, Kha Arc atmosphere, orbital SVG centered */
+.cover.cover-orbital-stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(11,80,251,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 70%, rgba(45,0,80,0.18) 0%, transparent 60%),
+    var(--void-black);
+  overflow: hidden;
+  z-index: 2;
+}
+.cover.cover-orbital-stage svg.cover-orbital {
+  width: min(100vw, 100vh);
+  height: min(100vw, 100vh);
+  max-width: 1200px;
+  max-height: 1200px;
+  display: block;
+  animation: cover-orbital-bloom 2.4s cubic-bezier(.2,.7,.2,1) 0.2s both;
+}
+@keyframes cover-orbital-bloom {
+  0%   { opacity: 0; transform: scale(0.92); filter: blur(8px); }
+  60%  { opacity: 1; transform: scale(1.01); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+/* Sigil core fade-in (delayed bloom) */
+.cover-orbital .cover-sigil-core {
+  opacity: 0;
+  animation: cover-sigil-core-reveal 1.6s ease-out 0.8s forwards;
+}
+@keyframes cover-sigil-core-reveal {
+  to { opacity: 1; }
+}
+
+/* Atmospheric rings build sequentially */
+.cover-orbital .cover-ring {
+  stroke-dasharray: 9999;
+  stroke-dashoffset: 9999;
+  animation: cover-ring-draw 2.2s ease-out forwards;
+}
+.cover-orbital .cover-ring-1 { animation-delay: 0.5s; }
+.cover-orbital .cover-ring-2 { animation-delay: 0.7s; }
+.cover-orbital .cover-ring-3 { animation-delay: 0.9s; }
+.cover-orbital .cover-ring-4 { animation-delay: 1.1s; }
+@keyframes cover-ring-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Constellation-point fades + tiny pulse */
+.cover-orbital .cover-constellation-pt {
+  opacity: 0;
+  animation: cover-constellation-pt-in 0.9s ease-out var(--pt-delay, 0.6s) forwards;
+}
+@keyframes cover-constellation-pt-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cover-orbital .cover-constellation-pt circle {
+  animation: cover-pt-breath 4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes cover-pt-breath {
+  0%, 100% { opacity: 0.65; r: 3.5; }
+  50%      { opacity: 1; r: 4.4; }
+}
+
+/* Curved text labels fade in slightly behind sigil */
+.cover-orbital .cover-wordmark,
+.cover-orbital .cover-title-arc,
+.cover-orbital .cover-meta-arc,
+.cover-orbital .cover-tag-arc {
+  opacity: 0;
+  animation: cover-arc-fade 1.4s ease-out forwards;
+}
+.cover-orbital .cover-wordmark    { animation-delay: 0.9s; }
+.cover-orbital .cover-title-arc   { animation-delay: 1.4s; }
+.cover-orbital .cover-meta-arc    { animation-delay: 1.7s; }
+.cover-orbital .cover-tag-arc     { animation-delay: 2.0s; }
+@keyframes cover-arc-fade {
+  to { opacity: 1; }
+}
+
+/* Mobile fallback — degrade orbital cover to centered stacked block */
+@media (max-width: 720px) {
+  .cover.cover-orbital-stage svg.cover-orbital {
+    width: 92vw;
+    height: 92vw;
+  }
+}
+
+/* La-Arc-fade — vertical gradient closer between Parts */
+.la-arc-fade {
+  position: relative;
+  width: 100%;
+  height: clamp(72px, 12vh, 168px);
+  margin: clamp(2rem, 4vw, 4rem) 0;
+  background: linear-gradient(180deg,
+    rgba(197,160,23,0.55) 0%,
+    rgba(45,0,80,0.65) 45%,
+    rgba(7,11,29,0.95) 100%
+  );
+  opacity: 0.35;
+  border-radius: 1px;
+}
+@supports (animation-timeline: view()) {
+  .la-arc-fade {
+    animation: la-arc-resolve linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+  @keyframes la-arc-resolve {
+    0%   { opacity: 0.25; transform: scaleY(0.4); transform-origin: top; }
+    40%  { opacity: 0.7;  transform: scaleY(1);   }
+    100% { opacity: 0.15; transform: scaleY(1);   }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .la-arc-fade { animation: none; }
+}
+
 /* ── Cover — animated sigil fade-in on initial paint ──────────────── */
 .cover .cover-sigil-stage svg {
   opacity: 0;
@@ -286,6 +439,16 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   padding: 0;
   box-sizing: border-box;
   position: relative;
+  /* Let the constellation-grid backdrop show through; subtle deep-surface
+     wash for legibility but not an opaque slab */
+  background:
+    linear-gradient(180deg, rgba(7,11,29,0.55) 0%, rgba(7,11,29,0.85) 100%);
+  backdrop-filter: blur(2px);
+  z-index: 2;
+}
+.canvas.interactive {
+  position: relative;
+  z-index: 2;
 }
 .body-content {
   width: clamp(18rem, 72vw, 80rem);

@@ -735,6 +735,7 @@ async function main() {
       is_composite: subjects.length >= 2,
       composite_subject_a: subjects[0]?.subject,
       composite_subject_b: subjects.slice(1).map((s) => s.subject).join(' × '),
+      subject_names: subjects.map((s) => s.subject),
     });
     const htmlPath = join(runDir, `${runSlug}.html`);
     await writeFile(htmlPath, html);
