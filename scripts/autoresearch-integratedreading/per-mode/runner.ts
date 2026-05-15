@@ -45,6 +45,11 @@ import {
   countCrossRefs,
 } from '../defaults.js';
 import { NvidiaClient } from '../../integratedreading/nvidia-client.js';
+import {
+  levelToRegisterBand,
+  type ConsciousnessLevel,
+  type RegisterBand,
+} from '../../integratedreading/level-resolver.js';
 
 // ────────────────────────────────────────────────────────────────────────
 // Config shape that each mode's config file exports
@@ -63,6 +68,26 @@ export interface ModeVariant {
   mutate(canonicalRaw: string): string;
 }
 
+/**
+ * Per-band axis spec. Lets autoresearch tune a DIFFERENT axis for the
+ * L1-L3 traditional-Vedic register vs the L4-L5 framework-native register
+ * because the two registers care about different qualities.
+ *
+ * Example for partner-synastry:
+ *   - l1_l3 might tune "traditional remedy specificity" (gemstone/mantra/
+ *     ritual concreteness in Vedic vocabulary)
+ *   - l4_l5 might tune "phase-lock geometry clarity" (Aletheios/Pichet
+ *     dyad-resolution of dasha stagger as structural data)
+ */
+export interface RegisterAxisSpec {
+  /** Human-readable axis name shown in lessons entry header. */
+  name: string;
+  /** 3-5 variant short names (the actual mutators live alongside). */
+  variants: string[];
+  /** Index into `variants` array that is the no-op baseline. */
+  baseline_index: number;
+}
+
 export interface ModeAutoresearchConfig {
   /** Must match the canonical mode key in `modes/<mode>.md`. */
   mode_key: string;
@@ -79,6 +104,22 @@ export interface ModeAutoresearchConfig {
   workspace_slug: string;
   /** Closing reference for the lessons entry. */
   closes_issue: string;
+  /**
+   * OPTIONAL — per-register-band axis declarations. When present, the
+   * runner can pivot the variant-axis label PER BAND so the L1-L3 run
+   * and L4-L5 run can tune different qualities. When absent, the runner
+   * uses the canonical `variant_axis` + `variants` for both bands.
+   *
+   * Note: This is a DOCUMENTATION-LEVEL contract for now. The variant
+   * mutators in `variants[]` remain shared across both bands — what
+   * changes per band is the JUDGE-AXIS LABEL and the lessons-entry
+   * heading. Future work can introduce per-band mutator sets if the
+   * mutation contract diverges between registers.
+   */
+  variant_axis_per_level?: {
+    l1_l3?: RegisterAxisSpec;
+    l4_l5?: RegisterAxisSpec;
+  };
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -92,6 +133,12 @@ interface CliArgs {
   dryRun: boolean;
   singleVariant?: number;
   promoteWinner: boolean;
+  /**
+   * Optional consciousness level (1-5). When provided, autoresearch runs
+   * only for the matching register band. When omitted, autoresearch runs
+   * over BOTH bands sequentially (L1-L3 then L4-L5) for full coverage.
+   */
+  level?: ConsciousnessLevel;
 }
 
 export function parseArgs(argv: string[]): CliArgs {
@@ -106,12 +153,22 @@ export function parseArgs(argv: string[]): CliArgs {
   const subjectsDir = getFlag('subjects-dir');
   const outputDir = getFlag('output-dir');
   const singleVariant = getFlag('single-variant');
+  const rawLevel = getFlag('level');
 
   if (!mode) {
     throw new Error('Missing --mode. Available: partner-synastry | business-partners | family-penta | team-synergy');
   }
   if (!hasFlag('dry-run') && (!subjectsDir || !outputDir)) {
     throw new Error('Without --dry-run, both --subjects-dir and --output-dir are required.');
+  }
+
+  let level: ConsciousnessLevel | undefined;
+  if (rawLevel !== undefined) {
+    const n = parseInt(rawLevel, 10);
+    if (!Number.isInteger(n) || n < 1 || n > 5) {
+      throw new Error(`--level must be an integer 1-5; got '${rawLevel}'`);
+    }
+    level = n as ConsciousnessLevel;
   }
 
   return {
@@ -121,6 +178,7 @@ export function parseArgs(argv: string[]): CliArgs {
     dryRun: hasFlag('dry-run'),
     singleVariant: singleVariant ? parseInt(singleVariant, 10) : undefined,
     promoteWinner: hasFlag('promote-winner'),
+    level,
   };
 }
 
@@ -235,17 +293,37 @@ export function parseJudgeJson(content: string, axisName: string): JudgeResult |
 // Lessons-entry composer
 // ────────────────────────────────────────────────────────────────────────
 
+/**
+ * Resolve the variant-axis label for a given register band. Falls back to
+ * the canonical `config.variant_axis` when no per-band override is set.
+ */
+export function getAxisLabelForBand(
+  config: ModeAutoresearchConfig,
+  band: RegisterBand,
+): string {
+  return config.variant_axis_per_level?.[band]?.name ?? config.variant_axis;
+}
+
 export function composeLessonsEntry(opts: {
   date: string;
   config: ModeAutoresearchConfig;
   variants: ModeVariant[];
   winner: { variant: ModeVariant; result: JudgeResult };
   workspace_path: string;
+  /**
+   * Register band this autoresearch run targeted. Defaults to 'l4_l5'
+   * for backward compatibility with pre-2026-05-15 invocations that
+   * predate the consciousness-level register split.
+   */
+  register?: RegisterBand;
 }): string {
+  const register: RegisterBand = opts.register ?? 'l4_l5';
   const variantsLine = opts.variants.map((v) => v.name).join(' / ');
+  const axisLabel = getAxisLabelForBand(opts.config, register);
   return `
-### ${opts.date} — ${opts.config.variant_axis}
-**Question:** Which variant of the ${opts.config.variant_axis} produces highest ${opts.config.mode_judge_axis.name.replace(/_/g, ' ')}?
+### ${opts.date} — ${axisLabel}
+**Level:** ${register}
+**Question:** Which variant of the ${axisLabel} produces highest ${opts.config.mode_judge_axis.name.replace(/_/g, ' ')}?
 **Variants:** ${variantsLine}
 **Winner:** ${opts.winner.variant.name} (judge total: ${opts.winner.result.total}/50 — ${opts.winner.result.one_line})
 **Adopted:** ${opts.winner.variant.description}
@@ -291,52 +369,51 @@ async function loadModeConfig(modeKey: string): Promise<ModeAutoresearchConfig> 
 // Main flow
 // ────────────────────────────────────────────────────────────────────────
 
-async function main() {
-  // Contract: refuse banned judges at startup
-  assertJudgeAllowed(JUDGE_MODEL);
-
-  const args = parseArgs(process.argv.slice(2));
-  const config = await loadModeConfig(args.mode);
-
-  console.log('═══ per-mode autoresearch ═══');
-  console.log(`  Mode:           ${config.mode_key}`);
-  console.log(`  Variant axis:   ${config.variant_axis}`);
-  console.log(`  Variants:       ${config.variants.length} (${config.variants.map((v) => v.name).join(', ')})`);
-  console.log(`  Judge axis:     ${config.mode_judge_axis.name}`);
-  console.log(`  Judge model:    ${JUDGE_MODEL}  (contractual)`);
-
-  // ─── Load + validate canonical mode doc ──────────────────────────
-  const canonicalPath = getCanonicalModeDocPath(config.mode_key);
-  if (!existsSync(canonicalPath)) {
-    throw new Error(`Canonical mode doc not found: ${canonicalPath}`);
+/**
+ * Decide which register bands this invocation runs against.
+ *
+ *   --level <1-3>  → ['l1_l3']    (single band)
+ *   --level <4-5>  → ['l4_l5']    (single band)
+ *   (omitted)      → ['l1_l3', 'l4_l5']  (both bands sequentially for full coverage)
+ *
+ * Backward-compat note: pre-2026-05-15 invocations had no --level flag
+ * and conceptually targeted the L4-L5 register. Now those invocations
+ * additionally exercise the L1-L3 register — without breaking dry-run
+ * tests (which short-circuit before live calls) and producing strictly
+ * more autoresearch coverage. The order is L1-L3 first then L4-L5 so
+ * the more-expensive L4-L5 run lands second.
+ */
+export function bandsForInvocation(
+  level: ConsciousnessLevel | undefined,
+): RegisterBand[] {
+  if (level !== undefined) {
+    return [levelToRegisterBand(level)];
   }
-  const canonicalRaw = await readFile(canonicalPath, 'utf-8');
-  parseModeDoc(canonicalPath);  // validate
-  console.log(`  Canonical:      ${canonicalPath}`);
+  return ['l1_l3', 'l4_l5'];
+}
 
-  // ─── Generate variant mode docs ──────────────────────────────────
-  const generated = generateVariants(config, canonicalRaw, canonicalPath);
-  console.log(`  → Generated ${generated.length} variant mode docs`);
+/**
+ * Run one register band's autoresearch: judge all variants, write
+ * results.tsv, optionally promote the winner. Returns nothing — all
+ * side-effects flow through disk + the canonical mode doc.
+ */
+async function runOneBand(opts: {
+  args: CliArgs;
+  config: ModeAutoresearchConfig;
+  canonicalPath: string;
+  canonicalRaw: string;
+  generated: GeneratedVariant[];
+  band: RegisterBand;
+  ts: string;
+  runDirBase: string;
+  variantsDirBase: string;
+  nvidia: NvidiaClient;
+}): Promise<void> {
+  const { args, config, canonicalPath, generated, band, ts, runDirBase, variantsDirBase, nvidia } = opts;
 
-  if (args.dryRun) {
-    console.log('\n[DRY RUN — variants generated and validated; no orchestrator runs, no API calls]');
-    for (const g of generated) {
-      console.log(`  ✓ ${g.variant.name}: ${g.raw_md.length} chars (${g.variant.description})`);
-    }
-    process.exit(0);
-  }
-
-  // ─── Live run path: spawn orchestrator per variant, judge each ───
-  await mkdir(args.outputDir, { recursive: true });
-  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const { runDir } = findOrCreateCachedRunDir({
-    outputDir: args.outputDir,
-    freshTs: ts,
-    useCache: false,
-  });
-  const variantsDir = join(runDir, 'variants');
-  await mkdir(variantsDir, { recursive: true });
-  console.log(`  Run dir:        ${runDir}`);
+  const axisLabel = getAxisLabelForBand(config, band);
+  console.log(`\n═══ band: ${band} ═══`);
+  console.log(`  Axis:           ${axisLabel}`);
 
   // Filter variants if --single-variant N specified
   const variantsToRun = typeof args.singleVariant === 'number'
@@ -346,27 +423,26 @@ async function main() {
     throw new Error(`Invalid --single-variant index ${args.singleVariant}`);
   }
 
-  const nvidia = new NvidiaClient(loadNvidiaKey());
+  // Per-band sub-directory so dual-band runs don't clobber each other
+  const bandSubdir = join(runDirBase, band);
+  const bandVariantsDir = join(variantsDirBase, band);
+  await mkdir(bandSubdir, { recursive: true });
+  await mkdir(bandVariantsDir, { recursive: true });
+
   const results: Array<{ variant: ModeVariant; output: string; words: number; xrefs: number; judge: JudgeResult | null }> = [];
 
   for (const g of variantsToRun) {
-    console.log(`\n  → Variant: ${g.variant.name}`);
-    // Write variant mode doc to a temp location the orchestrator can read.
-    // The orchestrator currently resolves modes from `scripts/integratedreading/modes/`,
-    // so we write the variant doc to a temp path AND copy back its assembled output.
-    const variantDocPath = join(variantsDir, `${config.mode_key}__${g.variant.name}.md`);
+    console.log(`\n  → Variant: ${g.variant.name}  (band: ${band})`);
+    const variantDocPath = join(bandVariantsDir, `${config.mode_key}__${g.variant.name}.md`);
     await writeFile(variantDocPath, g.raw_md);
-    // Re-validate the variant parses cleanly
     parseModeDoc(variantDocPath);
 
-    // Spawn the orchestrator — we point it at a SHIM-mode-dir via env, OR
-    // for now, just judge the variant's assembled prompt template against
-    // the canonical and produce a paper-judgment. The full pass-execution
-    // is an OPT-IN expense — see ./README.md for invocation contract.
-    //
     // For v1, we judge the variant's STATIC PROMPT-TEMPLATE differential
-    // (what the variant's templates produce vs canonical). Live full-pass
-    // runs land under a future `--full-pass` flag once budget is allocated.
+    // (what the variant's templates produce vs canonical). When future
+    // `--full-pass` lands, this is where we'd spawn the orchestrator as
+    // a child process with `--level ${args.level ?? bandToLevel(band)}`
+    // to forward the register choice — the orchestrator already accepts
+    // and respects the --level flag (see scripts/integratedreading-mode.ts).
     const variantParsed = parseModeDoc(variantDocPath);
     const templateContent = Object.values(variantParsed.sections).join('\n\n').slice(0, 12000);
 
@@ -391,10 +467,10 @@ async function main() {
     }
   }
 
-  // ─── Emit results.tsv + transcripts ──────────────────────────────
-  const header = 'variant\twords\txrefs\tvoice\tinsight\txref_axis\tcoherence\tmode_axis\ttotal\tone_line\n';
+  // ─── Emit per-band results.tsv ────────────────────────────────────
+  const header = 'band\tvariant\twords\txrefs\tvoice\tinsight\txref_axis\tcoherence\tmode_axis\ttotal\tone_line\n';
   const rows = results.map((r) => [
-    r.variant.name, r.words, r.xrefs,
+    band, r.variant.name, r.words, r.xrefs,
     r.judge?.voice_fidelity ?? '',
     r.judge?.insight_density ?? '',
     r.judge?.cross_reference_density ?? '',
@@ -403,16 +479,16 @@ async function main() {
     r.judge?.total ?? '',
     (r.judge?.one_line ?? '').replace(/\t/g, ' '),
   ].join('\t')).join('\n');
-  await writeFile(join(runDir, `results.tsv`), header + rows + '\n');
+  await writeFile(join(bandSubdir, 'results.tsv'), header + rows + '\n');
 
   // ─── Pick the winner ─────────────────────────────────────────────
   const ranked = results.filter((r) => r.judge !== null).sort((a, b) => (b.judge?.total ?? 0) - (a.judge?.total ?? 0));
   if (ranked.length === 0) {
-    console.warn('\n  ⚠ No variants returned valid judge JSON. Inspect transcripts manually.');
-    process.exit(0);
+    console.warn(`\n  ⚠ Band ${band}: no variants returned valid judge JSON. Inspect transcripts manually.`);
+    return;
   }
   const winnerResult = ranked[0];
-  console.log(`\n  🏆 Winner: ${winnerResult.variant.name} (${winnerResult.judge?.total}/50)`);
+  console.log(`\n  🏆 Band ${band} winner: ${winnerResult.variant.name} (${winnerResult.judge?.total}/50)`);
 
   // ─── Promote winner: append lessons entry to canonical mode doc ──
   if (args.promoteWinner && winnerResult.judge) {
@@ -422,15 +498,88 @@ async function main() {
       config,
       variants: results.map((r) => r.variant),
       winner: { variant: winnerResult.variant, result: winnerResult.judge },
-      workspace_path: runDir,
+      workspace_path: bandSubdir,
+      register: band,
     });
     await appendFile(canonicalPath, entry);
-    console.log(`  ✓ Lessons entry appended to ${canonicalPath}`);
+    console.log(`  ✓ Lessons entry (Level: ${band}) appended to ${canonicalPath}`);
   } else {
-    console.log(`\n  (To promote winner into canonical mode doc, re-run with --promote-winner)`);
+    console.log(`  (To promote band ${band} winner into canonical mode doc, re-run with --promote-winner)`);
+  }
+}
+
+async function main() {
+  // Contract: refuse banned judges at startup
+  assertJudgeAllowed(JUDGE_MODEL);
+
+  const args = parseArgs(process.argv.slice(2));
+  const config = await loadModeConfig(args.mode);
+
+  const bands = bandsForInvocation(args.level);
+
+  console.log('═══ per-mode autoresearch ═══');
+  console.log(`  Mode:           ${config.mode_key}`);
+  console.log(`  Variant axis:   ${config.variant_axis}`);
+  console.log(`  Variants:       ${config.variants.length} (${config.variants.map((v) => v.name).join(', ')})`);
+  console.log(`  Judge axis:     ${config.mode_judge_axis.name}`);
+  console.log(`  Judge model:    ${JUDGE_MODEL}  (contractual)`);
+  console.log(`  Level:          ${args.level ?? '(none — running both bands)'}`);
+  console.log(`  Bands:          ${bands.join(', ')}`);
+
+  // ─── Load + validate canonical mode doc ──────────────────────────
+  const canonicalPath = getCanonicalModeDocPath(config.mode_key);
+  if (!existsSync(canonicalPath)) {
+    throw new Error(`Canonical mode doc not found: ${canonicalPath}`);
+  }
+  const canonicalRaw = await readFile(canonicalPath, 'utf-8');
+  parseModeDoc(canonicalPath);  // validate
+  console.log(`  Canonical:      ${canonicalPath}`);
+
+  // ─── Generate variant mode docs ──────────────────────────────────
+  const generated = generateVariants(config, canonicalRaw, canonicalPath);
+  console.log(`  → Generated ${generated.length} variant mode docs`);
+
+  if (args.dryRun) {
+    console.log('\n[DRY RUN — variants generated and validated; no orchestrator runs, no API calls]');
+    for (const band of bands) {
+      console.log(`  band ${band}: axis = ${getAxisLabelForBand(config, band)}`);
+    }
+    for (const g of generated) {
+      console.log(`  ✓ ${g.variant.name}: ${g.raw_md.length} chars (${g.variant.description})`);
+    }
+    process.exit(0);
   }
 
-  console.log(`\n  Results: ${join(runDir, 'results.tsv')}`);
+  // ─── Live run path: shared run dir, one subdir per band ──────────
+  await mkdir(args.outputDir, { recursive: true });
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const { runDir } = findOrCreateCachedRunDir({
+    outputDir: args.outputDir,
+    freshTs: ts,
+    useCache: false,
+  });
+  const variantsDir = join(runDir, 'variants');
+  await mkdir(variantsDir, { recursive: true });
+  console.log(`  Run dir:        ${runDir}`);
+
+  const nvidia = new NvidiaClient(loadNvidiaKey());
+
+  for (const band of bands) {
+    await runOneBand({
+      args,
+      config,
+      canonicalPath,
+      canonicalRaw,
+      generated,
+      band,
+      ts,
+      runDirBase: runDir,
+      variantsDirBase: variantsDir,
+      nvidia,
+    });
+  }
+
+  console.log(`\n  Results: ${runDir}/<band>/results.tsv`);
   console.log(`  Variants: ${variantsDir}`);
 }
 

@@ -25,6 +25,8 @@ import {
   buildJudgePrompt,
   parseJudgeJson,
   composeLessonsEntry,
+  bandsForInvocation,
+  getAxisLabelForBand,
   type ModeAutoresearchConfig,
 } from '../scripts/autoresearch-integratedreading/per-mode/runner.js';
 import { appendToSection } from '../scripts/autoresearch-integratedreading/per-mode/_mutators.js';
@@ -275,6 +277,136 @@ describe('parseArgs', () => {
   it('--promote-winner sets flag', () => {
     const args = parseArgs(['--mode', 'x', '--dry-run', '--promote-winner']);
     assert.equal(args.promoteWinner, true);
+  });
+
+  // ─── P3.2 (#80) — --level flag ──────────────────────────────────
+  it('--level parses to a numeric ConsciousnessLevel', () => {
+    const args = parseArgs(['--mode', 'x', '--dry-run', '--level', '3']);
+    assert.equal(args.level, 3);
+  });
+
+  it('--level omitted yields undefined (both-band default)', () => {
+    const args = parseArgs(['--mode', 'x', '--dry-run']);
+    assert.equal(args.level, undefined);
+  });
+
+  it('--level rejects non-integer / out-of-range values', () => {
+    assert.throws(() => parseArgs(['--mode', 'x', '--dry-run', '--level', '0']), /must be an integer 1-5/);
+    assert.throws(() => parseArgs(['--mode', 'x', '--dry-run', '--level', '6']), /must be an integer 1-5/);
+    assert.throws(() => parseArgs(['--mode', 'x', '--dry-run', '--level', 'foo']), /must be an integer 1-5/);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// P3.2 (#80) — Register-band branching
+// ────────────────────────────────────────────────────────────────────────
+
+describe('bandsForInvocation (P3.2 / #80)', () => {
+  it('levels 1-3 map to single band l1_l3', () => {
+    assert.deepEqual(bandsForInvocation(1), ['l1_l3']);
+    assert.deepEqual(bandsForInvocation(2), ['l1_l3']);
+    assert.deepEqual(bandsForInvocation(3), ['l1_l3']);
+  });
+
+  it('levels 4-5 map to single band l4_l5', () => {
+    assert.deepEqual(bandsForInvocation(4), ['l4_l5']);
+    assert.deepEqual(bandsForInvocation(5), ['l4_l5']);
+  });
+
+  it('undefined level runs both bands in order l1_l3 then l4_l5', () => {
+    assert.deepEqual(bandsForInvocation(undefined), ['l1_l3', 'l4_l5']);
+  });
+});
+
+describe('getAxisLabelForBand (P3.2 / #80)', () => {
+  it('returns the canonical variant_axis when no per-band override exists', () => {
+    // team-synergy + business-partners do NOT declare variant_axis_per_level
+    assert.equal(getAxisLabelForBand(teamConfig, 'l1_l3'), teamConfig.variant_axis);
+    assert.equal(getAxisLabelForBand(teamConfig, 'l4_l5'), teamConfig.variant_axis);
+    assert.equal(getAxisLabelForBand(businessConfig, 'l1_l3'), businessConfig.variant_axis);
+  });
+
+  it('returns the band-specific axis when variant_axis_per_level is declared', () => {
+    // partner-synastry declares per-band axes (P3.2)
+    const l1 = getAxisLabelForBand(synastryConfig, 'l1_l3');
+    const l4 = getAxisLabelForBand(synastryConfig, 'l4_l5');
+    assert.match(l1, /traditional-remedy/);
+    assert.match(l4, /phase-lock/);
+    assert.notEqual(l1, l4);
+  });
+
+  it('family-penta declares both bands with distinct axis labels', () => {
+    const l1 = getAxisLabelForBand(familyConfig, 'l1_l3');
+    const l4 = getAxisLabelForBand(familyConfig, 'l4_l5');
+    assert.match(l1, /pitra-dosha/);
+    assert.match(l4, /lineage-current/);
+    assert.notEqual(l1, l4);
+  });
+});
+
+describe('composeLessonsEntry register field (P3.2 / #80)', () => {
+  function buildEntry(register?: 'l1_l3' | 'l4_l5') {
+    return composeLessonsEntry({
+      date: '2026-05-15',
+      config: synastryConfig,
+      variants: synastryConfig.variants,
+      winner: {
+        variant: synastryConfig.variants[1],
+        result: {
+          voice_fidelity: 7, insight_density: 8, cross_reference_density: 7,
+          narrative_coherence: 7, mode_specific: 8, total: 37,
+          one_line: 'Solid day-count anchoring.',
+        },
+      },
+      workspace_path: '/tmp/workspace',
+      register,
+    });
+  }
+
+  it('includes **Level:** field tagged with the band when register is supplied', () => {
+    const l1 = buildEntry('l1_l3');
+    assert.match(l1, /\*\*Level:\*\* l1_l3/);
+    const l4 = buildEntry('l4_l5');
+    assert.match(l4, /\*\*Level:\*\* l4_l5/);
+  });
+
+  it('defaults to l4_l5 when register is omitted (backward-compat)', () => {
+    const entry = buildEntry();  // no register
+    assert.match(entry, /\*\*Level:\*\* l4_l5/);
+  });
+
+  it('heading uses band-specific axis label when per-band axes are declared', () => {
+    const l1 = buildEntry('l1_l3');
+    // partner-synastry l1_l3 axis is "Pass γ traditional-remedy specificity"
+    assert.match(l1, /### 2026-05-15 — Pass γ traditional-remedy specificity/);
+    const l4 = buildEntry('l4_l5');
+    assert.match(l4, /### 2026-05-15 — Pass γ phase-lock specificity/);
+  });
+});
+
+describe('variant_axis_per_level optional field (P3.2 / #80)', () => {
+  it('at least 2 configs declare variant_axis_per_level', () => {
+    const declaring = ALL_CONFIGS.filter((c) => c.variant_axis_per_level !== undefined);
+    assert.ok(
+      declaring.length >= 2,
+      `expected ≥2 configs to declare variant_axis_per_level; got ${declaring.length}`,
+    );
+  });
+
+  it('every declared per-band axis is well-formed', () => {
+    for (const cfg of ALL_CONFIGS) {
+      if (!cfg.variant_axis_per_level) continue;
+      for (const band of ['l1_l3', 'l4_l5'] as const) {
+        const spec = cfg.variant_axis_per_level[band];
+        if (!spec) continue;
+        assert.ok(spec.name && spec.name.length > 0, `${cfg.mode_key} ${band}: empty axis name`);
+        assert.ok(Array.isArray(spec.variants) && spec.variants.length > 0, `${cfg.mode_key} ${band}: missing variants`);
+        assert.ok(
+          spec.baseline_index >= 0 && spec.baseline_index < spec.variants.length,
+          `${cfg.mode_key} ${band}: baseline_index ${spec.baseline_index} out of range`,
+        );
+      }
+    }
   });
 });
 
