@@ -327,12 +327,41 @@ Total: ~6-8 commits, ~1-2 days work. Each phase independently shippable.
 
 ---
 
-## 11. Open questions for user
+## 11. Locked decisions (user-validated 2026-05-15)
 
-1. **Per-Pass yantra mapping** (§ 3.2) — does α/β/γ/δ → triangle/vesica/spiral/compass feel right? Or should we let the LLM mark `<!-- yantra: <name> -->` in the markdown so it's data-driven?
-2. **Decision-plate trigger** (§ 3.7) — should it auto-fire on every blockquote, or only on a specific marker (e.g. blockquote starting with `> ⌬ ACT:`)? I lean toward the marker so we don't make every blockquote a decision moment.
-3. **Cover orbital text** (§ 3.10) — orbit the title text literally around the sigil (SVG path text), or just place it in fixed top-left/bottom-right corners that surround the sigil? The first is more "wow"; the second is more readable and renders cleaner at every viewport.
-4. **Mode-keyed motif system** — should `partner-synastry` mode get a different yantra family than `composite-triad` (e.g. dyadic vesica patterns instead of triad)? The mode doc already declares `svg_topology` — easy hook.
+1. **Per-Pass yantra mapping — DATA-DRIVEN.**
+   Each mode-doc declares a `yantra_family` in frontmatter. Each pass in the `pass_plan` may declare an optional `yantra: <name>` override. The orchestrator passes the resolved yantra name to the renderer at render time. The yantra SVG is rendered from a family registry (`scripts/integratedreading/render/svg/yantras/*.ts`). Falls back to a sensible default per pass `id` if neither mode nor pass declares.
+
+2. **Decision-plate trigger — `> ⌬ ACT:` MARKER.**
+   Blockquotes whose first line starts with `⌬ ACT:` are transformed into `<decision-plate>` components. Convention:
+   ```markdown
+   > ⌬ ACT: Stabilize family discussions in early evening
+   > WINDOW: 17:30–19:00 IST
+   > DATE: 2026-09-14
+   > QUOTE: Wisdom is the reward for a lifetime of listening.
+   ```
+   The mdToHtmlBlock post-processor parses these fields. Other blockquotes render as normal `.verse` blockquote with subtle accent.
+
+3. **Cover orbital text — FULL WOW.**
+   Title set on SVG `<textPath>` curving along the upper arc of the sigil. Lineage text curves along the lower arc. Subject names appear as constellation-point labels at compass positions around the sigil. Kha Arc atmosphere full-bleed canvas. Bioluminescent core glow centered. Maximum motion impact. Mobile fallback degrades to stacked text — but desktop gets the orbital treatment.
+
+4. **Mode-keyed yantra families — YES, per-mode topology.**
+   Each mode owns its own yantra family registry. Initial scope: composite-triad gets the triangle family (this PR's P1-P6 implementation target — we have working fixtures). Other modes get their yantra families filled in incrementally:
+
+   | Mode | Yantra family | Topology hint |
+   |---|---|---|
+   | composite-dyad | vesica family — interlocking circles | dyad-arc |
+   | composite-triad | triangle family — triadic mandala variants | triad-triangle (P1 target) |
+   | partner-synastry | bridge family — dyadic arcs with cross-chart links | dyad-arc + bridges |
+   | business-partners | axis-mundi family — 7th-house anchored | dyad-arc + 10th-pillar |
+   | family-penta | pentagram family — five-pointed star variants | pentagon |
+   | team-synergy | web-graph family — variable node graph | web-graph |
+
+   composite-triad's triangle family includes 4 yantra plates:
+   - α (Opening / Identity) → `triad-mandala` (the field plate, already exists)
+   - β (Resonance / Mutual) → `vesica-trio` (three interlocking circles, intersections illuminated)
+   - γ (Phase-lock / Time) → `dasha-spiral` (concentric ring waveform)
+   - δ (Anti-dependency / Synthesis) → `compass-trine` (cardinal compass with central seed)
 
 ---
 
