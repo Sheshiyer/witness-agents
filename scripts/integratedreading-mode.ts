@@ -23,7 +23,17 @@ import { join, basename, dirname, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { homedir } from 'node:os';
 
-import { parseModeDoc, summarizeLessons, type ParsedModeDoc, type PassSpec } from './integratedreading/modes/parser.js';
+import {
+  parseModeDoc,
+  summarizeLessons,
+  getPassTemplate,
+  getTargetWordsForRegister,
+  type ParsedModeDoc,
+  type PassSpec,
+  type RegisterBand,
+} from './integratedreading/modes/parser.js';
+import { resolveLevel, type ConsciousnessLevel } from './integratedreading/level-resolver.js';
+import { composeLexiconBlock, KNOWN_ENGINE_IDS } from './integratedreading/engine-lexicons-parser.js';
 import { renderByTopology } from './integratedreading/render/svg/index.js';
 import {
   renderInteractiveHTMLPage,
@@ -56,6 +66,13 @@ interface CliArgs {
   useCache: boolean;
   skipSolos: boolean;
   dryRun: boolean;
+  /**
+   * Admin/CLI override of the user's stored consciousness_level (1-5).
+   * From CLI we treat the runner as admin by convention — this is the
+   * dev/test/admin entry point. API callers go through the resolver +
+   * auth middleware path which gates the override.
+   */
+  level?: ConsciousnessLevel;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -69,10 +86,21 @@ function parseArgs(argv: string[]): CliArgs {
   const mode = getFlag('mode');
   const subjectsDir = getFlag('subjects-dir');
   const outputDir = getFlag('output-dir');
+  const rawLevel = getFlag('level');
 
   if (!mode || !subjectsDir || !outputDir) {
-    console.error('Usage: integratedreading-mode.ts --mode <name> --subjects-dir <path> --output-dir <path> [--use-cache] [--skip-solos] [--dry-run]');
+    console.error('Usage: integratedreading-mode.ts --mode <name> --subjects-dir <path> --output-dir <path> [--use-cache] [--skip-solos] [--dry-run] [--level 1-5]');
     process.exit(1);
+  }
+
+  let level: ConsciousnessLevel | undefined;
+  if (rawLevel !== undefined) {
+    const n = parseInt(rawLevel, 10);
+    if (!Number.isInteger(n) || n < 1 || n > 5) {
+      console.error(`--level must be an integer 1-5; got '${rawLevel}'`);
+      process.exit(1);
+    }
+    level = n as ConsciousnessLevel;
   }
 
   return {
@@ -82,6 +110,7 @@ function parseArgs(argv: string[]): CliArgs {
     useCache: hasFlag('use-cache'),
     skipSolos: hasFlag('skip-solos'),
     dryRun: hasFlag('dry-run'),
+    level,
   };
 }
 
@@ -302,14 +331,24 @@ async function executePass(
   doc: ParsedModeDoc,
   ctx: InterpolationContext,
   soloRuns: SoloRun[],
+  register: RegisterBand,
+  lexiconBlock: string,
 ): Promise<PassResult> {
-  const template = doc.sections[pass.template];
-  if (!template) throw new Error(`Pass ${pass.id}: template section '${pass.template}' not found`);
+  // Resolve per-register pass template. If the mode doc declares a
+  // register_variants override for this pass+register, use that template;
+  // otherwise fall back to the canonical pass_plan template.
+  const template = getPassTemplate(doc, pass.id, register);
+
+  // Per-pass effective target_words — uses register variant when declared.
+  // (We pass the original pass.target_words into the interpolation context
+  // for backward-compat, but the system prompt below reports the register-
+  // aware target so the LLM aims at the right band.)
+  const effectiveTargetWords = pass.target_words;
 
   const userPrompt = interpolate(template, {
     ...ctx,
     pass_title: pass.title,
-    target_words: String(pass.target_words),
+    target_words: String(effectiveTargetWords),
   });
 
   // Prepend the solo syntheses as context for the first pass; subsequent passes
@@ -319,9 +358,30 @@ async function executePass(
       soloRuns.map((s) => `### ${s.subject.toUpperCase()}\n${s.synthesis.slice(0, 14000)}`).join('\n\n')
     : '';
 
-  const system = `${ANATOMIST_PERSONA}\n\n${KOSHA_GRAMMAR}\n\n${DYADIC_LOOP}\n\n` +
+  // For L1-L3 register, prefer the traditional Vedic register guidance.
+  // For L4-L5, use the framework-native ANATOMIST_PERSONA + KOSHA_GRAMMAR
+  // + DYADIC_LOOP block. Both registers still receive the mode's overlay
+  // rules + bridge mandates + lessons summary + the per-engine lexicon
+  // block for the engines this mode foregrounds.
+  const registerHeader = register === 'l1_l3'
+    ? `## Voice Register: L1-L3 (Traditional Vedic Astrology)
+
+You are producing a reading for a user at consciousness_level 1-3. They expect
+TRADITIONAL Vedic astrology vocabulary — Lagna, Rashi, Nakshatra, dasha
+periods, yogas, doshas, remedies — not framework-native jargon. Use the
+familiar 11-Part Kundali conventions (Core Birth Chart, Past Life, Career,
+Money, Love, Marriage, Health, Family, Timeline, Remedies, Final Guidance).
+Remedies (mantras, gemstones, donations, fasting, temple practices) are
+ALLOWED and expected at this register. Avoid: Aletheios/Pichet dyad, Koshas-
+as-Clifford-algebras, Eigenwelt/Mitwelt/Umwelt, AKSHARA seed,
+anti-dependency telos. Stay in the practical, age-ranged, honest-prediction
+register.`
+    : `${ANATOMIST_PERSONA}\n\n${KOSHA_GRAMMAR}\n\n${DYADIC_LOOP}`;
+
+  const system = `${registerHeader}\n\n` +
     (ctx.lessons_summary ? `${ctx.lessons_summary}\n\n` : '') +
-    `## Mode Overlay Rules\n\n${ctx.overlay_summary}\n\n## Bridge Mandates\n\n${ctx.bridge_mandates}`;
+    `## Mode Overlay Rules\n\n${ctx.overlay_summary}\n\n## Bridge Mandates\n\n${ctx.bridge_mandates}` +
+    (lexiconBlock ? `\n\n${lexiconBlock}` : '');
 
   const model = pass.model ?? SYNTH_MODELS.PRIMARY;
   const result = await client.callWithRetry({
@@ -359,6 +419,8 @@ async function runLinear(
   baseCtx: Omit<InterpolationContext, 'prior_pass' | 'pass_title' | 'target_words'>,
   soloRuns: SoloRun[],
   runDir: string,
+  register: RegisterBand,
+  lexiconBlock: string,
 ): Promise<PassResult[]> {
   const results: PassResult[] = [];
   let assembled = '';
@@ -380,7 +442,7 @@ async function runLinear(
       pass_title: pass.title,
       target_words: String(pass.target_words),
     };
-    const result = await executePass(client, pass, doc, ctx, soloRuns);
+    const result = await executePass(client, pass, doc, ctx, soloRuns, register, lexiconBlock);
     await writeFile(cachePath, result.content);
     console.log(`      ${result.latency_ms}ms · ${result.words}w · ${result.xrefs} xrefs (target ${pass.target_words}w, model ${result.model})`);
     results.push(result);
@@ -395,6 +457,8 @@ async function runHierarchical(
   baseCtx: Omit<InterpolationContext, 'prior_pass' | 'pass_title' | 'target_words'>,
   soloRuns: SoloRun[],
   runDir: string,
+  register: RegisterBand,
+  lexiconBlock: string,
 ): Promise<PassResult[]> {
   // Hierarchical: first pass is outline; subsequent passes carry it forward.
   const [outlinePass, ...expansions] = doc.frontmatter.pass_plan;
@@ -415,7 +479,7 @@ async function runHierarchical(
       pass_title: outlinePass.title,
       target_words: String(outlinePass.target_words),
     };
-    outlineResult = await executePass(client, outlinePass, doc, ctx, soloRuns);
+    outlineResult = await executePass(client, outlinePass, doc, ctx, soloRuns, register, lexiconBlock);
     outlineContent = outlineResult.content;
     await writeFile(outlineCachePath, outlineContent);
     console.log(`      ${outlineResult.latency_ms}ms · ${outlineResult.words}w · ${outlineResult.xrefs} xrefs`);
@@ -444,7 +508,7 @@ async function runHierarchical(
       pass_title: pass.title,
       target_words: String(pass.target_words),
     };
-    const result = await executePass(client, pass, doc, ctx, soloRuns);
+    const result = await executePass(client, pass, doc, ctx, soloRuns, register, lexiconBlock);
     await writeFile(cachePath, result.content);
     console.log(`      ${result.latency_ms}ms · ${result.words}w · ${result.xrefs} xrefs (target ${pass.target_words}w)`);
     results.push(result);
@@ -502,12 +566,53 @@ async function main() {
     throw new Error(`Mode doc not found: ${modeDocPath}\nAvailable modes: ${listAvailableModes().join(', ')}`);
   }
   const doc = parseModeDoc(modeDocPath);
+
+  // ─── Resolve consciousness level + register ──────────────────────
+  // CLI runs as admin by convention (the dev/test/admin entry point).
+  // Default to level 5 for backward-compat with existing fixtures.
+  // API callers go through the resolver + auth middleware path
+  // (gated by CallerIdentity, not by this CLI's admin assumption).
+  const resolved = resolveLevel({
+    user_id: 'cli-runner',
+    admin_override: args.level,
+    caller_tier: 'initiate',
+    caller_is_admin: true,
+    default_level: 5,
+  });
+  const register = resolved.register_band;
+  const effectiveLevel = resolved.effective_level;
+
+  // ─── Compose engine-lexicon block for foregrounded engines ───────
+  // Engines weighted >= 1.0 in this mode's overlay are "foregrounded"
+  // and get their register-specific lexicon injected into the system
+  // prompt. Weight 0.0 engines are skipped entirely.
+  const allForegrounded = Object.entries(doc.frontmatter.engine_overlay_weights)
+    .filter(([, weight]) => weight >= 1.0)
+    .map(([id]) => id);
+  const knownSet = new Set<string>(KNOWN_ENGINE_IDS as ReadonlyArray<string>);
+  const foregroundedEngines = allForegrounded.filter((id) => knownSet.has(id));
+  const unknownForegrounded = allForegrounded.filter((id) => !knownSet.has(id));
+  if (unknownForegrounded.length > 0) {
+    console.warn(`  ⚠ unrecognized engine ids in overlay (no lexicon available): ${unknownForegrounded.join(', ')}`);
+  }
+  let lexiconBlock = '';
+  try {
+    lexiconBlock = composeLexiconBlock(foregroundedEngines, register);
+  } catch (err: any) {
+    console.warn(`  ⚠ engine-lexicon compose skipped: ${err.message}`);
+  }
+
+  // ─── Per-register target_words band (variants override canonical) ─
+  const regTargetWords = getTargetWordsForRegister(doc, register);
+
   console.log('═══ integratedreading-mode ═══');
   console.log(`  Mode:        ${doc.frontmatter.mode}`);
   console.log(`  Architecture: ${doc.frontmatter.architecture}`);
   console.log(`  Topology:    ${doc.frontmatter.svg_topology}`);
   console.log(`  Passes:      ${doc.frontmatter.pass_plan.length}`);
-  console.log(`  Target:      ${doc.frontmatter.target_words.min}–${doc.frontmatter.target_words.max} words`);
+  console.log(`  Target:      ${regTargetWords.min}–${regTargetWords.max} words`);
+  console.log(`  Level:        ${effectiveLevel} (${register}, source=${resolved.source})`);
+  console.log(`  Lexicons:    ${foregroundedEngines.length} foregrounded engine(s)${lexiconBlock ? '' : ' — empty block'}`);
 
   // ─── Load subjects ────────────────────────────────────────────────
   const subjects = loadSubjects(args.subjectsDir);
@@ -552,8 +657,8 @@ async function main() {
   };
 
   const passes = doc.frontmatter.architecture === 'hierarchical'
-    ? await runHierarchical(client, doc, baseCtx, soloRuns, runDir)
-    : await runLinear(client, doc, baseCtx, soloRuns, runDir);
+    ? await runHierarchical(client, doc, baseCtx, soloRuns, runDir, register, lexiconBlock)
+    : await runLinear(client, doc, baseCtx, soloRuns, runDir, register, lexiconBlock);
 
   // ─── Assemble + render ───────────────────────────────────────────
   const report = assemble(passes);
@@ -561,9 +666,18 @@ async function main() {
   await writeFile(assembledPath, report.markdown);
   console.log(`\n✓ Assembled: ${assembledPath} (${report.total_words.toLocaleString()} words · ${report.total_xrefs} cross-refs)`);
 
-  // Metric report
+  // Metric report — includes consciousness-level provenance so post-hoc
+  // audits / autoresearch can attribute outputs to the right register.
   const metricPath = join(runDir, `metrics_${runSlug}.json`);
-  await writeFile(metricPath, JSON.stringify(report, null, 2));
+  const reportWithLevel = {
+    ...report,
+    effective_consciousness_level: effectiveLevel,
+    register_band: register,
+    level_source: resolved.source,
+    target_words_band: regTargetWords,
+    foregrounded_engines: foregroundedEngines,
+  };
+  await writeFile(metricPath, JSON.stringify(reportWithLevel, null, 2));
   console.log(`✓ Metrics:   ${metricPath}`);
 
   // ─── SVG topology dispatch ───────────────────────────────────────
@@ -631,7 +745,8 @@ async function main() {
 
   // ─── Summary ─────────────────────────────────────────────────────
   console.log('\n═══ summary ═══');
-  console.log(`  Total words: ${report.total_words.toLocaleString()} (target ${doc.frontmatter.target_words.min}-${doc.frontmatter.target_words.max})`);
+  console.log(`  Level:       ${effectiveLevel} (${register})`);
+  console.log(`  Total words: ${report.total_words.toLocaleString()} (target ${regTargetWords.min}-${regTargetWords.max})`);
   console.log(`  Cross-refs:  ${report.total_xrefs}`);
   console.log(`  Latency:     ${(report.total_latency_ms / 1000).toFixed(0)}s total`);
   for (const m of report.pass_metrics) {
