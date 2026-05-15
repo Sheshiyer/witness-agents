@@ -770,19 +770,74 @@ function toRoman(n: number): string {
 // Markdown → HTML via pandoc (fallback to minimal regex if pandoc absent)
 function mdToHtmlBlock(md: string): string {
   if (!md.trim()) return '';
+  let html: string;
   try {
-    return execSync('pandoc -f markdown -t html5 --syntax-highlighting=none', {
+    html = execSync('pandoc -f markdown -t html5 --syntax-highlighting=none', {
       input: md,
       encoding: 'utf-8',
     });
   } catch {
-    return md
+    html = md
       .replace(/^### (.*$)/gm, '<h3>$1</h3>')
       .replace(/^## (.*$)/gm, '<h2>$1</h2>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .split(/\n\n+/).map((p) => p.startsWith('<') ? p : `<p>${p}</p>`).join('\n');
   }
+  // Post-process: wrap each top-level block in <div class="verse"> so the
+  // scroll-driven reveal CSS can light up 2-3 lines at a time as the reader
+  // scrolls. Headings get a stronger default visibility (verse-anchor) so
+  // they remain readable while the body verses dim.
+  return wrapVerses(html);
+}
+
+/**
+ * Wrap each top-level prose block (<p>, <h2>, <h3>, <h4>, <ul>, <ol>,
+ * <blockquote>, <table>) in a <div class="verse"> so the reader experiences
+ * one focused 2-3 line "verse" at a time via the CSS scroll-illumination
+ * animation. Skips elements that are already verses, and preserves figure
+ * / svg / pre blocks (those need different treatment).
+ *
+ * Splits long paragraphs (>180 words OR >2 sentence-end markers) into
+ * sentence-grouped verse fragments so a 600-word block doesn't read as
+ * one verse — it reads as ~3 verses each 2-3 lines long.
+ */
+function wrapVerses(html: string): string {
+  const blockRe = /(<(?:p|h2|h3|h4|ul|ol|blockquote|table)[^>]*>[\s\S]*?<\/(?:p|h2|h3|h4|ul|ol|blockquote|table)>)/g;
+  return html.replace(blockRe, (match, block: string) => {
+    const tagMatch = block.match(/^<(p|h2|h3|h4|ul|ol|blockquote|table)/);
+    const tag = tagMatch ? tagMatch[1] : 'p';
+    const isHeading = tag === 'h2' || tag === 'h3' || tag === 'h4';
+    const anchorClass = isHeading ? 'verse verse-anchor' : 'verse';
+
+    // For long paragraphs, split into sentence-grouped sub-verses
+    if (tag === 'p') {
+      const text = block.replace(/<\/?p[^>]*>/g, '');
+      const words = text.split(/\s+/).filter(Boolean).length;
+      // sentence-end count (rough — counts ". " and "? " and "! ")
+      const sentenceEnds = (text.match(/[.!?]\s+(?=[A-Z“"])/g) || []).length;
+      if (words > 160 && sentenceEnds >= 3) {
+        // Split on sentence boundaries, group into chunks of ~2-3 sentences
+        const parts = text.split(/(?<=[.!?])\s+(?=[A-Z“"])/);
+        const chunks: string[] = [];
+        let current: string[] = [];
+        let currentWords = 0;
+        for (const p of parts) {
+          const w = p.split(/\s+/).filter(Boolean).length;
+          current.push(p);
+          currentWords += w;
+          if (currentWords >= 55 || current.length >= 3) {
+            chunks.push(current.join(' '));
+            current = [];
+            currentWords = 0;
+          }
+        }
+        if (current.length) chunks.push(current.join(' '));
+        return chunks.map((c) => `<div class="${anchorClass}"><p>${c}</p></div>`).join('\n');
+      }
+    }
+    return `<div class="${anchorClass}">${block}</div>`;
+  });
 }
 
 function listAvailableModes(): string[] {

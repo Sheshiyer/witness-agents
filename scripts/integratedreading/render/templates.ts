@@ -33,7 +33,7 @@ export function renderHTMLPage(opts: {
     : opts.cover.subject;
 
   const coverMandala = opts.cover.cover_mandala_svg
-    ? `<div class="cover-svg-wrap">${opts.cover.cover_mandala_svg}</div>`
+    ? `<div class="cover-sigil-stage">${opts.cover.cover_mandala_svg}</div>`
     : '';
 
   return `<!DOCTYPE html>
@@ -297,7 +297,7 @@ export function renderInteractiveHTMLPage(opts: {
     : opts.cover.subject;
 
   const coverMandala = opts.cover.cover_mandala_svg
-    ? `<div class="cover-svg-wrap">${opts.cover.cover_mandala_svg}</div>`
+    ? `<div class="cover-sigil-stage">${opts.cover.cover_mandala_svg}</div>`
     : '';
 
   // Topology + mode-keyed interaction layer (inlined)

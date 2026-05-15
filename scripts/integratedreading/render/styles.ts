@@ -83,6 +83,12 @@ p, li, dd, td {
   display: flex; flex-direction: column; justify-content: space-between;
   position: relative;
   page-break-after: always;
+  overflow: hidden;
+}
+@media (max-width: 720px) {
+  .cover {
+    padding: 56px 28px;
+  }
 }
 .cover::before {
   content: '';
@@ -148,10 +154,45 @@ p, li, dd, td {
   border-top: 1px solid rgba(197,160,23,0.18);
   padding-top: 28px;
 }
-.cover-svg-wrap {
-  position: absolute; bottom: -8%; right: -8%;
-  width: 70%; opacity: 0.85;
-  pointer-events: none;
+/* Triadic sigil — flow element inside the cover, not a background decoration.
+   At narrow widths the sigil is part of the reading rhythm (full-bleed,
+   compressed). On large desktop it steps out of the way (hidden) so the
+   typographic hierarchy carries the cover on its own. */
+.cover-sigil-stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 36px auto 28px;
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  z-index: 1;
+  opacity: 0.92;
+}
+.cover-sigil-stage svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 56vh;
+}
+/* On large desktop the sigil cedes the cover to the typography */
+@media (min-width: 1400px) {
+  .cover-sigil-stage {
+    display: none;
+  }
+}
+/* On phone-class widths the sigil "squishes" to fit but stays prominent */
+@media (max-width: 720px) {
+  .cover-sigil-stage {
+    max-width: 100%;
+    margin: 24px auto 16px;
+  }
+  .cover-sigil-stage svg {
+    max-height: 44vh;
+  }
+}
+@media print {
+  .cover-sigil-stage { display: none; }
 }
 .cover-footer {
   display: flex; justify-content: space-between; align-items: flex-end;
@@ -996,7 +1037,8 @@ table.table-wide td:first-child, table.table-wide th:first-child { padding-left:
     page-break-after: always;
     background: var(--kha-arc) !important;
   }
-  .cover-svg-wrap { width: 80mm !important; right: -10mm !important; bottom: -10mm !important; }
+  /* Sigil is hidden in print — typography carries the cover */
+  .cover-sigil-stage { display: none !important; }
   /* Part starts on new page */
   .part-header { page-break-before: always; }
   .opening { page-break-after: always; }
@@ -1026,7 +1068,7 @@ table.table-wide td:first-child, table.table-wide th:first-child { padding-left:
     transform: none !important;
   }
   /* Cover elements appear immediately (no animated reveal) */
-  .cover .cover-svg-wrap svg,
+  .cover .cover-sigil-stage svg,
   .cover h1.cover-title,
   .cover .cover-subject,
   .cover .cover-tagline {

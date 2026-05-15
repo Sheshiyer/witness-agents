@@ -247,14 +247,14 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   scroll-behavior: smooth;
 }
 
-/* ── Cover — animated mandala fade-in on initial paint ──────────────── */
-.cover .cover-svg-wrap svg {
+/* ── Cover — animated sigil fade-in on initial paint ──────────────── */
+.cover .cover-sigil-stage svg {
   opacity: 0;
-  transform: scale(0.92);
-  animation: cover-mandala-reveal 1.6s ease-out 0.3s forwards;
+  transform: scale(0.94);
+  animation: cover-sigil-reveal 1.6s ease-out 0.3s forwards;
 }
-@keyframes cover-mandala-reveal {
-  to { opacity: 0.85; transform: scale(1); }
+@keyframes cover-sigil-reveal {
+  to { opacity: 1; transform: scale(1); }
 }
 .cover h1.cover-title,
 .cover .cover-subject,
@@ -270,14 +270,51 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Sticky TOC rail — left of body, auto-highlights current Part ───── */
+/* ── Body layout — wide responsive frame, narrow focus reading column ─
+ * The viewport is now split into a sticky TOC rail (left), a generous
+ * reading column (center), and breathing whitespace (right). The reading
+ * column itself constrains line-length to ~70-80ch so verses stay
+ * meditative; the surrounding whitespace becomes purposeful frame, not
+ * wasted empty space.
+ */
 .body-page.interactive {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 48px;
-  max-width: 1280px;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(0, 0.45fr);
+  column-gap: 56px;
+  width: 100%;
+  max-width: min(1680px, 98vw);
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 56px 36px 96px;
+  box-sizing: border-box;
+}
+.body-content {
+  grid-column: 2 / 3;
+  width: 100%;
+  max-width: 760px;
+  /* Reading column sits flush-left of its grid cell so the right-side
+     whitespace becomes the meditative breathing frame for each verse */
+  margin-left: 0;
+}
+@media (max-width: 1180px) {
+  .body-page.interactive {
+    grid-template-columns: minmax(170px, 200px) minmax(0, 1fr);
+    column-gap: 36px;
+    padding: 40px 24px 72px;
+  }
+  .body-content {
+    grid-column: 2 / 3;
+    max-width: 720px;
+  }
+}
+@media (max-width: 780px) {
+  .body-page.interactive {
+    grid-template-columns: 1fr;
+    padding: 24px 18px 56px;
+  }
+  .body-content {
+    grid-column: 1 / -1;
+    max-width: 100%;
+  }
 }
 .toc-rail {
   position: sticky;
@@ -371,20 +408,80 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   align-items: stretch;
 }
 
-/* ── Scroll-driven reveal — sections fade in as they enter viewport ── */
+/* ── Verse-by-verse scroll illumination ─────────────────────────────────
+ * Every prose block (<p>, <h*>, lists, tables, blockquotes) is wrapped
+ * server-side as a .verse. Default state is dim — when a verse enters
+ * the viewport-center band it illuminates to full opacity, then gently
+ * dims again as it scrolls past. This produces a "moving focus" feel
+ * where only 2-3 lines have the reader's full attention at any moment.
+ *
+ * Implementation uses CSS animation-timeline: view() where supported
+ * (Chrome 115+ / Edge 115+ / Safari 18+). Older browsers fall back to
+ * an IntersectionObserver in the JS runtime that toggles a "lit" class
+ * on the currently-focused verse.
+ */
+.verse {
+  margin: 0 0 22px;
+  opacity: 0.22;
+  transition: opacity 0.6s ease, filter 0.6s ease, transform 0.6s ease;
+  filter: blur(0.4px);
+  will-change: opacity, filter;
+}
+.verse > * { margin-top: 0; margin-bottom: 0; }
+.verse + .verse { margin-top: 18px; }
+.verse-anchor {
+  /* Headings stay slightly more readable when dim so the reader can scan
+     section structure without losing context */
+  opacity: 0.45;
+}
+.verse.lit,
+.verse:hover {
+  opacity: 1;
+  filter: blur(0);
+}
+.verse.lit + .verse,
+.verse.lit + .verse + .verse {
+  /* Neighbors of the focused verse get a partial highlight — preserves
+     the 2-3 line "current attention band" the user asked for */
+  opacity: 0.62;
+  filter: blur(0);
+}
+@supports (animation-timeline: view()) {
+  .verse {
+    animation: verse-illuminate linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+    transition: none;
+  }
+  @keyframes verse-illuminate {
+    0%   { opacity: 0.18; filter: blur(0.5px); }
+    35%  { opacity: 1;    filter: blur(0);    }
+    65%  { opacity: 1;    filter: blur(0);    }
+    100% { opacity: 0.3;  filter: blur(0.3px); }
+  }
+  @keyframes verse-anchor-illuminate {
+    0%   { opacity: 0.4; }
+    50%  { opacity: 1;   }
+    100% { opacity: 0.55; }
+  }
+  .verse-anchor {
+    animation: verse-anchor-illuminate linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+}
+
+/* ── Part-block + opening: subtle entry fade (preserved from earlier) ── */
 @supports (animation-timeline: view()) {
   .part-header,
-  .part-block,
-  .opening,
-  section.fig-index,
-  .doc-footer {
-    animation: fade-up linear both;
+  .opening > h2 {
+    animation: part-entry linear both;
     animation-timeline: view();
-    animation-range: entry 0% entry 50%;
+    animation-range: entry 0% entry 60%;
   }
-  @keyframes fade-up {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
+  @keyframes part-entry {
+    from { opacity: 0.35; transform: translateY(18px); }
+    to   { opacity: 1;    transform: translateY(0);   }
   }
 }
 
@@ -507,6 +604,26 @@ export const BASE_INTERACTIVE_JS = `
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
+
+  // ── Verse scroll-illumination fallback ────────────────────────────
+  // Browsers without animation-timeline: view() get an IntersectionObserver
+  // that toggles .lit on the currently-focused verse. The dim default state
+  // is set in CSS so the page is never blank. We test for support via
+  // CSS.supports() so we don't double-animate on modern browsers.
+  var supportsViewTimeline = (typeof CSS !== 'undefined') && CSS.supports && CSS.supports('animation-timeline: view()');
+  if (!supportsViewTimeline && 'IntersectionObserver' in window) {
+    var verseObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        // Light up the verse while it sits in the central 30% band of viewport
+        entry.target.classList.toggle('lit', entry.isIntersecting);
+      });
+    }, {
+      // Focus zone: top 35%–65% of viewport (the natural reading center)
+      rootMargin: '-35% 0% -35% 0%',
+      threshold: 0,
+    });
+    document.querySelectorAll('.verse').forEach(function(v) { verseObserver.observe(v); });
+  }
 })();
 `;
 
