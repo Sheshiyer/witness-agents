@@ -153,6 +153,137 @@ Workspace for ongoing experiments: `~/.claude/MEMORY/WORK/autoresearch-integrate
 
 ---
 
+## Consciousness Level Register (Hardened 2026-05-15)
+
+The integratedreading pipeline branches into TWO register bands based on the end-user's `consciousness_level` (1-5). This lets a single mode doc serve both traditional-Vedic readers (Levels 1-3) and framework-native initiates (Levels 4-5) without forking the codebase.
+
+**What it is.** Selemene's user-profile DB carries a `consciousness_level: 1-5` field. At request time the orchestrator resolves the effective level and selects the matching register band:
+
+- **L1-L3 — traditional Vedic register.** Kundali vocabulary (Lagna / Rashi / Nakshatra, Vimshottari Mahadasha, yogas, doshas, gemstone-mantra-transit remedies). ~9-11k words. Default for unknown / new users.
+- **L4-L5 — framework-native register.** Aletheios/Pichet dyad, Kosha-Clifford layering Cl(0)-Cl(7), Eigenwelt/Mitwelt/Umwelt, AKSHARA seed, anti-dependency telos via Quine principle. ~12-15k words. The May 2026 production register.
+
+The two bands share the same chart math, the same Selemene engine outputs, and the same overall 11-part structure — what changes is the prompt-template register-vocabulary and the per-engine lexicon block injected into each LLM call.
+
+### Resolution Precedence
+
+The orchestrator's `resolveLevel()` walks three paths in order:
+
+1. **`admin_override`** — payload-supplied integer 1-5. ONLY honored when `CallerIdentity.caller_is_admin === true` OR `caller_tier === 'initiate'`. Non-admin callers passing `admin_override` get HTTP 403 `FORBIDDEN_LEVEL_OVERRIDE`.
+2. **`user_db`** — the stored `consciousness_level` field on the target user's profile, looked up via the caller-supplied lookup function.
+3. **`default`** — fallback `default_level` (conventionally `1`) when no override and no user record.
+
+The resolved result carries the source (`admin_override` / `user_db` / `default`) so post-hoc audits can attribute readings to the right register. Source is also recorded in the run-metric report alongside `effective_consciousness_level` and `register_band`.
+
+### File Locations
+
+| File | Role |
+|---|---|
+| [`scripts/integratedreading/level-resolver.ts`](../../../scripts/integratedreading/level-resolver.ts) | `resolveLevel()` + `levelToRegisterBand()` + error types |
+| [`scripts/integratedreading/modes/parser.ts`](../../../scripts/integratedreading/modes/parser.ts) | Register-variants contract: `getPassTemplate()`, `getTargetWordsForRegister()` |
+| [`scripts/integratedreading/modes/_schema.md`](../../../scripts/integratedreading/modes/_schema.md) | Mode-doc schema reference — `register_variants` frontmatter spec |
+| [`scripts/integratedreading/engine-lexicons.md`](../../../scripts/integratedreading/engine-lexicons.md) | 16-engine vocabulary registers (both L1-L3 and L4-L5 sub-sections per engine) + voice rules |
+| [`scripts/integratedreading/engine-lexicons-parser.ts`](../../../scripts/integratedreading/engine-lexicons-parser.ts) | `composeLexiconBlock()` — emits the per-engine register-aware vocab block injected into pass system prompts |
+| [`src/types/reading-request.ts`](../../../src/types/reading-request.ts) | Request / response contract (`consciousness_level` payload field) |
+| [`src/api/auth.ts`](../../../src/api/auth.ts) | `extractCallerIdentity()` + `gateConsciousnessLevelOverride()` admin gate |
+| [`scripts/autoresearch-integratedreading/per-mode/runner.ts`](../../../scripts/autoresearch-integratedreading/per-mode/runner.ts) | Per-mode autoresearch — accepts `--level <1-5>`, runs band-aware variant studies |
+
+### CLI Usage
+
+```bash
+# Default (no --level) — uses level 5, hits L4-L5 framework-native register.
+# Backward-compat with pre-2026-05-15 invocations.
+npx tsx scripts/integratedreading-mode.ts \
+  --mode composite-dyad \
+  --subjects-dir 01-Projects/723/subjects/ \
+  --output-dir 01-Projects/723/out/
+
+# Force L1-L3 register (traditional Vedic vocabulary) for a level-3 user
+npx tsx scripts/integratedreading-mode.ts \
+  --mode composite-dyad \
+  --level 3 \
+  --subjects-dir 01-Projects/723/subjects/ \
+  --output-dir 01-Projects/723/out-l3/
+
+# Force L4-L5 register (framework-native) explicitly
+npx tsx scripts/integratedreading-mode.ts \
+  --mode partner-synastry \
+  --level 5 \
+  --subjects-dir 01-Projects/dyad/subjects/ \
+  --output-dir 01-Projects/dyad/out-l5/
+```
+
+Console output for every run reports the resolved level + band + source:
+
+```
+  Level:        3 (l1_l3, source=admin_override)
+```
+
+### API Usage
+
+The `POST /reading` endpoint accepts an optional `consciousness_level: 1-5` in the request payload:
+
+```json
+{
+  "user_id": "harshita-2026",
+  "mode": "composite-dyad",
+  "subjects": [ ... ],
+  "consciousness_level": 4
+}
+```
+
+Authentication headers (or `WITNESS_DEV_ADMIN=1` env flag for local dev) determine whether the override is honored:
+
+| Caller identity | Behavior |
+|---|---|
+| `X-Caller-Admin: 1` OR `X-Caller-Tier: initiate` OR `WITNESS_DEV_ADMIN=1` | Override honored, response includes `level_source: admin_override` |
+| Anything else WITH `consciousness_level` in payload | HTTP 403 `FORBIDDEN_LEVEL_OVERRIDE` |
+| Anything else WITHOUT `consciousness_level` in payload | Falls through to user-DB lookup → default |
+
+Response always reports `effective_consciousness_level`, `register_band` (`l1_l3` / `l4_l5`), and `level_source`.
+
+### Update Protocol — Extending the System
+
+Three common extensions, each with a specific surface:
+
+1. **Adding a new mode.** Author the mode doc per [`_schema.md`](../../../scripts/integratedreading/modes/_schema.md). To support both bands, include a `register_variants` block in frontmatter AND add the corresponding `## pass-<id>-template-l1-l3` body sections alongside the canonical `## pass-<id>-template` sections. Without `register_variants` the mode runs both bands against the same canonical templates (backward-compat).
+
+2. **Adding a new engine.** Extend `KNOWN_ENGINE_IDS` in [`engine-lexicons-parser.ts`](../../../scripts/integratedreading/engine-lexicons-parser.ts) AND populate BOTH register sub-sections (`### <engine> — l1_l3` and `### <engine> — l4_l5`) in [`engine-lexicons.md`](../../../scripts/integratedreading/engine-lexicons.md). The parser fails fast if either is missing.
+
+3. **Adding new autoresearch axes per band.** Declare `variant_axis_per_level` in the mode's per-mode autoresearch config (`scripts/autoresearch-integratedreading/per-mode/<mode>.ts`). When present the runner uses the band-specific axis label for the lessons-entry heading; when absent the canonical `variant_axis` applies to both bands. Existing modes `partner-synastry.ts` and `family-penta.ts` demonstrate the pattern.
+
+### Autoresearch — Band-Aware Runner
+
+The per-mode autoresearch runner ([`runner.ts`](../../../scripts/autoresearch-integratedreading/per-mode/runner.ts)) accepts `--level <1-5>` and routes the run to the matching band:
+
+```bash
+# Run only the L1-L3 band autoresearch
+npx tsx scripts/autoresearch-integratedreading/per-mode/runner.ts \
+  --mode partner-synastry \
+  --level 3 \
+  --dry-run
+
+# Default (no --level) — run BOTH bands sequentially, L1-L3 then L4-L5
+npx tsx scripts/autoresearch-integratedreading/per-mode/runner.ts \
+  --mode family-penta \
+  --dry-run
+```
+
+Lessons entries appended to mode docs now carry a `**Level:**` field tagging the band (`l1_l3` / `l4_l5`) so future readers can attribute each autoresearch finding to its register context. The lessons-entry heading uses the band-specific axis label when `variant_axis_per_level` is declared, e.g.:
+
+```markdown
+### 2026-05-20 — Pass γ traditional-remedy specificity
+**Level:** l1_l3
+**Question:** Which variant of the Pass γ traditional-remedy specificity ...
+```
+
+### Pointers
+
+- **Design doc:** [`docs/plans/2026-05-15-consciousness-level-register-design.md`](../../../docs/plans/2026-05-15-consciousness-level-register-design.md) — 3-phase plan + locked contracts (one reading per user per request at exactly one level, binary register split, admin-gated override).
+- **Verification:** [`docs/verification/2026-05-15-consciousness-level-runs.md`](../../../docs/verification/2026-05-15-consciousness-level-runs.md) — live L1-L3 vs L4-L5 production runs with cross-band artifact diff.
+- **Milestone:** GitHub milestone #1 — consciousness-level register epic — issues #68 through #80 (P1 contracts → P2 parallel build → P3 integration + skill update).
+
+---
+
 ## Reading Modes (Hardened 2026-05-14)
 
 Four new modes extend the pipeline beyond solo + composite-dyad + composite-triad: Partner-Synastry (2 subjects romantic), Business-Partners (2-3 co-founders), Family-Penta (5 kinship), Team-Synergy (4-12 team). Each delivers 12-15k meaningful words via the unified orchestrator `scripts/integratedreading-mode.ts`.
