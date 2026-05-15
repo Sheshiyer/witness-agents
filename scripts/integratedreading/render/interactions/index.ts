@@ -270,61 +270,61 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Body layout — wide responsive frame, narrow focus reading column ─
- * The viewport is now split into a sticky TOC rail (left), a generous
- * reading column (center), and breathing whitespace (right). The reading
- * column itself constrains line-length to ~70-80ch so verses stay
- * meditative; the surrounding whitespace becomes purposeful frame, not
- * wasted empty space.
+/* ── Body layout — single centered reading column, fixed sidebar TOC ─
+ * The reading IS the page. One column, centered on the viewport,
+ * line-length tuned for verse-style focus (~64-72ch). The TOC becomes a
+ * fixed-position rail at the left viewport edge — it never consumes
+ * reading width. On narrow viewports the TOC collapses to a top drawer.
  */
 .body-page.interactive {
-  display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(0, 0.45fr);
-  column-gap: 56px;
+  display: block;
   width: 100%;
-  max-width: min(1680px, 98vw);
-  margin: 0 auto;
-  padding: 56px 36px 96px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
+  position: relative;
 }
 .body-content {
-  grid-column: 2 / 3;
   width: 100%;
-  max-width: 760px;
-  /* Reading column sits flush-left of its grid cell so the right-side
-     whitespace becomes the meditative breathing frame for each verse */
-  margin-left: 0;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 80px 32px 96px;
+  box-sizing: border-box;
 }
-@media (max-width: 1180px) {
-  .body-page.interactive {
-    grid-template-columns: minmax(170px, 200px) minmax(0, 1fr);
-    column-gap: 36px;
-    padding: 40px 24px 72px;
-  }
+@media (max-width: 720px) {
   .body-content {
-    grid-column: 2 / 3;
-    max-width: 720px;
-  }
-}
-@media (max-width: 780px) {
-  .body-page.interactive {
-    grid-template-columns: 1fr;
-    padding: 24px 18px 56px;
-  }
-  .body-content {
-    grid-column: 1 / -1;
+    padding: 48px 22px 64px;
     max-width: 100%;
   }
 }
 .toc-rail {
-  position: sticky;
-  top: 32px;
-  align-self: start;
-  font-family: var(--font-mono);
-  font-size: 10pt;
-  line-height: 1.6;
-  max-height: calc(100vh - 64px);
+  /* Fixed-position rail at the left viewport edge. Does NOT consume any
+     of the reading column's width. Visible only when there's enough
+     viewport room to the left of the centered reading column. */
+  position: fixed;
+  top: 50%;
+  left: 24px;
+  transform: translateY(-50%);
+  width: 180px;
+  max-height: 70vh;
   overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 9.5pt;
+  line-height: 1.55;
+  z-index: 20;
+  padding: 18px 14px;
+  background: rgba(7,11,29,0.78);
+  border: 1px solid rgba(197,160,23,0.18);
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.3s ease;
+}
+@media (max-width: 1100px) {
+  /* Below 1100px there isn't enough margin for a fixed rail without
+     overlapping the reading column — hide it entirely. The user
+     navigates by scrolling. */
+  .toc-rail { display: none; }
 }
 .toc-rail-title {
   font-size: 8pt;
@@ -375,25 +375,32 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   display: block;
 }
 
-/* ── Per-Part sticky-viz column layout ─────────────────────────────── */
+/* ── Per-Part layout — viz becomes an inline figure between verses ───
+ * No more sticky-side-column splitting the reading width. The viz is a
+ * full-width figure that sits between the part-header and the prose,
+ * rendered as part of the verse rhythm.
+ */
 .part-block {
   margin-bottom: 96px;
+  display: block;
 }
-.part-block.has-viz {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 48px;
-  align-items: start;
-}
-.part-block.has-viz .part-prose { min-width: 0; }
 .part-block.has-viz .part-viz-column {
-  position: sticky;
-  top: 32px;
-  align-self: start;
-  max-height: calc(100vh - 64px);
+  display: block;
+  margin: 32px 0 48px;
+  padding: 0;
+  position: static;
+  max-height: none;
 }
-.part-block.has-viz .part-viz-column figure.viz { margin: 0; }
-.part-block.has-viz .part-viz-column .viz svg { max-width: 100%; }
+.part-block.has-viz .part-viz-column figure.viz {
+  margin: 0 auto;
+  max-width: 100%;
+}
+.part-block.has-viz .part-viz-column .viz svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
 
 /* ── Plate sections — full-viewport-height with scroll-snap ────────── */
 .canvas.interactive {
@@ -517,27 +524,9 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   border-bottom: 1px solid var(--sacred-gold);
 }
 
-/* ── Mobile / narrow viewport — collapse grid to single column ─────── */
-@media (max-width: 900px) {
-  .body-page.interactive { grid-template-columns: 1fr; padding: 24px 16px; }
-  .toc-rail {
-    position: relative;
-    top: 0;
-    max-height: none;
-    margin-bottom: 32px;
-    padding: 16px;
-    border: 1px solid rgba(197,160,23,0.2);
-    border-radius: 4px;
-  }
-  .part-block.has-viz {
-    grid-template-columns: 1fr;
-  }
-  .part-block.has-viz .part-viz-column {
-    position: relative;
-    top: 0;
-    max-height: none;
-  }
-}
+/* Mobile-specific tweaks: body-page is already single-column at every
+   viewport; nothing further needed for layout. The fixed TOC rail is
+   hidden below 1100px (see .toc-rail @media block). */
 
 /* ── Reduced motion — strip animations for accessibility ───────────── */
 @media (prefers-reduced-motion: reduce) {

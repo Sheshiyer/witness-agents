@@ -1079,25 +1079,30 @@ table.table-wide td:first-child, table.table-wide th:first-child { padding-left:
     scroll-snap-type: none !important;
     scroll-behavior: auto !important;
   }
-  /* Body-page grid collapses to single column */
+  /* Body-page is already single-column; flatten max-width for print */
   .body-page.interactive {
     display: block !important;
-    grid-template-columns: none !important;
     max-width: 100% !important;
     padding: 0 !important;
   }
-  /* Hide sticky TOC rail (table of contents page already serves this in print) */
-  .toc-rail { display: none !important; }
-  /* Per-Part sticky-viz column collapses to flow */
-  .part-block.has-viz {
-    display: block !important;
-    grid-template-columns: none !important;
+  .body-content {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
+  /* Hide fixed TOC rail in print (table-of-contents page already serves this) */
+  .toc-rail { display: none !important; }
+  /* Per-Part viz is already inline in screen; ensure same in print */
   .part-block.has-viz .part-viz-column {
     position: static !important;
-    top: 0 !important;
-    max-height: none !important;
-    margin-top: 24px;
+    margin: 18px 0;
+  }
+  /* In print every verse is fully visible — no scroll-driven dimming */
+  .verse, .verse-anchor {
+    opacity: 1 !important;
+    filter: none !important;
+    animation: none !important;
+    transition: none !important;
   }
   /* Plate sections lose viewport-min-height — let them size to content */
   .viz-plate {
