@@ -247,37 +247,146 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   scroll-behavior: smooth;
 }
 
-/* ── Cover — animated mandala fade-in on initial paint ──────────────── */
+/* ── Cover — mandala fades in on initial paint; text is INSTANT VISIBLE.
+ * Earlier versions used cover-text-reveal CSS keyframes with delays, but
+ * that broke headless print rendering + caused flash-of-invisible-text
+ * on slow connections. GSAP handles the parallax-on-scroll dim/rotation
+ * for the mandala (see BASE_INTERACTIVE_JS). Cover text is solid from
+ * paint-1 with no reveal animation — it's the artifact's first impression. */
 .cover .cover-svg-wrap svg {
-  opacity: 0;
-  transform: scale(0.92);
-  animation: cover-mandala-reveal 1.6s ease-out 0.3s forwards;
+  animation: cover-mandala-reveal 1.6s ease-out 0.3s both;
 }
 @keyframes cover-mandala-reveal {
-  to { opacity: 0.85; transform: scale(1); }
-}
-.cover h1.cover-title,
-.cover .cover-subject,
-.cover .cover-tagline {
-  opacity: 0;
-  animation: cover-text-reveal 0.9s ease-out forwards;
-}
-.cover h1.cover-title { animation-delay: 0.5s; }
-.cover .cover-subject { animation-delay: 0.8s; }
-.cover .cover-tagline { animation-delay: 1.1s; }
-@keyframes cover-text-reveal {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* ── Sticky TOC rail — left of body, auto-highlights current Part ───── */
+/* ── Body layout — full-viewport responsive 3-column grid ─────────────
+ * Wide  (>1400px): [TOC rail] [prose 720px] [right meta column 1fr]
+ * Mid   (900-1400): [TOC rail] [prose flex] [aside collapses if tight]
+ * Small (<900):    [stack] — TOC at top, prose flowing, no aside
+ *
+ * The container uses CLAMP padding so side gutters scale with viewport —
+ * a 2000px-wide screen gets 96px gutters; a 1100px screen gets 32px.
+ */
 .body-page.interactive {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 48px;
-  max-width: 1280px;
+  grid-template-columns:
+    minmax(180px, 240px)
+    minmax(0, 740px)
+    minmax(0, 1fr);
+  column-gap: clamp(32px, 4vw, 80px);
+  row-gap: 0;
+  max-width: min(1640px, 96vw);
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: clamp(48px, 6vw, 96px) clamp(24px, 4vw, 64px) 96px;
+  position: relative;
+  z-index: 5;
+}
+/* The prose column takes the middle grid track. No internal max-width
+   needed — the grid track itself caps it at 740px. */
+.body-content {
+  width: 100%;
+  min-width: 0;
+  grid-column: 2;
+}
+/* Long headings hyphenate cleanly within prose but DO NOT break inside
+   tables (tables get their own break rule below). */
+.body-content > .opening h1,
+.body-content > .opening h2,
+.body-content > .opening h3,
+.part-block .part-prose > h1,
+.part-block .part-prose > h2,
+.part-block .part-prose > h3,
+.part-block .part-prose > h4 {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  word-break: normal;
+}
+
+/* Tables in long-form prose can BREAK OUT of the 740px prose column when
+   they need more width. They never letter-fragment — overflow-x: auto
+   lets them scroll horizontally if the viewport is genuinely narrow. */
+.body-content table,
+.part-prose table {
+  display: block;
+  width: 100%;
+  max-width: none;
+  overflow-x: auto;
+  margin: 32px -clamp(8px, 2vw, 32px);  /* slight break-out */
+  padding-right: clamp(8px, 2vw, 32px);
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  line-height: 1.55;
+}
+.body-content table thead,
+.part-prose table thead {
+  background: rgba(197, 160, 23, 0.05);
+}
+.body-content table th,
+.body-content table td,
+.part-prose table th,
+.part-prose table td {
+  /* Critical: do NOT word-break inside tables. Cells size naturally. */
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
+  white-space: normal;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(240, 237, 227, 0.08);
+  vertical-align: top;
+  min-width: 110px;
+  text-align: left;
+}
+.body-content table th,
+.part-prose table th {
+  font-family: var(--font-mono);
+  font-size: 8.5pt;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sacred-gold);
+  font-weight: 700;
+  border-bottom: 1.5px solid var(--sacred-gold);
+}
+
+/* Right meta column — placeholder until per-Part viz cards land.
+   Even empty, it should not collapse so the grid keeps its proportions
+   on wide screens. */
+.body-page.interactive::after {
+  content: '';
+  grid-column: 3;
+  /* This is a non-displayed grid filler. Real content comes from a sidebar
+     element when per-Part viz is wired. */
+  display: none;
+}
+
+/* ── Responsive breakpoints ───────────────────────────────────────── */
+@media (max-width: 1180px) {
+  /* Collapse to 2-column: TOC + prose, no right column */
+  .body-page.interactive {
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+    column-gap: 48px;
+  }
+}
+@media (max-width: 900px) {
+  /* Stack everything */
+  .body-page.interactive {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    padding: 32px 16px 64px;
+  }
+  .toc-rail {
+    position: static !important;
+    top: 0 !important;
+    max-height: none !important;
+    margin-bottom: 32px;
+    padding: 16px;
+    border: 1px solid rgba(197, 160, 23, 0.2);
+    border-radius: 4px;
+  }
+  .body-content {
+    grid-column: 1;
+  }
 }
 .toc-rail {
   position: sticky;
@@ -358,34 +467,184 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
 .part-block.has-viz .part-viz-column figure.viz { margin: 0; }
 .part-block.has-viz .part-viz-column .viz svg { max-width: 100%; }
 
-/* ── Plate sections — full-viewport-height with scroll-snap ────────── */
-.canvas.interactive {
-  scroll-snap-type: y proximity;
-}
+/* ── Plate sections — natural sizing, scroll-snap REMOVED (was causing
+ *    a jarring empty band between cover and first plate). Plate visual
+ *    treatment via the existing top/bottom hairline rules from .viz-plate
+ *    in the base STYLES still applies. */
 .viz-plate {
-  scroll-snap-align: center;
-  min-height: 90vh;
+  /* No min-height, no scroll-snap. The plate sizes to its content + the
+   *    existing top/bottom gold-rule frame from STYLES. */
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: stretch;
 }
 
-/* ── Scroll-driven reveal — sections fade in as they enter viewport ── */
-@supports (animation-timeline: view()) {
-  .part-header,
-  .part-block,
-  .opening,
-  section.fig-index,
-  .doc-footer {
-    animation: fade-up linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 50%;
-  }
-  @keyframes fade-up {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+/* ── Scroll-driven reveal — DISABLED by default ──────────────────────
+ * The earlier @supports(animation-timeline: view()) block kept .part-block,
+ * .opening, etc. at opacity:0 by default and only revealed them as the
+ * element entered the viewport. This broke headless rendering + caused
+ * flash-of-invisible-text on first paint when virtual-time-budget didn't
+ * fully drive the scroll-timeline. The artifact must LOOK GREAT by
+ * default; reveal animations are progressive sugar — see the GSAP
+ * timeline in BASE_INTERACTIVE_JS for the visible scroll-narrative.
+ *
+ * If you want the CSS scroll-driven animation back, opt-in per-element
+ * via a data-animate-on-scroll attribute; never on every .part-block.
+ */
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Editorial layer — what makes the artifact feel like a designed object,
+ * not just structured prose.
+ * ──────────────────────────────────────────────────────────────────────
+ */
+
+/* Part header — bigger Roman numeral + leading gold rule + scale-on-scroll.
+ * The user sees a clear chapter mark as each Part enters view. */
+.part-header {
+  margin: 96px 0 32px;
+  padding-top: 32px;
+  position: relative;
+}
+.part-header::before {
+  /* The leading gold rule that announces a new Part */
+  content: '';
+  display: block;
+  width: 64px;
+  height: 2px;
+  background: var(--sacred-gold);
+  margin-bottom: 24px;
+}
+.part-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9pt;
+  letter-spacing: 0.55em;
+  text-transform: uppercase;
+  color: var(--coherence-emerald);
+  margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.part-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 38pt;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  color: var(--parchment);
+  margin: 0 0 12px;
+}
+.part-subtitle {
+  font-family: var(--font-mono);
+  font-size: 8.5pt;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--muted-silver);
+  margin-bottom: 32px;
+  opacity: 0.7;
+}
+
+/* Drop-cap on the first paragraph of each Part — editorial signature */
+.part-prose > p:first-of-type::first-letter {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 5.2em;
+  line-height: 0.92;
+  float: left;
+  color: var(--sacred-gold);
+  margin: 8px 14px -4px 0;
+  padding-top: 4px;
+  text-shadow: 0 0 24px rgba(197,160,23,0.18);
+}
+
+/* Cross-reference highlights — bold + colored text gets a subtle gold
+ * accent + underline-on-hover. Makes the multi-system braid VISIBLE. */
+.part-prose strong {
+  color: var(--sacred-gold);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+.part-prose em {
+  color: var(--coherence-emerald);
+  font-style: italic;
+}
+/* Inline code spans (Sanskrit anchors, technical names) */
+.part-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  color: var(--coherence-emerald);
+  background: rgba(16,181,167,0.05);
+  padding: 1px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.02em;
+}
+
+/* Pull-quote — h3 sub-headings can be styled like editorial pull-quotes
+ * when they carry weight. Add gold left rule. */
+.part-prose h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16pt;
+  line-height: 1.25;
+  color: var(--sacred-gold);
+  margin: 48px 0 16px;
+  padding-left: 18px;
+  border-left: 3px solid var(--sacred-gold);
+  letter-spacing: -0.01em;
+}
+.part-prose h4 {
+  font-family: var(--font-mono);
+  font-size: 9.5pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--coherence-emerald);
+  margin: 32px 0 12px;
+}
+
+/* Paragraph rhythm tuned for long-form reading */
+.part-prose p {
+  font-family: var(--font-display);
+  font-size: 11.5pt;
+  line-height: 1.72;
+  color: var(--parchment);
+  margin: 0 0 22px;
+  letter-spacing: 0.002em;
+}
+
+/* Between-Part divider — three centered dots (∴ + hairline rules either side) */
+.part-block + .part-block::before {
+  content: '∴';
+  display: block;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 18pt;
+  color: var(--sacred-gold);
+  opacity: 0.45;
+  margin: 64px auto 32px;
+  letter-spacing: 0.5em;
+}
+
+/* Opening section — first paragraph is the reading's address */
+.opening {
+  margin-bottom: 96px;
+  padding: 48px 0;
+  border-bottom: 1px solid rgba(197,160,23,0.18);
+}
+.opening p:first-of-type {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-style: italic;
+  font-size: 14pt;
+  line-height: 1.55;
+  color: var(--sacred-gold);
+  margin-bottom: 22px;
+}
+.opening p {
+  font-family: var(--font-display);
+  font-size: 12pt;
+  line-height: 1.7;
+  color: var(--parchment);
+  margin-bottom: 18px;
 }
 
 /* ── Tooltips for hover-bridge revelations ─────────────────────────── */
@@ -506,6 +765,70 @@ export const BASE_INTERACTIVE_JS = `
       var target = document.querySelector(a.getAttribute('href'));
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+  });
+
+  // ── GSAP scroll-reveals (progressive sugar — never hide content) ───
+  // CRITICAL: every animation here uses fromTo() with immediateRender:false
+  // OR to() so elements DEFAULT to visible. If GSAP/ScrollTrigger do not
+  // fire (slow browser, headless render, print, prefers-reduced-motion),
+  // the artifact still reads correctly.
+  if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Part header reveal — animates IN from a slightly-lower position
+    // ONLY when the header enters view; never hides the content.
+    document.querySelectorAll('.part-header').forEach(function(header) {
+      var eyebrow = header.querySelector('.part-eyebrow');
+      var title   = header.querySelector('.part-title');
+      var subtitle= header.querySelector('.part-subtitle');
+
+      var tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: header,
+          start: 'top 80%',
+          toggleActions: 'play none none none',  // play once, never reverse
+        },
+      });
+      if (eyebrow) tl.fromTo(eyebrow,
+        { y: 16, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, ease: 'power2.out', immediateRender: false });
+      if (title) tl.fromTo(title,
+        { y: 28, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out', immediateRender: false }, '-=0.2');
+      if (subtitle) tl.fromTo(subtitle,
+        { y: 12, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.4, ease: 'power2.out', immediateRender: false }, '-=0.3');
+    });
+
+    // Cover-to-body parallax — cover SVG mandala scrubs as user scrolls.
+    // gsap.to() animates FROM the natural state, so the SVG defaults to
+    // visible. No from() hiding here.
+    var coverSvg = document.querySelector('.cover-svg-wrap svg');
+    if (coverSvg) {
+      gsap.to(coverSvg, {
+        rotation: 25,
+        opacity: 0.2,
+        scale: 1.1,
+        scrollTrigger: {
+          trigger: '.cover',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: 0.5,
+        },
+        transformOrigin: 'center center',
+      });
+    }
+  }
+
+  // ── Scroll-progress indicator on TOC rail (subtle gold tick mark) ──
+  var progressTick = document.createElement('div');
+  progressTick.id = 'scroll-progress-tick';
+  progressTick.style.cssText = 'position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--coherence-emerald),var(--sacred-gold));width:0%;z-index:10000;transition:width 0.15s linear;pointer-events:none;';
+  document.body.appendChild(progressTick);
+  window.addEventListener('scroll', function() {
+    var h = document.documentElement;
+    var pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+    progressTick.style.width = pct + '%';
   });
 })();
 `;

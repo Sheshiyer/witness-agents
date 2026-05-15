@@ -149,9 +149,30 @@ p, li, dd, td {
   padding-top: 28px;
 }
 .cover-svg-wrap {
-  position: absolute; bottom: -8%; right: -8%;
-  width: 70%; opacity: 0.85;
+  /* Centered radial backdrop — sits BEHIND header content + footer.
+     Low opacity so the title remains legible; placed at center-right of
+     the cover so it doesn't compete with the title on the left. */
+  position: absolute;
+  top: 50%; right: 6%;
+  transform: translateY(-46%);
+  width: min(56vh, 52%);
+  max-width: 720px;
+  aspect-ratio: 1 / 1;
+  opacity: 0.55;
   pointer-events: none;
+  filter: drop-shadow(0 0 32px rgba(11,80,251,0.18));
+  z-index: 1;
+}
+.cover-svg-wrap svg {
+  width: 100%; height: 100%;
+  display: block;
+}
+/* Cover header text sits above the SVG */
+.cover > header,
+.cover > .cover-footer { position: relative; z-index: 2; }
+/* Constrain the cover title block to the left half so it doesn't overlap the SVG */
+.cover > header {
+  max-width: 58%;
 }
 .cover-footer {
   display: flex; justify-content: space-between; align-items: flex-end;
