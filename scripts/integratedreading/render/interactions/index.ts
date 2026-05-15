@@ -247,14 +247,14 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   scroll-behavior: smooth;
 }
 
-/* ── Cover — animated mandala fade-in on initial paint ──────────────── */
-.cover .cover-svg-wrap svg {
+/* ── Cover — animated sigil fade-in on initial paint ──────────────── */
+.cover .cover-sigil-stage svg {
   opacity: 0;
-  transform: scale(0.92);
-  animation: cover-mandala-reveal 1.6s ease-out 0.3s forwards;
+  transform: scale(0.94);
+  animation: cover-sigil-reveal 1.6s ease-out 0.3s forwards;
 }
-@keyframes cover-mandala-reveal {
-  to { opacity: 0.85; transform: scale(1); }
+@keyframes cover-sigil-reveal {
+  to { opacity: 1; transform: scale(1); }
 }
 .cover h1.cover-title,
 .cover .cover-subject,
@@ -270,24 +270,93 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Sticky TOC rail — left of body, auto-highlights current Part ───── */
+/* ── Body layout — single centered reading column with fluid sizing ──
+ * All sizing is now relative (vw/rem/clamp). The reading column scales
+ * from ~320px on mobile to ~1280px on 4K. Inside it, paragraphs cap at
+ * ~64ch for readability while headings and figures are allowed to span
+ * the wider container so short titles don't break into 5 lines on
+ * desktop. Body text also scales fluidly so typography stays balanced
+ * at every viewport.
+ */
 .body-page.interactive {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 48px;
-  max-width: 1280px;
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  position: relative;
+}
+.body-content {
+  width: clamp(18rem, 72vw, 80rem);
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: clamp(2rem, 4vw, 5rem) clamp(1rem, 2.4vw, 2.5rem) clamp(3rem, 6vw, 6rem);
+  box-sizing: border-box;
+  /* Body type scales fluidly with viewport so the reading rhythm is
+     proportional, not pinned to one viewport size. */
+  font-size: clamp(1rem, 0.85rem + 0.45vw, 1.22rem);
+  line-height: 1.65;
+}
+/* Inside the reading column, paragraphs and list items stay inside the
+   readable line-length sweet spot. Headings + figures + tables are
+   allowed to span the full container width so short headings don't
+   wrap into 5 lines on wide viewports. */
+.body-content :where(p, li, blockquote p) {
+  max-width: 64ch;
+}
+.body-content :where(h2, h3, h4, figure, table, .viz-plate, .part-viz-column, .context-sidebar) {
+  max-width: 100%;
+}
+.body-content :where(.part-title, .part-subtitle, .cover-title) {
+  max-width: 100%;
+}
+/* Headline + heading sizes also become fluid */
+.body-content h2 {
+  font-size: clamp(1.3rem, 1rem + 1vw, 2.2rem);
+  line-height: 1.18;
+}
+.body-content h3 {
+  font-size: clamp(1.05rem, 0.85rem + 0.6vw, 1.5rem);
+  line-height: 1.28;
+}
+.body-content h4 {
+  font-size: clamp(0.85rem, 0.7rem + 0.3vw, 1.05rem);
+  letter-spacing: 0.16em;
+}
+.body-content .part-title {
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 4.5rem);
+  line-height: 1.02;
+}
+.body-content .part-subtitle {
+  font-size: clamp(0.9rem, 0.75rem + 0.4vw, 1.2rem);
 }
 .toc-rail {
-  position: sticky;
-  top: 32px;
-  align-self: start;
-  font-family: var(--font-mono);
-  font-size: 10pt;
-  line-height: 1.6;
-  max-height: calc(100vh - 64px);
+  /* Fixed-position rail at the left viewport edge. Does NOT consume any
+     of the reading column's width. Visible only when there's enough
+     viewport room to the left of the centered reading column. */
+  position: fixed;
+  top: 50%;
+  left: 24px;
+  transform: translateY(-50%);
+  width: 180px;
+  max-height: 70vh;
   overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 9.5pt;
+  line-height: 1.55;
+  z-index: 20;
+  padding: 18px 14px;
+  background: rgba(7,11,29,0.78);
+  border: 1px solid rgba(197,160,23,0.18);
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+  transition: opacity 0.3s ease;
+}
+@media (max-width: 1100px) {
+  /* Below 1100px there isn't enough margin for a fixed rail without
+     overlapping the reading column — hide it entirely. The user
+     navigates by scrolling. */
+  .toc-rail { display: none; }
 }
 .toc-rail-title {
   font-size: 8pt;
@@ -338,25 +407,32 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   display: block;
 }
 
-/* ── Per-Part sticky-viz column layout ─────────────────────────────── */
+/* ── Per-Part layout — viz becomes an inline figure between verses ───
+ * No more sticky-side-column splitting the reading width. The viz is a
+ * full-width figure that sits between the part-header and the prose,
+ * rendered as part of the verse rhythm.
+ */
 .part-block {
   margin-bottom: 96px;
+  display: block;
 }
-.part-block.has-viz {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 48px;
-  align-items: start;
-}
-.part-block.has-viz .part-prose { min-width: 0; }
 .part-block.has-viz .part-viz-column {
-  position: sticky;
-  top: 32px;
-  align-self: start;
-  max-height: calc(100vh - 64px);
+  display: block;
+  margin: 32px 0 48px;
+  padding: 0;
+  position: static;
+  max-height: none;
 }
-.part-block.has-viz .part-viz-column figure.viz { margin: 0; }
-.part-block.has-viz .part-viz-column .viz svg { max-width: 100%; }
+.part-block.has-viz .part-viz-column figure.viz {
+  margin: 0 auto;
+  max-width: 100%;
+}
+.part-block.has-viz .part-viz-column .viz svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
 
 /* ── Plate sections — full-viewport-height with scroll-snap ────────── */
 .canvas.interactive {
@@ -371,20 +447,80 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   align-items: stretch;
 }
 
-/* ── Scroll-driven reveal — sections fade in as they enter viewport ── */
+/* ── Verse-by-verse scroll illumination ─────────────────────────────────
+ * Every prose block (<p>, <h*>, lists, tables, blockquotes) is wrapped
+ * server-side as a .verse. Default state is dim — when a verse enters
+ * the viewport-center band it illuminates to full opacity, then gently
+ * dims again as it scrolls past. This produces a "moving focus" feel
+ * where only 2-3 lines have the reader's full attention at any moment.
+ *
+ * Implementation uses CSS animation-timeline: view() where supported
+ * (Chrome 115+ / Edge 115+ / Safari 18+). Older browsers fall back to
+ * an IntersectionObserver in the JS runtime that toggles a "lit" class
+ * on the currently-focused verse.
+ */
+.verse {
+  margin: 0 0 22px;
+  opacity: 0.22;
+  transition: opacity 0.6s ease, filter 0.6s ease, transform 0.6s ease;
+  filter: blur(0.4px);
+  will-change: opacity, filter;
+}
+.verse > * { margin-top: 0; margin-bottom: 0; }
+.verse + .verse { margin-top: 18px; }
+.verse-anchor {
+  /* Headings stay slightly more readable when dim so the reader can scan
+     section structure without losing context */
+  opacity: 0.45;
+}
+.verse.lit,
+.verse:hover {
+  opacity: 1;
+  filter: blur(0);
+}
+.verse.lit + .verse,
+.verse.lit + .verse + .verse {
+  /* Neighbors of the focused verse get a partial highlight — preserves
+     the 2-3 line "current attention band" the user asked for */
+  opacity: 0.62;
+  filter: blur(0);
+}
+@supports (animation-timeline: view()) {
+  .verse {
+    animation: verse-illuminate linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+    transition: none;
+  }
+  @keyframes verse-illuminate {
+    0%   { opacity: 0.18; filter: blur(0.5px); }
+    35%  { opacity: 1;    filter: blur(0);    }
+    65%  { opacity: 1;    filter: blur(0);    }
+    100% { opacity: 0.3;  filter: blur(0.3px); }
+  }
+  @keyframes verse-anchor-illuminate {
+    0%   { opacity: 0.4; }
+    50%  { opacity: 1;   }
+    100% { opacity: 0.55; }
+  }
+  .verse-anchor {
+    animation: verse-anchor-illuminate linear both;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+}
+
+/* ── Part-block + opening: subtle entry fade (preserved from earlier) ── */
 @supports (animation-timeline: view()) {
   .part-header,
-  .part-block,
-  .opening,
-  section.fig-index,
-  .doc-footer {
-    animation: fade-up linear both;
+  .opening > h2 {
+    animation: part-entry linear both;
     animation-timeline: view();
-    animation-range: entry 0% entry 50%;
+    animation-range: entry 0% entry 60%;
   }
-  @keyframes fade-up {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
+  @keyframes part-entry {
+    from { opacity: 0.35; transform: translateY(18px); }
+    to   { opacity: 1;    transform: translateY(0);   }
   }
 }
 
@@ -420,27 +556,123 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   border-bottom: 1px solid var(--sacred-gold);
 }
 
-/* ── Mobile / narrow viewport — collapse grid to single column ─────── */
-@media (max-width: 900px) {
-  .body-page.interactive { grid-template-columns: 1fr; padding: 24px 16px; }
-  .toc-rail {
-    position: relative;
-    top: 0;
-    max-height: none;
-    margin-bottom: 32px;
-    padding: 16px;
-    border: 1px solid rgba(197,160,23,0.2);
-    border-radius: 4px;
-  }
-  .part-block.has-viz {
-    grid-template-columns: 1fr;
-  }
-  .part-block.has-viz .part-viz-column {
-    position: relative;
-    top: 0;
-    max-height: none;
-  }
+/* ── Editorial data layouts (replace stock <table>) ───────────────────
+ * Two formats, auto-selected server-side based on table shape:
+ *
+ *   .data-cascade   — definition-list cascade. Default for all tables.
+ *                     Each row becomes its own verse with the row label
+ *                     as an h4 and the remaining cells as a styled dl.
+ *
+ *   .data-cards     — bento-style card grid. Auto-selected for tables
+ *                     whose first column is "Native" / "Subject" / etc.
+ *                     Three cards side-by-side on desktop, stacked on
+ *                     mobile via auto-fit grid.
+ */
+.data-cascade {
+  margin: clamp(1.2rem, 2vw, 2rem) 0;
+  display: block;
 }
+.data-entry {
+  margin: 0 0 clamp(1rem, 1.5vw, 1.5rem);
+  padding: clamp(0.9rem, 1.4vw, 1.4rem) clamp(1rem, 1.5vw, 1.4rem);
+  border-left: 2px solid var(--sacred-gold);
+  background: linear-gradient(90deg, rgba(45,0,80,0.18), transparent 70%);
+  border-radius: 0 4px 4px 0;
+}
+.data-entry-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.95rem, 0.8rem + 0.4vw, 1.2rem);
+  letter-spacing: 0.02em;
+  color: var(--sacred-gold);
+  margin: 0 0 clamp(0.5rem, 0.8vw, 0.8rem);
+  text-transform: none;
+  border-left: none;
+  padding-left: 0;
+}
+.data-entry-list,
+.data-card-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(7rem, max-content) 1fr;
+  column-gap: clamp(0.8rem, 1.2vw, 1.2rem);
+  row-gap: clamp(0.35rem, 0.6vw, 0.6rem);
+}
+.data-pair {
+  display: contents;
+}
+.data-entry-list dt,
+.data-card-list dt {
+  font-family: var(--font-mono);
+  font-size: clamp(0.72rem, 0.65rem + 0.15vw, 0.85rem);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--coherence-emerald);
+  white-space: nowrap;
+  padding-top: 0.1em;
+}
+.data-entry-list dd,
+.data-card-list dd {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(0.92rem, 0.85rem + 0.25vw, 1.1rem);
+  color: var(--parchment);
+  line-height: 1.55;
+}
+.data-entry-list dd strong,
+.data-card-list dd strong {
+  color: var(--sacred-gold);
+}
+.data-entry-list dd em,
+.data-card-list dd em {
+  color: var(--coherence-emerald);
+}
+
+/* Bento card grid — auto-fit columns based on viewport width */
+.data-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: clamp(0.8rem, 1.5vw, 1.4rem);
+  margin: clamp(1rem, 2vw, 1.8rem) 0;
+}
+.data-card {
+  padding: clamp(1rem, 1.5vw, 1.4rem);
+  background: linear-gradient(160deg, rgba(45,0,80,0.32), rgba(7,11,29,0.92));
+  border: 1px solid rgba(197,160,23,0.22);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.data-card::before {
+  /* Subtle gold accent edge */
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sacred-gold), transparent 70%);
+}
+.data-card-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.95rem, 0.8rem + 0.4vw, 1.15rem);
+  letter-spacing: 0.02em;
+  color: var(--parchment);
+  margin: 0 0 clamp(0.7rem, 1vw, 1rem);
+  padding-bottom: clamp(0.5rem, 0.8vw, 0.8rem);
+  border-bottom: 1px solid rgba(197,160,23,0.18);
+}
+
+/* When inside the reading column, both layouts span its full width */
+.body-content .data-cascade,
+.body-content .data-cards {
+  max-width: 100%;
+}
+
+/* Mobile-specific tweaks: body-page is already single-column at every
+   viewport; nothing further needed for layout. The fixed TOC rail is
+   hidden below 1100px (see .toc-rail @media block). */
 
 /* ── Reduced motion — strip animations for accessibility ───────────── */
 @media (prefers-reduced-motion: reduce) {
@@ -507,6 +739,26 @@ export const BASE_INTERACTIVE_JS = `
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
+
+  // ── Verse scroll-illumination fallback ────────────────────────────
+  // Browsers without animation-timeline: view() get an IntersectionObserver
+  // that toggles .lit on the currently-focused verse. The dim default state
+  // is set in CSS so the page is never blank. We test for support via
+  // CSS.supports() so we don't double-animate on modern browsers.
+  var supportsViewTimeline = (typeof CSS !== 'undefined') && CSS.supports && CSS.supports('animation-timeline: view()');
+  if (!supportsViewTimeline && 'IntersectionObserver' in window) {
+    var verseObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        // Light up the verse while it sits in the central 30% band of viewport
+        entry.target.classList.toggle('lit', entry.isIntersecting);
+      });
+    }, {
+      // Focus zone: top 35%–65% of viewport (the natural reading center)
+      rootMargin: '-35% 0% -35% 0%',
+      threshold: 0,
+    });
+    document.querySelectorAll('.verse').forEach(function(v) { verseObserver.observe(v); });
+  }
 })();
 `;
 

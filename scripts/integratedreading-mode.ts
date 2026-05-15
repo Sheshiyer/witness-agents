@@ -770,19 +770,180 @@ function toRoman(n: number): string {
 // Markdown → HTML via pandoc (fallback to minimal regex if pandoc absent)
 function mdToHtmlBlock(md: string): string {
   if (!md.trim()) return '';
+  let html: string;
   try {
-    return execSync('pandoc -f markdown -t html5 --syntax-highlighting=none', {
+    html = execSync('pandoc -f markdown -t html5 --syntax-highlighting=none', {
       input: md,
       encoding: 'utf-8',
     });
   } catch {
-    return md
+    html = md
       .replace(/^### (.*$)/gm, '<h3>$1</h3>')
       .replace(/^## (.*$)/gm, '<h2>$1</h2>')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .split(/\n\n+/).map((p) => p.startsWith('<') ? p : `<p>${p}</p>`).join('\n');
   }
+  // Post-process: first convert <table> elements into editorial layouts
+  // (definition-list cascade OR bento card grid based on table shape),
+  // THEN wrap remaining top-level blocks in <div class="verse"> for the
+  // scroll-driven illumination.
+  html = transformTables(html);
+  return wrapVerses(html);
+}
+
+/**
+ * Transform <table> elements into editorial-first layouts that play
+ * nicely with the verse-illumination scroll system. Two strategies:
+ *
+ *  - Bento card grid (.data-cards): when the table is a "per-subject
+ *    comparison" (first-column header includes 'native' | 'subject' |
+ *    'person' | 'member' OR matches one of the subject names heuristically
+ *    in the table body). Each row becomes a card with the row label as
+ *    eyebrow and remaining cells as a definition list. Grid auto-fits
+ *    1-3 columns by viewport.
+ *
+ *  - Definition-list cascade (.data-cascade): default for all other
+ *    tables. Each row becomes a verse with the row label as <h4> and
+ *    the remaining cells as a <dl>. Reads as continuous prose.
+ *
+ * Tables that don't have a header row, or have only one column, are
+ * left as <table> elements (probably layout tables that shouldn't be
+ * touched).
+ */
+function transformTables(html: string): string {
+  return html.replace(/<table[^>]*>([\s\S]*?)<\/table>/g, (full, inner: string) => {
+    // Extract header row (thead > tr > th, or first tr > th)
+    const theadMatch = inner.match(/<thead[^>]*>([\s\S]*?)<\/thead>/);
+    let headerHtml = '';
+    let bodyHtml = '';
+    if (theadMatch) {
+      headerHtml = theadMatch[1];
+      bodyHtml = inner.replace(theadMatch[0], '');
+    } else {
+      // Fallback: first <tr> is the header
+      const firstRowMatch = inner.match(/<tr[^>]*>[\s\S]*?<\/tr>/);
+      if (firstRowMatch && firstRowMatch[0].includes('<th')) {
+        headerHtml = firstRowMatch[0];
+        bodyHtml = inner.replace(firstRowMatch[0], '');
+      } else {
+        return full; // No header — leave as <table>
+      }
+    }
+
+    const headerCells = [...headerHtml.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)].map((m) => stripTags(m[1]).trim());
+    if (headerCells.length < 2) return full;
+
+    // Pull body rows
+    const bodyTbody = bodyHtml.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/);
+    const rowSource = bodyTbody ? bodyTbody[1] : bodyHtml;
+    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+    const rows: string[][] = [];
+    let rm: RegExpExecArray | null;
+    while ((rm = rowRegex.exec(rowSource)) !== null) {
+      const cells = [...rm[1].matchAll(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/g)].map((cm) => cm[1].trim());
+      if (cells.length === headerCells.length) rows.push(cells);
+    }
+    if (rows.length === 0) return full;
+
+    // Decide format: bento cards if first-column header is a "subject"
+    // identifier OR if there are 2-4 rows (likely comparison shape).
+    const firstColHeader = headerCells[0].toLowerCase();
+    const isSubjectAxis = /^(native|subject|person|member|partner|chart|individual)$/i.test(firstColHeader);
+    const useCards = isSubjectAxis && rows.length >= 2 && rows.length <= 6;
+
+    if (useCards) {
+      return renderBentoCards(headerCells, rows);
+    }
+    return renderCascade(headerCells, rows);
+  });
+}
+
+function renderBentoCards(headers: string[], rows: string[][]): string {
+  const cards = rows.map((row) => {
+    const label = stripTags(row[0]).trim();
+    const defs = headers.slice(1).map((h, i) => {
+      const value = row[i + 1] ?? '';
+      return `<div class="data-pair"><dt>${escapeAttr(h)}</dt><dd>${value}</dd></div>`;
+    }).join('');
+    return `<article class="data-card">
+      <header class="data-card-label">${label}</header>
+      <dl class="data-card-list">${defs}</dl>
+    </article>`;
+  }).join('');
+  return `<div class="verse"><div class="data-cards">${cards}</div></div>`;
+}
+
+function renderCascade(headers: string[], rows: string[][]): string {
+  const entries = rows.map((row) => {
+    const label = stripTags(row[0]).trim();
+    const defs = headers.slice(1).map((h, i) => {
+      const value = row[i + 1] ?? '';
+      return `<div class="data-pair"><dt>${escapeAttr(h)}</dt><dd>${value}</dd></div>`;
+    }).join('');
+    return `<div class="verse data-entry">
+      <h4 class="data-entry-label">${label}</h4>
+      <dl class="data-entry-list">${defs}</dl>
+    </div>`;
+  }).join('\n');
+  return `<div class="data-cascade">${entries}</div>`;
+}
+
+function stripTags(s: string): string {
+  return s.replace(/<[^>]+>/g, '').trim();
+}
+
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * Wrap each top-level prose block (<p>, <h2>, <h3>, <h4>, <ul>, <ol>,
+ * <blockquote>, <table>) in a <div class="verse"> so the reader experiences
+ * one focused 2-3 line "verse" at a time via the CSS scroll-illumination
+ * animation. Skips elements that are already verses, and preserves figure
+ * / svg / pre blocks (those need different treatment).
+ *
+ * Splits long paragraphs (>180 words OR >2 sentence-end markers) into
+ * sentence-grouped verse fragments so a 600-word block doesn't read as
+ * one verse — it reads as ~3 verses each 2-3 lines long.
+ */
+function wrapVerses(html: string): string {
+  const blockRe = /(<(?:p|h2|h3|h4|ul|ol|blockquote|table)[^>]*>[\s\S]*?<\/(?:p|h2|h3|h4|ul|ol|blockquote|table)>)/g;
+  return html.replace(blockRe, (match, block: string) => {
+    const tagMatch = block.match(/^<(p|h2|h3|h4|ul|ol|blockquote|table)/);
+    const tag = tagMatch ? tagMatch[1] : 'p';
+    const isHeading = tag === 'h2' || tag === 'h3' || tag === 'h4';
+    const anchorClass = isHeading ? 'verse verse-anchor' : 'verse';
+
+    // For long paragraphs, split into sentence-grouped sub-verses
+    if (tag === 'p') {
+      const text = block.replace(/<\/?p[^>]*>/g, '');
+      const words = text.split(/\s+/).filter(Boolean).length;
+      // sentence-end count (rough — counts ". " and "? " and "! ")
+      const sentenceEnds = (text.match(/[.!?]\s+(?=[A-Z“"])/g) || []).length;
+      if (words > 160 && sentenceEnds >= 3) {
+        // Split on sentence boundaries, group into chunks of ~2-3 sentences
+        const parts = text.split(/(?<=[.!?])\s+(?=[A-Z“"])/);
+        const chunks: string[] = [];
+        let current: string[] = [];
+        let currentWords = 0;
+        for (const p of parts) {
+          const w = p.split(/\s+/).filter(Boolean).length;
+          current.push(p);
+          currentWords += w;
+          if (currentWords >= 55 || current.length >= 3) {
+            chunks.push(current.join(' '));
+            current = [];
+            currentWords = 0;
+          }
+        }
+        if (current.length) chunks.push(current.join(' '));
+        return chunks.map((c) => `<div class="${anchorClass}"><p>${c}</p></div>`).join('\n');
+      }
+    }
+    return `<div class="${anchorClass}">${block}</div>`;
+  });
 }
 
 function listAvailableModes(): string[] {

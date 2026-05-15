@@ -33,7 +33,7 @@ export function renderHTMLPage(opts: {
     : opts.cover.subject;
 
   const coverMandala = opts.cover.cover_mandala_svg
-    ? `<div class="cover-svg-wrap">${opts.cover.cover_mandala_svg}</div>`
+    ? `<div class="cover-sigil-stage">${opts.cover.cover_mandala_svg}</div>`
     : '';
 
   return `<!DOCTYPE html>
@@ -297,7 +297,7 @@ export function renderInteractiveHTMLPage(opts: {
     : opts.cover.subject;
 
   const coverMandala = opts.cover.cover_mandala_svg
-    ? `<div class="cover-svg-wrap">${opts.cover.cover_mandala_svg}</div>`
+    ? `<div class="cover-sigil-stage">${opts.cover.cover_mandala_svg}</div>`
     : '';
 
   // Topology + mode-keyed interaction layer (inlined)
@@ -312,24 +312,26 @@ export function renderInteractiveHTMLPage(opts: {
       </ol>
     </nav>`;
 
-  // Body parts assembly — each Part becomes a .part-block (with optional sticky viz column)
+  // Body parts assembly — each Part is a single-column block. If the
+  // pass carries a viz, it's emitted INLINE between header and prose as
+  // a full-width figure (no sticky side column — that was splitting the
+  // reading width into a useless narrow strip at every viewport size).
   const partsHtml = opts.parts.map((p) => {
     const hasViz = !!p.vizHtml;
-    const partInner = `
-      <section class="part-header" id="part-${p.partNum}">
-        <div class="part-eyebrow">Part ${p.romanNumeral}</div>
-        <h2 class="part-title">${p.title}</h2>
-        ${p.subtitle ? `<div class="part-subtitle">${p.subtitle}</div>` : ''}
-      </section>
-      <div class="part-prose">${p.contentHtml}</div>`;
-    if (hasViz) {
-      return `
-      <div class="part-block has-viz">
-        ${partInner}
-        <aside class="part-viz-column">${p.vizHtml}</aside>
+    const vizBlock = hasViz
+      ? `<aside class="part-viz-column">${p.vizHtml}</aside>`
+      : '';
+    const wrapperClass = hasViz ? 'part-block has-viz' : 'part-block';
+    return `
+      <div class="${wrapperClass}">
+        <section class="part-header" id="part-${p.partNum}">
+          <div class="part-eyebrow">Part ${p.romanNumeral}</div>
+          <h2 class="part-title">${p.title}</h2>
+          ${p.subtitle ? `<div class="part-subtitle">${p.subtitle}</div>` : ''}
+        </section>
+        ${vizBlock}
+        <div class="part-prose">${p.contentHtml}</div>
       </div>`;
-    }
-    return `<div class="part-block">${partInner}</div>`;
   }).join('\n');
 
   return `<!DOCTYPE html>
