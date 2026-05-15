@@ -62,6 +62,28 @@ house_overlay: [7, 11, 12, 5, 2]         # Vedic houses to foreground
 bridge_mandates:                         # mode-specific four-way triangulation rules
   - "Every major claim must braid: Vedic-7th × Tarot-relational × HD-electromagnetic-channel × dasha-anchor"
 svg_topology: dyad-arc                   # one of: dyad-arc | triad-triangle | pentagon | web-graph
+
+# ── Consciousness-level register variants (OPTIONAL, hardened 2026-05-15) ──
+# When present, the orchestrator uses the resolved level's register band
+# ('l1_l3' for levels 1-3 / 'l4_l5' for levels 4-5) to pick per-pass
+# template overrides. Mode docs without this block keep current L5 behavior.
+register_variants:
+  l1_l3:                                 # traditional vocabulary register
+    target_words:
+      min: 9000
+      max: 11000
+    overrides:
+      - pass_id: alpha
+        template: pass-alpha-template-l1-l3   # named section in this same doc
+      - pass_id: beta
+        template: pass-beta-template-l1-l3
+  l4_l5:                                 # framework-native register
+    target_words:
+      min: 12000
+      max: 15000
+    overrides:                           # passes not listed fall back to pass_plan default
+      - pass_id: alpha
+        template: pass-alpha-template
 ---
 ```
 
@@ -79,6 +101,20 @@ svg_topology: dyad-arc                   # one of: dyad-arc | triad-triangle | p
 | `house_overlay` | `number[]` | Vedic house numbers (1-12). |
 | `bridge_mandates` | `string[]` | Mode-specific 4-way triangulation rules. Folded into every pass system prompt. |
 | `svg_topology` | `TopologyKey` | One of `dyad-arc` / `triad-triangle` / `pentagon` / `web-graph`. Routes to the matching renderer in `render/svg/index.ts`. |
+| `register_variants` | `RegisterVariants` (optional) | Consciousness-level register branching. See "Register variants" section below. |
+
+### Register variants
+
+Optional. Mode docs declare alternative pass templates and target word ranges for each register band:
+
+- **`l1_l3`** — traditional vocabulary, used for users at consciousness_level 1, 2, or 3. Vedic Kundali conventions (Lagna, Rashi, Nakshatra, dasha, yogas, doshas, remedies). 11-Part baseline structure. ~9-11k words.
+- **`l4_l5`** — framework-native vocabulary, used for users at level 4 or 5. Aletheios/Pichet dyad, Kosha-Clifford layering, Eigenwelt/Mitwelt/Umwelt, AKSHARA seed, anti-dependency telos. ~12-15k words.
+
+Each variant declares optional `target_words` (falls back to the mode's canonical range) and `overrides` (per-pass template substitutions). Passes not listed in `overrides` use the canonical `pass_plan` template.
+
+**Backward compatibility:** Mode docs without `register_variants` retain current L5 behavior. The orchestrator falls back to canonical templates.
+
+**Body sections for variants:** Per-band template overrides MUST resolve to `## section-name` body sections in the same mode doc (e.g., `pass-alpha-template-l1-l3`). The parser validates this at parse time.
 
 ### Pass spec fields
 
