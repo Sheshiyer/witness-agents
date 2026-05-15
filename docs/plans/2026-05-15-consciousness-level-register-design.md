@@ -164,6 +164,62 @@ The lexicon doc is the SINGLE reference for orchestrator + mode-doc authors. Whe
 - **Deferred to P3 autoresearch:** within the L1-L3 band, does a level-1 user get a SHORTER reading than a level-3 user? (Currently: same register, same length. May vary later via autoresearch.)
 - **Deferred:** does the orchestrator EVER auto-promote a user's level based on this single reading's completion? (No — level promotion is the user-state machinery's job, not the orchestrator's.)
 
+## GitHub Issue Tree (materialized 2026-05-15)
+
+**Milestone:** [#2 Consciousness-Level Register System](https://github.com/Sheshiyer/witness-agents/milestone/2)
+
+### Phase epics (3)
+| # | Title |
+|---|---|
+| [#67](https://github.com/Sheshiyer/witness-agents/issues/67) | [P1] Contract Freeze — level-resolver + mode-doc register schema + engine-lexicon schema + API types |
+| [#68](https://github.com/Sheshiyer/witness-agents/issues/68) | [P2] Parallel Build — orchestrator + mode variants + lexicons + API + auth |
+| [#69](https://github.com/Sheshiyer/witness-agents/issues/69) | [P3] Integration + Hardening — live runs + autoresearch + SKILL.md |
+
+### Phase 1 — Contracts (4 tasks, sequential in one PR)
+- [#70](https://github.com/Sheshiyer/witness-agents/issues/70) 1.1 — Level-resolver module
+- [#71](https://github.com/Sheshiyer/witness-agents/issues/71) 1.2 — Mode-doc register-variant schema extension
+- [#72](https://github.com/Sheshiyer/witness-agents/issues/72) 1.3 — Per-engine vocabulary lexicon schema (skeleton)
+- [#73](https://github.com/Sheshiyer/witness-agents/issues/73) 1.4 — API request/response contract
+
+### Phase 2 — Parallel Build (5 tasks, parallelizable)
+- [#74](https://github.com/Sheshiyer/witness-agents/issues/74) 2.1 — Orchestrator level-branching
+- [#75](https://github.com/Sheshiyer/witness-agents/issues/75) 2.2 — Mode-doc L1-L3 register variants (6 modes)
+- [#76](https://github.com/Sheshiyer/witness-agents/issues/76) 2.3 — Per-engine L1-L3 lexicons (16 engines)
+- [#77](https://github.com/Sheshiyer/witness-agents/issues/77) 2.4 — API endpoint updates
+- [#78](https://github.com/Sheshiyer/witness-agents/issues/78) 2.5 — Admin auth path
+
+### Phase 3 — Hardening (2 tasks, sequential)
+- [#79](https://github.com/Sheshiyer/witness-agents/issues/79) 3.1 — Live-run + render verification at L1, L3, L5
+- [#80](https://github.com/Sheshiyer/witness-agents/issues/80) 3.2 — Autoresearch extension + SKILL.md update
+
+### Dependency graph
+```
+P1 (sequential, single PR)
+  #70 level-resolver ─┐
+  #71 mode-schema    ─┤
+  #72 lexicon-schema ─┤
+  #73 api-types      ─┘
+         ↓
+P2 (parallel, 5 swarms)
+  #74 orchestrator ←──── (#70, #71, #72)
+  #75 mode variants ←─── (#71)
+  #76 engine lexicons ←─ (#72)
+  #77 API endpoints ←─── (#70, #73)
+  #78 admin auth ←────── (#70, #73)
+         ↓
+P3 (sequential)
+  #79 verification ←──── (all P2 closed)
+  #80 autoresearch+SKILL ← (#79)
+```
+
+### Multi-agent boundaries enforced
+Per swarm-architect `playbooks/multi-agent-boundaries.md`:
+- One issue → one owner → one branch/worktree
+- P1 contracts FREEZE before P2 parallel work
+- P2 swarms operate on disjoint file zones (mode docs vs lexicon vs orchestrator vs API vs auth) — no overlap inside the wave
+
+---
+
 ## References
 
 - Predecessor milestone: [#1 Reading Modes — Synastry / Business / Family / Team](https://github.com/Sheshiyer/witness-agents/milestone/1)
