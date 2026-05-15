@@ -16,6 +16,24 @@ export const MODE_AUTORESEARCH_CONFIG: ModeAutoresearchConfig = {
     name: 'lineage_current_legibility',
     description: 'Is the lineage-current named with specific chart-architectural anchoring (4th/9th/12th house cross-overlay + Pitru-karaka + generational nakshatra + Gene-Key sphere-of-purpose) and made operationally legible — what the family inherited, what it propagates? (10 = lineage is decoded as structural current; 0 = generic family-systems generalities.)',
   },
+  // ─── Per-register axes (P3.2 / #80) ───────────────────────────────
+  // L1-L3 tunes the traditional pitra-dosha / kula-devata legibility
+  // (which Vedic ancestral signature the family is configured to
+  // propagate, in Kundali-native vocabulary); L4-L5 tunes the
+  // framework-native lineage-current decoding. Same four variants,
+  // different judge-axis label per band.
+  variant_axis_per_level: {
+    l1_l3: {
+      name: 'Pass α pitra-dosha & kula-devata legibility',
+      variants: ['4th-house-emphasis', '9th-house-emphasis', '12th-house-emphasis', 'balanced-4-9-12'],
+      baseline_index: 3,  // balanced is the conservative starting point at L1-L3
+    },
+    l4_l5: {
+      name: 'Pass α lineage-current strength (4th / 9th / 12th house emphasis)',
+      variants: ['4th-house-emphasis', '9th-house-emphasis', '12th-house-emphasis', 'balanced-4-9-12'],
+      baseline_index: 3,
+    },
+  },
   variants: [
     {
       name: '4th-house-emphasis',

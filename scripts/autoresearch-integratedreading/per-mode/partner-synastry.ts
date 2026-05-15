@@ -16,6 +16,24 @@ export const MODE_AUTORESEARCH_CONFIG: ModeAutoresearchConfig = {
     name: 'phase_lock_geometry_clarity',
     description: 'Does the reading treat the X-day Mahadasha-pivot stagger as STRUCTURAL DATA, with explicit day-counts and decoded ordering rationale? (10 = full geometric decoding; 0 = stagger named but not decoded.)',
   },
+  // ─── Per-register axes (P3.2 / #80) ───────────────────────────────
+  // L1-L3 tunes the traditional-Vedic remedy specificity (gemstones,
+  // mantras, transit-windows in Kundali idiom); L4-L5 tunes the
+  // framework-native phase-lock-geometry clarity. Mutators in
+  // `variants[]` apply to both bands; what differs per band is the
+  // judge-axis label and the lessons-entry heading.
+  variant_axis_per_level: {
+    l1_l3: {
+      name: 'Pass γ traditional-remedy specificity',
+      variants: ['baseline', 'explicit-day-count', 'explicit-day-count-plus-transit-overlay'],
+      baseline_index: 0,
+    },
+    l4_l5: {
+      name: 'Pass γ phase-lock specificity',
+      variants: ['baseline', 'explicit-day-count', 'explicit-day-count-plus-transit-overlay'],
+      baseline_index: 0,
+    },
+  },
   variants: [
     {
       name: 'baseline',
