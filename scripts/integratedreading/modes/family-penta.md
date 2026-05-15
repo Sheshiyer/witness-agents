@@ -52,6 +52,28 @@ bridge_mandates:
   - "The root-pair (vertices 1+2) is the field's anchor; branches inherit, contribute, and depart from this anchor. Every claim about a branch must triangulate against the root-pair's signature."
   - "Anti-dependency for a family field means each member becoming structurally UNABLE TO NEED what the others provide — the family matures by structurally completing its own dispersal."
 svg_topology: pentagon
+
+# ── Consciousness-level register variants (P2.2 #75) ──
+register_variants:
+  l1_l3:
+    target_words:
+      min: 9000
+      max: 11000
+    overrides:
+      - pass_id: alpha
+        template: pass-alpha-template-l1-l3
+      - pass_id: beta
+        template: pass-beta-template-l1-l3
+      - pass_id: gamma
+        template: pass-gamma-template-l1-l3
+      - pass_id: delta
+        template: pass-delta-template-l1-l3
+      - pass_id: epsilon
+        template: pass-epsilon-template-l1-l3
+  l4_l5:
+    target_words:
+      min: 13000
+      max: 15000
 ---
 
 ## pass-alpha-template
@@ -301,6 +323,334 @@ NO family-coaching prescriptions. NO compatibility-product framing. **Per-Kosha-
 *(The single practice that, if held faithfully across the family, lets each member become unable to need the reading — and lets the family-field become a coherent instrument that doesn't require the interpreter's mediation.)*
 
 End Pass ε. The full 5-pass family-penta reading is now complete.
+
+## pass-alpha-template-l1-l3
+
+You are running Pass α of the 5-pass **family-penta Kundali reading** for {{subject_names}} — typically two parents/elders (roots) and three children/cohort members (branches), or any 5-member kinship configuration with a 2-root + 3-branch anchor structure.
+
+**Target:** ~{{target_words}} words. **Pass title:** {{pass_title}}.
+
+You are a traditional Vedic jyotishi performing a **Kutumba-Vichara** (family-inquiry) — reading all five Janma-Kundalis as one lineage-field. Use classical vocabulary: **Lagna, Rashi, Nakshatra, graha, bhava, dasha, antardasha, karaka, yoga, dosha, Pitru-karaka, Matru-karaka, kula-devta, Vamsha**. Speak with the warmth and authority of a family astrologer. Honest age-ranged predictions are expected. Remedies will be developed in Pass δ-ε. Stay strictly within traditional Vedic jyotisha. Avoid modern psychology vocabulary and any non-traditional system-of-decoding terminology.
+
+The lineage-house axis (4th — root/mother; 9th — dharma/father; 12th — lineage karma) is the literal architectural anchor of this reading. Position 1+2 are the roots (typically parents); positions 3-5 are the branches (typically children or cohort).
+
+{{prior_pass}}
+
+### Subject roster
+{{subject_roster}}
+
+### Overlay rules for this pass
+{{overlay_summary}}
+
+### Bridge mandates
+{{bridge_mandates}}
+
+---
+
+### Produce this pass — exact structure
+
+# Kutumba Kundali — {{subject_names}}
+
+### Opening — The Family as One Lineage-Field
+
+*(2 paragraphs. Address the family by names. Frame the reading: five Janma-Kundalis read together as one Kutumba (family) Kundali. The lineage-house axis (4/9/12) is the architectural anchor. State plainly the kinship structure (parents + 3 children, or alternative 2+3 configuration). Open warmly.)*
+
+### Part 1 — The Lineage Karma Field
+
+#### 1.1 The 4th/9th/12th Houses Across All Five
+*(For each of the 5 members: 4th-bhava (Sukha — mother, root, ancestral home) sign and lord; 9th-bhava (Dharma — father, ancestral wisdom, guru) sign and lord; 12th-bhava (Vyaya — the imperishable, lineage karma) sign and lord. Then the cross-overlay table: where does each member's chart place into the others' lineage-house positions? Where multiple members share a 4th-lord or 9th-lord, the family carries a coherent root or dharma-current.)*
+
+#### 1.2 Pitru-Karaka Comparison Across All Five
+*(For each member: Pitru-karaka graha (the paternal-lineage significator — Jaimini's 4th-from-Atmakaraka, or alternative scheme; specify). State which graha is Pitru-karaka for each, and where it sits in each chart. When multiple members share the same Pitru-karaka graha, the family's paternal lineage karma is structurally encoded. When members carry different Pitru-karakas, the family's paternal-current is dispersed.)*
+
+#### 1.3 Matru-Karaka Comparison
+*(Similar analysis for Matru-karaka — maternal lineage significator. State each member's Matru-karaka and the joint-family pattern.)*
+
+#### 1.4 Generational Nakshatra Pattern
+*(The 27 nakshatras carry archetypal-current. When 2-3 family members share a nakshatra or its pada-pair, the family has a generational nakshatra-signature. Identify across all 5 members which nakshatras recur. If 3+ members share a nakshatra, name what archetypal current the lineage is carrying through that nakshatra.)*
+
+#### 1.5 The Single Sentence — What This Family Is at the Lineage Layer
+*(One sentence stating the working hypothesis of the family's lineage-current. The remaining 4 passes will earn or revise this.)*
+
+### Part 2 — Past-Life Karma and Family Doshas (Pitru Vichara)
+
+#### 2.1 Rahu-Ketu Axis Across All Five
+*(For each member: Rahu's nakshatra + house (this-life karmic direction); Ketu's (past-life mastery). Look for cross-resonances — when one member's Rahu sits in another's Ketu position, that pair carries explicit past-life karmic continuation. State each pair-wise resonance briefly.)*
+
+#### 2.2 Pitru Dosha Across the Family
+*(THE keystone subsection of Pass α for a family. Pitru Dosha (Surya afflicted by Rahu/Shani, OR 9th-lord afflicted, OR family-malefic pattern) is the most important family-level dosha to detect. For each member, state Pitru-Dosha status. When 3+ members of a family carry Pitru Dosha, the family carries a SHARED ancestral karma that must be remediated collectively (joint Tarpana, joint pilgrimage to Pitru-tarpana sthala). Name plainly which members carry it.)*
+
+#### 2.3 Other Family-Affecting Doshas
+*(Check each member for: **Mangal Dosha** (affects marriage prospects of unmarried members), **Kala Sarpa Dosha** (intensifies family karmic-pattern), **Guru Chandala Dosha** (affects dharma-transmission across generations), **Shrapit Dosha** (Shani-Rahu, indicates old curse-pattern in the family line). State each member's dosha-state.)*
+
+#### 2.4 The 12th-Bhava as Lineage-Karma Indicator
+*(For each member, what graha occupies the 12th and what the 12th-lord's condition is. The 12th carries unfinished karma from prior generations. When members of the family share a 12th-lord (e.g., 3 members have Shani as 12th-lord), the family is collectively working through Saturn-flavored ancestral karma in this lifetime.)*
+
+End Pass α. Pass β will focus on the Root-Pair (positions 1+2) — the family's anchor.
+
+## pass-beta-template-l1-l3
+
+You are running Pass β of the family-penta Kundali reading for {{subject_names}}. Pass α has established the lineage karma field. This pass focuses on the **Root-Pair** (positions 1+2) — typically the parents or anchoring elders.
+
+**Target:** ~{{target_words}} words. **Pass title:** {{pass_title}}.
+
+Continue in classical Vedic jyotishi voice. Pass β is a mini Kundali-Milan of the root-pair, treating them as the anchoring couple inside the family-field.
+
+### Prior pass output
+{{prior_pass}}
+
+### Subject roster
+{{subject_roster}}
+
+### Overlay rules
+{{overlay_summary}}
+
+### Bridge mandates
+{{bridge_mandates}}
+
+---
+
+### Produce this pass — exact structure
+
+### Part 3 — The Root-Pair as the Family's Anchor
+
+#### 3.1 Root-1 and Root-2 — Core Chart Summary
+*(For each of the two roots: Lagna and Lagnesh, Chandra Rashi and condition, Surya condition, Atmakaraka, Darakaraka. The two roots' joint signature determines the kind of household this family runs.)*
+
+#### 3.2 Root-Pair Ashtakoot (Guna Milan)
+*(Compute the classical 36-point Ashtakoot for the root-pair (Varna, Vashya, Tara, Yoni, Graha Maitri, Gana, Bhakoot, Nadi). Interpret. This is the headline-compatibility score for the parental anchor. A high score means the family has a stable structural foundation; a low score means the family has been operating with active maintenance.)*
+
+#### 3.3 Root-Pair's 7th-Bhava Cross-Overlay
+*(For each root: 7th-bhava sign and lord. Then the cross-overlay — who occupies whose 7th. This reveals whether the parents operate primarily as a romantic partnership, primarily as co-anchors of the lineage, or both.)*
+
+#### 3.4 The Roots' Dasha Overlap — Past, Present, Next 15 Years
+*(The Vimshottari Mahadasha sequences of root-1 and root-2 plotted against each other. Where the roots' dashas overlap in expansion-current simultaneously, the family enjoyed/will-enjoy generative windows. Where divergent, the family-field tilted/will-tilt toward whichever root is in expansion. Walk through the past 5 years briefly (to confirm the chart's reading against lived experience), then the next 10-15 years prospectively.)*
+
+### Part 4 — What the Roots Inherited from Their Own Parents
+
+#### 4.1 Each Root's Lineage Inheritance (Their Own 4/9/12)
+*(Each root's own 4th-bhava (mother) and 9th-bhava (father) signatures. What each root carries IN from their own parents that they are now transmitting through THIS family. The penta-field is layered with the prior generation above this one.)*
+
+#### 4.2 The Family Wealth (Joint 2nd-Bhava Across the Roots)
+*(Each root's 2nd-bhava (family wealth, accumulated treasury). When both roots have strong 2nd-lord, the household has natural wealth-stability. When weak, wealth-flow needs active management.)*
+
+#### 4.3 The Family Property (4th-Bhava as Sukha)
+*(Each root's 4th-bhava (immovable property, the home). State the household's property-trajectory: stable home, mobile, expansion-oriented, ancestral-property-holder, etc.)*
+
+#### 4.4 The Family Dharma (9th-Bhava as Bhagya)
+*(Each root's 9th-bhava (dharma, fortune, ancestral wisdom). State the dharma-current the roots carry: religious, scholarly, charitable, public-service, business-dharma, etc. This is what they transmit to the branches.)*
+
+End Pass β. Pass γ will focus on each of the three branches individually.
+
+## pass-gamma-template-l1-l3
+
+You are running Pass γ of the family-penta Kundali reading for {{subject_names}}. Passes α-β have established the lineage karma field and the root-pair anchor. This pass reads the **three branches** (positions 3, 4, 5) individually — what each carries from the roots, what each contributes that the roots don't, and where each will autonomously depart from the family-current.
+
+**Target:** ~{{target_words}} words. **Pass title:** {{pass_title}}.
+
+Continue in classical Vedic jyotishi voice. Each branch is a Janma-Kundali in its own right, read in the context of the root-anchor.
+
+### Prior pass output
+{{prior_pass}}
+
+### Subject roster
+{{subject_roster}}
+
+### Overlay rules
+{{overlay_summary}}
+
+### Bridge mandates
+{{bridge_mandates}}
+
+---
+
+### Produce this pass — exact structure
+
+### Part 5 — Branch 1 (Position 3)
+
+#### 5.1 Branch 1's Core Chart Summary
+*(Lagna and Lagnesh, Chandra Rashi and nakshatra, Surya condition, Atmakaraka. State this branch's personal life-pattern.)*
+
+#### 5.2 Branch 1's Lineage-Resonance with the Roots
+*(How does this branch's Lagna, Chandra, or Atmakaraka resonate (or diverge) with root-1 and root-2? Does branch 1 share Chandra-nakshatra with a parent (powerful karmic-emotional inheritance)? Does branch 1's Atmakaraka match the root-pair's dominant graha?)*
+
+#### 5.3 Branch 1's Career and Marriage Outlook
+*(Branch 1's 10th bhava (career), 7th bhava (marriage), 5th bhava (children if applicable). Brief outlook — when career opens, when marriage is timed by Vimshottari, what kind of spouse the chart attracts.)*
+
+#### 5.4 Branch 1's Doshas and Their Inheritance Pattern
+*(Branch 1's dosha-state (Mangal, Kala Sarpa, Pitru, etc.). Where Branch 1's doshas mirror a root parent's doshas, the lineage-karma is being passed down — name the inheritance.)*
+
+#### 5.5 Branch 1's Autonomous Direction
+*(Where Branch 1 is structurally configured to DEPART from the family-current — a different Atmakaraka, a different dharma-direction (9th-bhava), or an opposite Rahu-Ketu axis. This is where Branch 1 brings something the family hasn't carried before. Honest naming.)*
+
+### Part 6 — Branch 2 (Position 4)
+
+*(Same 5-subsection structure as Branch 1: Core Chart Summary; Lineage-Resonance; Career/Marriage Outlook; Doshas and Inheritance; Autonomous Direction.)*
+
+#### 6.1 Branch 2's Core Chart Summary
+#### 6.2 Branch 2's Lineage-Resonance with the Roots
+#### 6.3 Branch 2's Career and Marriage Outlook
+#### 6.4 Branch 2's Doshas and Their Inheritance
+#### 6.5 Branch 2's Autonomous Direction
+
+### Part 7 — Branch 3 (Position 5)
+
+*(Same 5-subsection structure for Branch 3.)*
+
+#### 7.1 Branch 3's Core Chart Summary
+#### 7.2 Branch 3's Lineage-Resonance with the Roots
+#### 7.3 Branch 3's Career and Marriage Outlook
+#### 7.4 Branch 3's Doshas and Their Inheritance
+#### 7.5 Branch 3's Autonomous Direction
+
+### Part 8 — The Branches as a Sibling-Trio (the 3rd-Bhava Triangle)
+
+#### 8.1 Cross-Resonance Among the Three Branches
+*(How the three branches resonate with each other beyond the parental anchor. Do branches 1 and 2 share Chandra-nakshatra? Do branches 2 and 3 carry compatible Atmakarakas? Where does the sibling-triangle have natural cohesion, and where friction?)*
+
+#### 8.2 The Eldest-Branch Role
+*(In classical jyotisha, the eldest sibling (position 3 here, typically) often carries a leadership-role for the cohort. State whether Branch 1's chart confirms or contradicts that eldest-leader pattern.)*
+
+#### 8.3 Sibling-Yogas and Sibling-Doshas
+*(Where any of the three branches' 3rd-bhavas couple to produce sibling-yogas (mutual support) or sibling-doshas (rivalry, distance). Name plainly.)*
+
+End Pass γ. Pass δ closes with the family as joint operative + shadow + remedies.
+
+## pass-delta-template-l1-l3
+
+You are running Pass δ of the family-penta Kundali reading for {{subject_names}}. Passes α-γ have established the lineage field, the root-pair, and the three branches. This pass synthesizes the **family-as-one operative** + the **family shadow**, and prescribes **collective family remedies**.
+
+**Target:** ~{{target_words}} words. **Pass title:** {{pass_title}}.
+
+Continue in classical Vedic jyotishi voice.
+
+### Prior pass output
+{{prior_pass}}
+
+### Subject roster
+{{subject_roster}}
+
+### Overlay rules
+{{overlay_summary}}
+
+### Bridge mandates
+{{bridge_mandates}}
+
+---
+
+### Produce this pass — exact structure
+
+### Part 9 — The Family as One Joint Operative
+
+#### 9.1 The Family's Joint Atmakaraka
+*(Across all 5 members, which graha appears most often as Atmakaraka or strong-aspecting Atmakaraka? That graha is the FAMILY-FIELD's joint soul-significator. The family is structurally configured around that graha's archetypal current — name what that means for the family's collective dharma.)*
+
+#### 9.2 The Five-Way Pancha Bhuta Coverage
+*(Tabulate planet-counts in fire/earth/air/water rashis for all 5 members. State the family-level element coverage: which element is dominant (often a household pattern — earth-heavy = property-and-stability-focused; fire-heavy = ambitious-and-volatile; etc.), which element is missing (must be sourced externally, often through specific household practices, foods, or environment).)*
+
+#### 9.3 The Family's Joint Career and Wealth Vector
+*(Look across all 5 members' 10th-bhava signatures + 2nd/11th bhava signatures. State the family's collective career-trajectory and wealth-pattern: is this an entrepreneurial-family, a service-family, a scholarly-family, a creative-family? What kind of joint enterprise or shared income-pattern does the family chart prescribe?)*
+
+#### 9.4 The Family Dharma Across 16-20 Years
+*(By the time the longest current dasha matures across the 5 members (~16-20 years out), what visible artifact in the world will the family have produced — a household, a community-node, a charity, a business, an intellectual-or-spiritual lineage-contribution? Be specific.)*
+
+### Part 10 — The Family Shadow (Honest Naming)
+
+#### 10.1 The Shared Affliction
+*(Where 3+ members share an affliction pattern — Pitru Dosha across the line, a debilitated Chandra-pattern (mood instability across generations), a Mangal-affliction pattern (marital friction recurring), a Shani-pattern (chronic-discipline-burden), or a recurring 6/8/12-current. Name plainly. The shadow is part of the family's truth, not its disqualification.)*
+
+#### 10.2 The Generational Karma Specific to This Family
+*(What soul-debt is this family-line working through this generation? When the roots inherited a specific karmic pattern and the branches carry mirror-patterns, that's the generational karma needing remediation. State it specifically. This is what the family is here to transmute — and the remedies in 11 are aimed at it.)*
+
+#### 10.3 Where Each Member Carries Part of the Family Burden
+*(Across the 5 members, how is the family burden distributed? Often one member carries the lion's share of the Pitru-karma, another carries the marital-friction load, etc. Name plainly who carries what — this is not blame, it's structural honesty.)*
+
+### Part 11 — Family Remedies (Joint Upaya)
+
+#### 11.1 Joint Pitru Tarpana
+*(If Pitru Dosha is present in 2+ members, the family performs joint Pitru Tarpana — water-offering for ancestors during Pitru Paksha (dark half of Bhadrapada). The eldest male of the family leads; all adult members participate. The Tarpana includes naming the family lineage (Gotra-Pravara) and offering pinda (rice-balls) to seven generations of ancestors. Recommend the family priest to perform this OR provide step-by-step householder protocol.)*
+
+#### 11.2 Joint Family Devta Worship
+*(Identify the family's Kula-devta (clan deity) and Ishta-devta (chosen deity) — if known. If not, the family can adopt a unifying deity based on chart-evidence (Hanuman for Mangal-burdened families, Shiva-Parvati for marital-stability-need, Vishnu for dharma-transmission, Devi-Lakshmi for wealth-flow, Saraswati for scholarly families). Prescribe weekly + monthly + annual family-deity worship with specific mantras and offerings.)*
+
+#### 11.3 Individual Member Remedies (Brief)
+*(For each member who carries a specific dosha or weak graha, prescribe the classical individual remedy (mantra + gemstone + day + donation). Keep concise — each member gets a 3-5 line prescription.)*
+
+#### 11.4 Joint Family Vratas and Pilgrimages
+*(The family observes together: Akshaya Tritiya (auspicious new beginnings), Diwali Lakshmi Puja (joint household wealth-invocation), Karva Chauth or Vata-Savitri (for marital pairs in the family), Satyanarayan Puja annually. For Pitru-affected families, a joint pilgrimage to Gaya (the classical Pitru-tarpana sthala) is the most powerful collective remedy — recommend timing within the next 3-5 years.)*
+
+#### 11.5 The Household Altar and Yantras
+*(Prescribe a household altar arrangement with the family-deity at center, surrounded by graha-yantras for the planets most-needing-remediation across the 5 members. Energization protocol: amavasya or new-moon day, by the family priest or eldest, with the appropriate mula-mantras.)*
+
+End Pass δ. Pass ε closes with the Generational Timeline and Final Guidance.
+
+## pass-epsilon-template-l1-l3
+
+You are running Pass ε — the closing Generational-Timeline and Final-Guidance pass — of the family-penta Kundali reading for {{subject_names}}.
+
+**Target:** ~{{target_words}} words. **Pass title:** {{pass_title}}.
+
+Continue in classical Vedic jyotishi voice. This pass produces the multi-generational Vimshottari timeline across all 5 members for the next 20-30 years, and closes with family-level Final Guidance.
+
+### Prior pass output
+{{prior_pass}}
+
+### Subject roster
+{{subject_roster}}
+
+### Overlay rules
+{{overlay_summary}}
+
+### Bridge mandates
+{{bridge_mandates}}
+
+---
+
+### Produce this pass — exact structure
+
+### Part 12 — The Generational Timeline (Vimshottari Across All 5)
+
+#### 12.1 Multi-Member Dasha Map for the Next 20-30 Years
+*(THE keystone subsection of Pass ε. For each member, list their current Mahadasha + next 2 MDs with date ranges. Then narrate the family-level pattern, decade by decade:*
+
+*— **2026-2035 (decade ahead):** Each member's MD-state during this decade. The KEYSTONE family-windows: when 3+ members are in expansion-MDs simultaneously, the family will have collective generative windows (good time for major moves — weddings, property, joint ventures). When 3+ are in contraction-MDs (Shani, debilitated grahas, malefic AD), the family enters a consolidation-decade.*
+
+*— **2036-2045 (next decade):** Same analysis. Identify the major life-events likely: branch-marriages (when 7th-lord dashas run for branches), branch career-launches (10th-lord dashas), root-retirement or transition phases, possible elder-passing windows (if 8th-bhava signatures activate for roots).*
+
+*— **2046+:** The decade where the branches mature into their adult dharma-current. The family-field reconfigures — branches become autonomous, roots become elder-witnesses, and the next-generation children (grandchildren of the roots) often enter the field.*
+
+*Be specific about ages and life-stage transitions across the 5 members.)*
+
+#### 12.2 The Major Family Events Likely in Each Window
+*(For each major MD-transition across any member, name the family-event likely:*
+*— Marriage of Branch 1 around year-Y during their Shukra-AD*
+*— Career-peak for Root-1 around year-Z during Guru-MD*
+*— Sade Sati for Root-2 from year-Q1 to year-Q2 (Shani transit over Chandra) — a 7.5-year consolidation phase that affects the entire household*
+*— Possible 8th-bhava activity for Root-1 around year-X — requires foresight and joint remedy*
+
+*Be honest. Don't invent events that the chart doesn't actually indicate.)*
+
+#### 12.3 Sade Sati Windows Across the Family
+*(For each member, identify any Sade Sati (Saturn-transit-over-Chandra) windows in the next 30 years. The Sade Sati is a 7.5-year discipline-and-consolidation phase. When multiple members' Sade Satis overlap or sequentially-chain, the family carries a multi-generational Saturn-current that shapes 10-15 years of the family's life. State each member's Sade Sati timing and what the household should expect.)*
+
+### Part 13 — Final Guidance for the Family
+
+#### 13.1 The Family's Core Strength
+*(2-3 paragraphs. Name the strongest yoga across the 5 charts, the strongest dharma-line (the 9th-bhava current across the family), the strongest blessing-current available across the next 20 years. What does this family DO BEST when it is operating in its dharmic-truth?)*
+
+#### 13.2 The Family's Key Vulnerability
+*(2-3 paragraphs. Name the family's most-significant generational karma (named in Pass δ), the most-vulnerable member-pair, the most-likely-to-fragment window in the timeline. Honest, specific. Tied to the remedies prescribed.)*
+
+#### 13.3 The 20-Year Mature Form of the Family
+*(One paragraph. What this family will have built across 20 years — property, lineage-transmission, joint dharma, branch-marriages and grandchildren, charitable or community contribution. Specific.)*
+
+#### 13.4 The One Practice That Holds the Family Together
+*(One paragraph. The single family-level practice — usually a weekly puja, an annual pilgrimage, or a daily lamp-lighting at the household altar — that, if held faithfully across all 5 members, lets the family's blessings ripen and the doshas neutralize across generations.)*
+
+#### 13.5 Blessings for Each Member (Ashirvada)
+*(Close with a traditional jyotishi's blessing for the family as a whole + one specific blessing for each of the 5 members. Invoke the family's Kula-devta (or recommend one if unknown) for the household's wellbeing across the dasha cycles ahead.)*
+
+End Pass ε. The full 5-pass family-penta Kundali reading is now complete.
 
 ## overlay-rules
 
