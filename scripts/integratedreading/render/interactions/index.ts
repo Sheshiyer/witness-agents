@@ -270,11 +270,13 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Body layout — single centered reading column, fixed sidebar TOC ─
- * The reading IS the page. One column, centered on the viewport,
- * line-length tuned for verse-style focus (~64-72ch). The TOC becomes a
- * fixed-position rail at the left viewport edge — it never consumes
- * reading width. On narrow viewports the TOC collapses to a top drawer.
+/* ── Body layout — single centered reading column with fluid sizing ──
+ * All sizing is now relative (vw/rem/clamp). The reading column scales
+ * from ~320px on mobile to ~1280px on 4K. Inside it, paragraphs cap at
+ * ~64ch for readability while headings and figures are allowed to span
+ * the wider container so short titles don't break into 5 lines on
+ * desktop. Body text also scales fluidly so typography stays balanced
+ * at every viewport.
  */
 .body-page.interactive {
   display: block;
@@ -286,17 +288,47 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   position: relative;
 }
 .body-content {
-  width: 100%;
-  max-width: 720px;
+  width: clamp(18rem, 72vw, 80rem);
   margin: 0 auto;
-  padding: 80px 32px 96px;
+  padding: clamp(2rem, 4vw, 5rem) clamp(1rem, 2.4vw, 2.5rem) clamp(3rem, 6vw, 6rem);
   box-sizing: border-box;
+  /* Body type scales fluidly with viewport so the reading rhythm is
+     proportional, not pinned to one viewport size. */
+  font-size: clamp(1rem, 0.85rem + 0.45vw, 1.22rem);
+  line-height: 1.65;
 }
-@media (max-width: 720px) {
-  .body-content {
-    padding: 48px 22px 64px;
-    max-width: 100%;
-  }
+/* Inside the reading column, paragraphs and list items stay inside the
+   readable line-length sweet spot. Headings + figures + tables are
+   allowed to span the full container width so short headings don't
+   wrap into 5 lines on wide viewports. */
+.body-content :where(p, li, blockquote p) {
+  max-width: 64ch;
+}
+.body-content :where(h2, h3, h4, figure, table, .viz-plate, .part-viz-column, .context-sidebar) {
+  max-width: 100%;
+}
+.body-content :where(.part-title, .part-subtitle, .cover-title) {
+  max-width: 100%;
+}
+/* Headline + heading sizes also become fluid */
+.body-content h2 {
+  font-size: clamp(1.3rem, 1rem + 1vw, 2.2rem);
+  line-height: 1.18;
+}
+.body-content h3 {
+  font-size: clamp(1.05rem, 0.85rem + 0.6vw, 1.5rem);
+  line-height: 1.28;
+}
+.body-content h4 {
+  font-size: clamp(0.85rem, 0.7rem + 0.3vw, 1.05rem);
+  letter-spacing: 0.16em;
+}
+.body-content .part-title {
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 4.5rem);
+  line-height: 1.02;
+}
+.body-content .part-subtitle {
+  font-size: clamp(0.9rem, 0.75rem + 0.4vw, 1.2rem);
 }
 .toc-rail {
   /* Fixed-position rail at the left viewport edge. Does NOT consume any
@@ -522,6 +554,120 @@ export const BASE_SCROLL_NARRATIVE_CSS = `
   background: var(--void-black);
   border-right: 1px solid var(--sacred-gold);
   border-bottom: 1px solid var(--sacred-gold);
+}
+
+/* ── Editorial data layouts (replace stock <table>) ───────────────────
+ * Two formats, auto-selected server-side based on table shape:
+ *
+ *   .data-cascade   — definition-list cascade. Default for all tables.
+ *                     Each row becomes its own verse with the row label
+ *                     as an h4 and the remaining cells as a styled dl.
+ *
+ *   .data-cards     — bento-style card grid. Auto-selected for tables
+ *                     whose first column is "Native" / "Subject" / etc.
+ *                     Three cards side-by-side on desktop, stacked on
+ *                     mobile via auto-fit grid.
+ */
+.data-cascade {
+  margin: clamp(1.2rem, 2vw, 2rem) 0;
+  display: block;
+}
+.data-entry {
+  margin: 0 0 clamp(1rem, 1.5vw, 1.5rem);
+  padding: clamp(0.9rem, 1.4vw, 1.4rem) clamp(1rem, 1.5vw, 1.4rem);
+  border-left: 2px solid var(--sacred-gold);
+  background: linear-gradient(90deg, rgba(45,0,80,0.18), transparent 70%);
+  border-radius: 0 4px 4px 0;
+}
+.data-entry-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.95rem, 0.8rem + 0.4vw, 1.2rem);
+  letter-spacing: 0.02em;
+  color: var(--sacred-gold);
+  margin: 0 0 clamp(0.5rem, 0.8vw, 0.8rem);
+  text-transform: none;
+  border-left: none;
+  padding-left: 0;
+}
+.data-entry-list,
+.data-card-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(7rem, max-content) 1fr;
+  column-gap: clamp(0.8rem, 1.2vw, 1.2rem);
+  row-gap: clamp(0.35rem, 0.6vw, 0.6rem);
+}
+.data-pair {
+  display: contents;
+}
+.data-entry-list dt,
+.data-card-list dt {
+  font-family: var(--font-mono);
+  font-size: clamp(0.72rem, 0.65rem + 0.15vw, 0.85rem);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--coherence-emerald);
+  white-space: nowrap;
+  padding-top: 0.1em;
+}
+.data-entry-list dd,
+.data-card-list dd {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: clamp(0.92rem, 0.85rem + 0.25vw, 1.1rem);
+  color: var(--parchment);
+  line-height: 1.55;
+}
+.data-entry-list dd strong,
+.data-card-list dd strong {
+  color: var(--sacred-gold);
+}
+.data-entry-list dd em,
+.data-card-list dd em {
+  color: var(--coherence-emerald);
+}
+
+/* Bento card grid — auto-fit columns based on viewport width */
+.data-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: clamp(0.8rem, 1.5vw, 1.4rem);
+  margin: clamp(1rem, 2vw, 1.8rem) 0;
+}
+.data-card {
+  padding: clamp(1rem, 1.5vw, 1.4rem);
+  background: linear-gradient(160deg, rgba(45,0,80,0.32), rgba(7,11,29,0.92));
+  border: 1px solid rgba(197,160,23,0.22);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.data-card::before {
+  /* Subtle gold accent edge */
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sacred-gold), transparent 70%);
+}
+.data-card-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.95rem, 0.8rem + 0.4vw, 1.15rem);
+  letter-spacing: 0.02em;
+  color: var(--parchment);
+  margin: 0 0 clamp(0.7rem, 1vw, 1rem);
+  padding-bottom: clamp(0.5rem, 0.8vw, 0.8rem);
+  border-bottom: 1px solid rgba(197,160,23,0.18);
+}
+
+/* When inside the reading column, both layouts span its full width */
+.body-content .data-cascade,
+.body-content .data-cards {
+  max-width: 100%;
 }
 
 /* Mobile-specific tweaks: body-page is already single-column at every
