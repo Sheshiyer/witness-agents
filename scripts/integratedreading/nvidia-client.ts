@@ -124,14 +124,18 @@ export class NvidiaClient {
   }
 }
 
-/** Model IDs as constants — verified live via 2026-05-10 probe. */
+/** Model IDs as constants — verified live via 2026-05-18 probe. */
 export const MODELS = {
-  GPT_OSS_120B:   'openai/gpt-oss-120b',         // verified ✓ ~30s
-  GPT_OSS_20B:    'openai/gpt-oss-20b',          // verified ✓ ~400ms
-  KIMI_K2:        'moonshotai/kimi-k2-instruct', // verified ✓ ~600ms (synthesis)
-  KIMI_K2_0905:   'moonshotai/kimi-k2-instruct', // alias to verified k2 (0905 returns 410 Gone)
-  GLM_47:         'z-ai/glm4.7',                 // verified ✓ ~50s (math/astro)
-  GLM_47_ALT:     'z-ai/glm4.7',                 // same as primary now
-  MINIMAX:        'minimaxai/minimax-m2.7',      // probe timed out at 60s — needs ≥180s; falls back to regex chunker
-  NEMOTRON_120B:  'nvidia/nemotron-3-super-120b-a12b', // verified ✓ ~3s (adversarial)
+  GPT_OSS_120B:   'openai/gpt-oss-120b',                       // verified ✓ ~30s
+  GPT_OSS_20B:    'openai/gpt-oss-20b',                        // verified ✓ ~400ms
+  // moonshotai/kimi-k2-instruct hit EOL 2026-05-12 (HTTP 410 Gone).
+  // moonshotai/kimi-k2-instruct-0905 returns 404. kimi-k2-thinking also 410.
+  // Re-pointed the constants at Llama 4 Maverick (verified 2026-05-18) so the
+  // synthesis + composite phases continue working without renaming downstream.
+  KIMI_K2:        'meta/llama-4-maverick-17b-128e-instruct',   // verified ✓ 2026-05-18 (was kimi-k2-instruct; EOL 2026-05-12)
+  KIMI_K2_0905:   'meta/llama-4-maverick-17b-128e-instruct',   // verified ✓ 2026-05-18 (was kimi-k2 alias; EOL)
+  GLM_47:         'nvidia/llama-3.3-nemotron-super-49b-v1',    // verified ✓ 2026-05-18 (was z-ai/glm4.7; EOL)
+  GLM_47_ALT:     'nvidia/llama-3.3-nemotron-super-49b-v1',    // verified ✓ 2026-05-18 (was glm4.7 alias; same EOL)
+  MINIMAX:        'meta/llama-4-maverick-17b-128e-instruct',   // verified ✓ 2026-05-18 (was minimax-m2.7; chronic timeouts → empty-V1 regex fallback)
+  NEMOTRON_120B:  'nvidia/nemotron-3-super-120b-a12b',         // verified ✓ ~3s (adversarial)
 } as const;
