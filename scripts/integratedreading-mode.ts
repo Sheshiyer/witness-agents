@@ -118,6 +118,25 @@ function parseArgs(argv: string[]): CliArgs {
 // Subject loading
 // ────────────────────────────────────────────────────────────────────────
 
+/**
+ * Per-subject relationship declaration. Optional but strongly recommended for
+ * modes that have semantic role contracts (family-triad, family-penta,
+ * partner-synastry). The orchestrator surfaces this into the `subject_roster`
+ * template variable so every pass system prompt knows who-is-what.
+ *
+ * Roles are mode-defined (see modes/_schema.md frontmatter `roles:` array).
+ * Common roles: mother, father, child, sibling, partner-A, partner-B,
+ * root-1, root-2, branch-1, branch-2, branch-3.
+ *
+ * `relations` carries kinship edges by the slug of the other subject's file
+ * (without the `01_` prefix). Example: { spouse: 'nateshan', children: ['witnessalchemist'] }.
+ */
+interface SubjectRelationship {
+  role?: string;
+  relations?: Record<string, string | string[]>;
+  notes?: string;
+}
+
 interface SubjectConfig {
   subject: string;
   birth_date?: string;
@@ -136,6 +155,7 @@ interface SubjectConfig {
     next_starts_iso?: string;
     next_duration_years?: number;
   };
+  relationship?: SubjectRelationship;
   output_dir?: string;
   source_path?: string;
   [key: string]: any;
@@ -650,7 +670,17 @@ async function main() {
   const client = new NvidiaClient(loadNvidiaKey());
   const baseCtx: Omit<InterpolationContext, 'prior_pass' | 'pass_title' | 'target_words'> = {
     subject_names: subjects.map((s) => s.subject).join(', '),
-    subject_roster: subjects.map((s, i) => `${i + 1}. ${s.subject}${s.lagna ? ` — ${s.lagna} Lagna` : ''}${s.atmakaraka ? `, AK ${s.atmakaraka}` : ''}`).join('\n'),
+    subject_roster: subjects.map((s, i) => {
+      const baseLine = `${i + 1}. ${s.subject}${s.lagna ? ` — ${s.lagna} Lagna` : ''}${s.atmakaraka ? `, AK ${s.atmakaraka}` : ''}`;
+      if (!s.relationship) return baseLine;
+      const role = s.relationship.role ? `   ROLE: ${s.relationship.role}` : '';
+      const relations = s.relationship.relations
+        ? `   RELATIONS: ${Object.entries(s.relationship.relations).map(([k, v]) =>
+            `${k}=${Array.isArray(v) ? v.join('+') : v}`).join('; ')}`
+        : '';
+      const notes = s.relationship.notes ? `   NOTES: ${s.relationship.notes}` : '';
+      return [baseLine, role, relations, notes].filter(Boolean).join('\n');
+    }).join('\n'),
     lessons_summary: summarizeLessons(doc.lessons),
     overlay_summary: buildOverlaySummary(doc),
     bridge_mandates: buildBridgeMandates(doc),
