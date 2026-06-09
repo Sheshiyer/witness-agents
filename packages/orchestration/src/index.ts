@@ -13,8 +13,22 @@ export * from './grounding.js';
 // Re-export key grounding helper for domain graphs
 export { injectGroundedContext } from './grounding.js';
 
-// P3 skeleton exports (actor prep + extraction direction)
+// P3 actor model exports
 export * from './actor-grounding-stub.js';
+export {
+  ActorGroundingProvider,
+  ActorGroundingProviderStub,
+  RetrievalWorkerActor,
+  RetrievalActorPool,
+  type ActorRef,
+  type ActorState,
+  type ActorConfig,
+  type RetrievalMessage,
+  type RetrievalReply,
+  type SupervisionSignal,
+} from './actor-grounding-stub.js';
+
+// P3 extraction + private index exports
 export {
   NoopExtractionProvider,
   createNemoExtractionProvider,

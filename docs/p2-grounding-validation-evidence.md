@@ -102,21 +102,29 @@ This section will be expanded with your notes / diffs / metrics correlation when
 
 While the P2 human fidelity review is in progress, the following P3 skeleton artifacts were created autonomously per the expanded plan (extraction, private indexes, actor prep). Driving without pause as requested.
 
-**Latest additions (P3-W1 + P3-W2 grounded fact-checker + retrieval-augmented repair):**
-- Fleshed out `ExtractionProvider` + `NoopExtractionProvider` + `createNemoExtractionProvider` factory.
-- `ingestWitnessCorpus` helper.
-- `PrivateIndexManager` interface + `NoopPrivateIndexManager`.
-- P3-W2 skeleton in assembler: when `groundingProvider` is present, the repair loop now retrieves supporting passages for disputed locked keys and includes them in the repair prompt (with the "resonance only, never override locked facts" guard).
-- **NEW: `createGroundedLLMFactChecker`** - retrieval-augmented fact-checker that:
-  - Retrieves supporting passages via groundingProvider before calling the LLM
-  - Includes passages in system prompt for synonymy/nuance awareness (e.g. "Kanya" = "Virgo")
-  - Maintains FactLock precedence ("locked facts always take precedence")
-  - Graceful degradation on retrieval failure (falls back to no grounding)
-- All exported / wired.
+**Latest additions (P3-W3 full actor skeleton):**
+- **Full actor model implementation:**
+  - `RetrievalWorkerActor`: Simulated actor with message passing, supervision signals, cancellation, back-pressure
+  - `RetrievalActorPool`: Supervisor for worker pool, lifecycle management, work distribution
+  - `ActorGroundingProvider`: Full streaming provider backed by actor pool
+  - Message types: `RetrievalMessage`, `RetrievalReply`, `SupervisionSignal`
+  - State types: `ActorState`, `ActorConfig`, `ActorRef`
+- **Streaming retrieval**: `retrieveStream()` yields passages as `AsyncIterable<GroundedPassage>`
+- **Supervision features**: restart handling, crash escalation, resume, back-pressure (max concurrent queries)
+- **Observability**: `getPoolStatus()` for monitoring worker state
+- **Graceful degradation**: errors/timeouts return empty passages, don't crash
+- **13 new actor tests** covering workers, pool, provider, streaming, supervision
 
-This completes the retrieval-augmented fact-checking pipeline (both repair and main fact-checker paths).
+Previous P3 work (still complete):
+- `ExtractionProvider` + `NoopExtractionProvider` + `createNemoExtractionProvider` factory
+- `ingestWitnessCorpus` helper
+- `PrivateIndexManager` + `NoopPrivateIndexManager`
+- Retrieval-augmented repair in assembler
+- `createGroundedLLMFactChecker` (retrieval-augmented fact-checker)
+- Private index + ingestion example
+- ADR-003 expanded with actor supervision notes
 
-Verification after this addition: typecheck clean + **16/16 tests green** (added 2 new tests for grounded fact-checker).
+Verification: typecheck clean + **29/29 tests green**
 
 **Previously created (still valid):**
 - `IndexScope` hints + `StreamingGroundingProvider` extension.

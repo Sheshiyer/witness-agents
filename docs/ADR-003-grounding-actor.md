@@ -1,7 +1,7 @@
 # ADR-003: Grounding Layer Path to Actor Model (Elixir/OTP or Equivalent)
 
-**Status:** Draft / Skeleton (P3 parallel work started while P2 gate review is in progress)  
-**Date:** 2026-06-09  
+**Status:** Implemented (P3-W3 complete — full actor skeleton with tests)  
+**Date:** 2026-06-09 (updated 2026-06-10)  
 **Context:** NVIDIA NeMo Retriever grounding added in P1/P2 as an optional, evidence-gated `GroundingProvider` port on top of the atomic fact-locked orchestration.
 
 ## Decision
