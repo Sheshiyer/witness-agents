@@ -57,9 +57,99 @@ Future extraction and index actors will follow similar patterns.
 
 ## Next Steps (P3 waves)
 
-- P3-W1: ExtractionProvider + basic ingestion for witness corpus.
-- P3-W2: Per-subject private indexes + retrieval-augmented fact-checker/repair.
+- P3-W1: ExtractionProvider + basic ingestion for witness corpus. ✅ (skeleton complete)
+- P3-W2: Per-subject private indexes + retrieval-augmented fact-checker/repair. ✅ (skeleton + first real behavior in assembler)
 - P3-W3: Full actor skeleton implementation behind the streaming interface + this ADR finalized + release notes.
+
+## Actor Supervision Model (Detailed Notes)
+
+### Supervision Tree Shape
+
+```
+WitnessOrchestrationSupervisor
+├── RetrievalWorkerPool (dynamic, one per concurrent perspective)
+│   ├── RetrievalWorker:aletheios (supervised, restarts on crash)
+│   ├── RetrievalWorker:pichet
+│   └── RetrievalWorker:synthesis
+├── ExtractionSupervisor (for PDF/image/table extraction)
+│   └── ExtractionWorker:* (one per active extraction job)
+├── PrivateIndexSupervisor (per-subject state)
+│   ├── SubjectIndex:subject-001 (holds vector embeddings, survives restarts)
+│   ├── SubjectIndex:subject-002
+│   └── GlobalCorpus (shared canonical passages)
+└── IngestionSupervisor (long-running batch jobs)
+    └── IngestionWorker:* (one per corpus ingestion job)
+```
+
+### Key Actor Behaviors
+
+1. **RetrievalWorker**
+   - Receives `RetrievalQuery`, calls embedding + reranker NIMs
+   - Returns `GroundedPassage[]` or streams via `AsyncIterable`
+   - Timeout: 10s (configurable via budget)
+   - On crash: supervisor restarts, caller gets empty passages (graceful degradation)
+
+2. **SubjectIndex Actor**
+   - Holds per-subject vector embeddings + metadata
+   - Supports `addPassages(passages)` and `retrieve(query)`
+   - State survives worker restarts (persisted to local vector DB or Durable Object storage)
+   - Privacy boundary: never leaks to other subjects without explicit scope
+
+3. **ExtractionWorker**
+   - Calls NeMo extraction NIMs (OCR, table, layout)
+   - Can be slow (minutes for large PDFs); must not block orchestration
+   - Results feed into IngestionSupervisor → SubjectIndex
+
+### Back-Pressure & Flow Control
+
+- Orchestrator starts N concurrent perspectives but retrieval workers have bounded concurrency
+- If retrieval pool is saturated, later perspectives wait (or skip retrieval if budget exceeded)
+- FactLock + atomic tasks never wait indefinitely; retrieval is always optional
+
+### Message Shapes (Erlang/OTP style, TS approximation)
+
+```ts
+// Retrieval request
+type RetrievalMsg = 
+  | { tag: 'retrieve'; query: RetrievalQuery; replyTo: ActorRef }
+  | { tag: 'cancel'; queryId: string };
+
+// Retrieval response
+type RetrievalReply =
+  | { tag: 'passages'; passages: GroundedPassage[] }
+  | { tag: 'error'; reason: string }
+  | { tag: 'timeout' };
+
+// Index mutation
+type IndexMsg =
+  | { tag: 'add'; subjectId: string; passages: GroundedPassage[]; scope: IndexScope }
+  | { tag: 'retrieve'; query: RetrievalQuery; replyTo: ActorRef };
+```
+
+### Cloudflare Durable Objects Alternative
+
+If we go Cloudflare instead of Elixir/OTP:
+
+- Each `SubjectIndex` is a Durable Object (named by subjectId)
+- DO provides transactional storage + single-threaded execution per subject
+- Retrieval workers are regular Workers calling DO RPC
+- Supervision = DO's built-in restart semantics + alarm-based health checks
+
+### Observability Integration
+
+All actor messages must be instrumented:
+- `onRetrievalStart` / `onRetrievalComplete` flow to `OrchestrationObserver`
+- Metrics collector captures per-actor latency, error rate, restart count
+- Traces span from orchestrator → retrieval worker → NIM call → response
+
+### Migration Path Summary
+
+1. **Phase A (current):** InProcess + GroundingProvider port. All retrieval is sync request/response.
+2. **Phase B:** Add `StreamingGroundingProvider` + async adapter. InProcess delegates to actor pool behind the port.
+3. **Phase C:** Full actor runtime (Elixir/OTP or DO). TS InProcess becomes a thin client to the actor system.
+4. **Phase D (optional):** Multi-region / edge deployment with actor affinity to subject's home region.
+
+Each phase maintains the same `GroundingProvider` interface. Callers never change.
 
 ## Decision Record
 
@@ -70,3 +160,5 @@ Approved in principle as part of the 3-phase NVIDIA NeMo grounding initiative. I
 - P2 evidence: `docs/p2-grounding-validation-evidence.md`
 - P2 review harness: `docs/P2-GROUNDING-REVIEW-HARNESS.md`
 - Current port: `packages/orchestration/src/grounding.ts`
+- Actor stub: `packages/orchestration/src/actor-grounding-stub.ts`
+- Private index example: `examples/private-index-ingestion.ts`
