@@ -1,12 +1,13 @@
-// ─── /integratedreading — Multi-Model NVIDIA Runner ─────────────────
-// The orchestrator. Wires nvidia-client + system-prompts + stitcher into
-// the 10-phase workflow. Re-runnable per-subject; dyadic when 2 subjects.
+// ─── /integratedreading — Multi-Model Runner (NIM + Ollama + OpenRouter) ──
+// The orchestrator. LlmClient (NIM primary → Ollama → OpenRouter fallback).
+// Re-runnable per-subject; dyadic when 2 subjects.
 //
 // Usage:
 //   node --import tsx scripts/integratedreading.ts <config.json>
 //
-// Env:
-//   NVIDIA_API_KEY (required; auto-loads from ~/.claude/.env if not set)
+// Env (any of):
+//   NVIDIA_API_KEY, OLLAMA_API_KEY (+ OLLAMA_BASE_URL), OPENROUTER_API_KEY
+//   LLM_PROVIDER=auto|nim|ollama|openrouter  (default auto)
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, basename, resolve } from 'node:path';
@@ -14,7 +15,7 @@ import { homedir } from 'node:os';
 import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
-import { NvidiaClient, MODELS, type ChatMessage } from './integratedreading/nvidia-client.js';
+import { LlmClient as NvidiaClient, MODELS, type ChatMessage } from './integratedreading/llm-client.js';
 import {
   ANATOMIST_PERSONA,
   KOSHA_GRAMMAR,
@@ -406,7 +407,7 @@ async function main(): Promise<void> {
   console.log(`  Mode:        ${cfg.subjects.length === 2 ? 'DYAD' : 'SOLO'}`);
   console.log('═══════════════════════════════════════════════════════════');
 
-  const client = new NvidiaClient(process.env.NVIDIA_API_KEY!);
+  const client = new NvidiaClient(); // LlmClient loads NVIDIA_API_KEY / OPENROUTER_API_KEY / OLLAMA from ~/.claude/.env itself
   const subjectResults: Awaited<ReturnType<typeof processSubject>>[] = [];
 
   // First pass: ingest both, so partner data is available for cross-resonance

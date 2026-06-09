@@ -16,7 +16,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { execSync } from 'node:child_process';
 
-import { NvidiaClient, MODELS } from './integratedreading/nvidia-client.js';
+import { LlmClient as NvidiaClient, MODELS } from './integratedreading/llm-client.js';
 import {
   ANATOMIST_PERSONA,
   KOSHA_GRAMMAR,
@@ -127,7 +127,7 @@ async function main() {
   const skipAstro = hasFlag('skip-astro');
   const startFrom = getArg('start-from', 'auto');
 
-  const client = new NvidiaClient(process.env.NVIDIA_API_KEY!);
+  const client = new NvidiaClient(); // LlmClient auto-loads keys (NIM/Ollama/OpenRouter) from ~/.claude/.env
 
   console.log('═══ /integratedreading-resume ═══');
   console.log(`Run dir:       ${runDir}`);

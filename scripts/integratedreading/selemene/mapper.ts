@@ -223,6 +223,22 @@ const SANSKRIT_TO_ENGLISH: Record<string, string> = {
   dhanu: 'sagittarius', makara: 'capricorn', kumbha: 'aquarius', meena: 'pisces',
 };
 
+const RASHI_NAMES: string[] = [
+  'Mesha', 'Vrishabha', 'Mithuna', 'Karka', 'Simha', 'Kanya',
+  'Tula', 'Vrishchika', 'Dhanu', 'Makara', 'Kumbha', 'Meena',
+];
+
+/** Defensive guard: compute authoritative sidereal rashi name from lunar longitude (degrees). */
+export function moonRashiFromPanchanga(panchanga: any): { rashi: string; nakshatra?: string; longitude?: number } {
+  if (!panchanga) return { rashi: 'UNKNOWN' };
+  const lon = panchanga.lunar_longitude ?? panchanga.result?.lunar_longitude;
+  if (typeof lon !== 'number') return { rashi: 'UNKNOWN' };
+  const idx = Math.floor(lon / 30) % 12;
+  const rashi = RASHI_NAMES[idx];
+  const nakshatra = panchanga.nakshatra_name ?? panchanga.result?.nakshatra_name;
+  return { rashi, nakshatra, longitude: lon };
+}
+
 export function computePanchaBhuta(placements: Array<{ planet: string; sign: string; house?: number }>): { fire: number; earth: number; water: number; air: number; ether: number } {
   const counts = { fire: 0, earth: 0, water: 0, air: 0, ether: 0 };
   for (const p of placements) {

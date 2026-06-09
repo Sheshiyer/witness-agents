@@ -17,6 +17,10 @@
 import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { OLLAMA_MODELS } from '../integratedreading/ollama-client.js';
+
+export { OLLAMA_MODELS }; // re-export so runners can import the local tags from the canonical defaults module too
+
 // ── Pinned judge ──────────────────────────────────────────────────────
 //
 // Use gpt-oss-20b as the autoresearch judge. Reasons:
@@ -58,7 +62,12 @@ export const SYNTH_MODELS = {
   // Highest cross-reference density per word (Pass 1 finding, 2026-05-13:
   // 83 xrefs / 1127w on C1). Use when weaving is the metric, latency is OK.
   // Long-context (256K) — also a candidate for single-pass alternatives.
-  DENSITY_CHAMPION: 'moonshotai/kimi-k2.6',
+  //
+  // Sourced from OLLAMA_MODELS.DENSITY_CHAMPION when LLM_PROVIDER=ollama
+  // (your local/gateway kimi-k2.6:cloud). Otherwise the OpenRouter slug.
+  DENSITY_CHAMPION: (process.env.LLM_PROVIDER || '').toLowerCase() === 'ollama'
+    ? OLLAMA_MODELS.DENSITY_CHAMPION
+    : 'moonshotai/kimi-k2.6',
 
   // Slow reasoning (~150s on Pass 1) but consistently high voice fidelity
   // on adversarial / structural-pattern prompts. Use selectively.

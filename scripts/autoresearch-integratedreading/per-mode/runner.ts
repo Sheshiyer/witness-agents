@@ -44,7 +44,8 @@ import {
   AUTORESEARCH_BRAND_SYSTEM,
   countCrossRefs,
 } from '../defaults.js';
-import { NvidiaClient } from '../../integratedreading/nvidia-client.js';
+// Multi-provider LlmClient: NIM → Ollama → OpenRouter (LLM_PROVIDER=auto|nim|ollama|openrouter).
+import { LlmClient as NvidiaClient } from '../../integratedreading/llm-client.js';
 import {
   levelToRegisterBand,
   type ConsciousnessLevel,
@@ -562,7 +563,9 @@ async function main() {
   await mkdir(variantsDir, { recursive: true });
   console.log(`  Run dir:        ${runDir}`);
 
-  const nvidia = new NvidiaClient(loadNvidiaKey());
+  // LlmClient pulls its own keys; loadNvidiaKey() still runs as a preflight log only.
+  try { loadNvidiaKey(); } catch { /* allow OpenRouter-only runs */ }
+  const nvidia = new NvidiaClient();
 
   for (const band of bands) {
     await runOneBand({

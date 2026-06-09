@@ -1,6 +1,10 @@
 {
   "name": "@witness-agents/core",
   "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "type": "module",
   "description": "Embodied meaning-authoring dyad — Aletheios & Pichet as inference layer for the Selemene Engine",
   "main": "dist/index.js",
@@ -10,8 +14,9 @@
     "start": "node dist/serve.js",
     "dev": "node --import tsx src/serve.ts",
     "test": "node --import tsx --test tests/*.test.ts",
+    "test:orchestration": "npm run test --workspace=@witness/orchestration",
     "probe:nvidia-routing": "node --import tsx scripts/probe-active-nvidia-routing.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "npm run build --workspace=@witness/orchestration --if-present && tsc --noEmit"
   },
   "keywords": [
     "witness-agents",
@@ -27,7 +32,7 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.7.0"
   }
 }

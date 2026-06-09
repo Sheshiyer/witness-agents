@@ -20,7 +20,7 @@ import { join, resolve } from 'node:path';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 
-import { NvidiaClient, MODELS } from './integratedreading/nvidia-client.js';
+import { LlmClient as NvidiaClient, MODELS } from './integratedreading/llm-client.js';
 import {
   ANATOMIST_PERSONA,
   KOSHA_GRAMMAR,
@@ -226,7 +226,7 @@ async function main() {
     });
   }
 
-  const client = new NvidiaClient(process.env.NVIDIA_API_KEY!);
+  const client = new NvidiaClient(); // LlmClient auto-loads from ~/.claude/.env (supports Ollama + OpenRouter fallback)
   const allTrials: Trial[] = [];
 
   // ──────────────────────────────────────────────────────────────────

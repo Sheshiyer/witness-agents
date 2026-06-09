@@ -40,9 +40,12 @@ engine_overlay_weights:
   sigil-forge: 0.3
 house_overlay: [7, 11, 12, 5, 2]
 bridge_mandates:
-  - "Every major claim must braid four cross-references in the same sentence-flow: Vedic-7th-or-related-house × Tarot-relational-archetype × HD-electromagnetic-channel × dasha-anchor."
-  - "The 9-week (or actual-duration) Mahadasha pivot stagger is PHASE-LOCK GEOMETRY, not coincidence. Decode WHY one transition opens before the other."
-  - "Anti-dependency in Pass δ is per-Kosha-layer self-decoding capacity, NOT relationship-coaching prescriptions. Anatomically grounded only."
+   - "DEFENSIVE RASHI GUARD (MANDATORY): For Vandana G (partner-B), the authoritative Vedic Moon rashi is **Kanya (Virgo)** at ~9.3° (lunar_longitude 159.3° from panchanga engine). Nakshatra: Uttara Phalguni 4. Any prior synthesis, context, or hallucination claiming Moon in Karka/Cancer, Taurus/Vrishabha, or any other rashi is polluted data from earlier scaffolding — IGNORE and CORRECT explicitly to Kanya. Cite the longitude or 'per panchanga lunar_longitude' when stating the placement. This guard applies to all passes and both subjects when relevant."
+   - "GENERAL AUTHORITATIVE FACTS (runner-supplied + pass validation): Locked facts per subject (Lagna, Moon rashi/nakshatra/longitude, Sun, Atmakaraka, Mahadasha) are injected into Bridge Mandates and enforced. Only *explicit* contradictions (direct \"is in / rashi is / mahadasha of\" wrong values) cause validation failure + retry. Indirect/poetic language is untouched."
+   - "MULTI-SYSTEM AUTHORITATIVE FACTS (from Selemene engines): Lock HD profile/type/authority/definition, Gene Keys activation sequence (Lifes Work/Evolution/Radiance/Purpose), Numerology core (Life Path/Expression/Soul Urge/Personality), Vimshottari current periods (Mahadasha/Antardasha/Pratyantardasha). Explicit contradictions only (e.g. profile 3/5, Life Path 8, GK 55 for Lifes Work, Saturn antardasha)."
+   - "Every major claim must braid four cross-references in the same sentence-flow: Vedic-7th-or-related-house × Tarot-relational-archetype × HD-electromagnetic-channel × dasha-anchor."
+   - "The 9-week (or actual-duration) Mahadasha pivot stagger is PHASE-LOCK GEOMETRY, not coincidence. Decode WHY one transition opens before the other."
+   - "Anti-dependency in Pass δ is per-Kosha-layer self-decoding capacity, NOT relationship-coaching prescriptions. Anatomically grounded only."
 svg_topology: dyad-arc
 
 # ── Consciousness-level register variants (P2.2 #75) ──

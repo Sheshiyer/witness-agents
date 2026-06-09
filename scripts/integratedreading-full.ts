@@ -17,7 +17,8 @@ import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { findOrCreateCachedRunDir } from './autoresearch-integratedreading/defaults.js';
 
-import { NvidiaClient, MODELS } from './integratedreading/nvidia-client.js';
+// Multi-provider LlmClient: NIM → Ollama → OpenRouter (LLM_PROVIDER=auto|nim|ollama|openrouter).
+import { LlmClient as NvidiaClient, MODELS } from './integratedreading/llm-client.js';
 import {
   ANATOMIST_PERSONA,
   KOSHA_GRAMMAR,
@@ -39,6 +40,7 @@ import {
   toKoshaLayerSignals,
   toMahadashaInput,
   computePanchaBhuta,
+  moonRashiFromPanchanga,
 } from './integratedreading/selemene/mapper.js';
 import {
   computeDriftReport,
@@ -80,6 +82,83 @@ interface RunConfig {
   pdf?: boolean;
 }
 
+interface AuthoritativeMoon {
+  rashi: string;
+  nakshatra?: string;
+  longitude?: number;
+}
+
+interface AuthoritativeFacts {
+  lagna?: string;
+  moon?: {
+    rashi: string;
+    nakshatra?: string;
+    longitude?: number;
+  };
+  sun?: {
+    rashi: string;
+  };
+  atmakaraka?: string;
+  current_mahadasha?: string;
+  next_mahadasha?: string;
+  // NEW multi-system (sourced from Selemene engines: human-design, gene-keys, numerology, vimshottari)
+  human_design?: {
+    profile?: string;      // e.g. "6/3"
+    hd_type?: string;      // e.g. "Manifesting Generator" (engine key is hd_type)
+    authority?: string;    // e.g. "Emotional"
+    definition?: string;   // e.g. "Split"
+  };
+  gene_keys?: {
+    lifes_work?: [number, number];
+    evolution?: [number, number];
+    radiance?: [number, number];
+    purpose?: [number, number];
+  };
+  numerology?: {
+    life_path?: number;
+    expression?: number;
+    soul_urge?: number;
+    personality?: number;
+  };
+  vimshottari?: {
+    current_mahadasha?: string;
+    current_antardasha?: string;
+    current_pratyantardasha?: string;
+    birth_nakshatra?: string;
+  };
+}
+
+interface PassClientOption {
+  name: string;
+  client: NvidiaClient;
+}
+
+const STRUCTURED_OUTPUT_ONLY_RULES = [
+  'FINAL OUTPUT ONLY — NO META COMMENTARY:',
+  'Return ONLY the final user-facing Markdown.',
+  'NEVER output: planning notes, scratchpad, calculations, uncertainty, meta commentary, or self-corrections.',
+  'FORBIDDEN anywhere in output (including implied reasoning):',
+  '  - "The user wants", "Wait,", "I need to", "Let\'s", "Now, let\'s"',
+  '  - "Key constraints", "Structure required", "Chart facts to respect"',
+  '  - "Need a table", "Word count:", "Given the lack of"',
+  '  - Any sentence starting with "First," or "Step 1:" describing your own process',
+  'If a chart fact is uncertain, STATE THE LOCKED FACT VERBATIM rather than reasoning about it.',
+].join('\n');
+
+const META_LEAKAGE_PATTERNS: RegExp[] = [
+  /(^|\n)The user wants\b/i,
+  /(^|\n)Key constraints\b/i,
+  /(^|\n)Wait,\s/i,
+  /(^|\n)I need to\b/i,
+  /(^|\n)Let'?s\b/i,
+  /(^|\n)Need a table\b/i,
+  /(^|\n)Structure required:\b/i,
+  /(^|\n)Chart facts to respect:\b/i,
+  /(^|\n)Word count:\s*\d/i,
+  /(^|\n)Now, let'?s\b/i,
+  /(^|\n)Given the lack of specific planetary placements/i,
+];
+
 // ──────────────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────────────
@@ -110,11 +189,511 @@ function mdToHtml(md: string): string {
   }
 }
 
+function resolveAuthoritativeMoon(selemene: SelemeneEngineOutput[]): AuthoritativeMoon | undefined {
+  const panchanga = selemene.find((o) => o.engine_id === 'panchanga' && o.result && !o._error)?.result;
+  const moon = moonRashiFromPanchanga(panchanga);
+  return moon.rashi === 'UNKNOWN' ? undefined : moon;
+}
+
+function buildAuthoritativeMoonMandate(subject: string, moon?: AuthoritativeMoon): string {
+  if (!moon) return '';
+  const degree = typeof moon.longitude === 'number' ? ` @ ${moon.longitude.toFixed(3)}°` : '';
+  const nakshatra = moon.nakshatra ? ` (Nakshatra ${moon.nakshatra})` : '';
+  return [
+    `AUTHORITATIVE MOON FACT FOR ${subject}: Moon rashi is ${moon.rashi}${degree}${nakshatra}.`,
+    'Treat this as fixed chart truth derived from panchanga. Do not speculate, hedge, or replace it with any other Moon sign.',
+    'If any draft reasoning suggests Cancer/Karka, Taurus/Vrishabha, or any non-authoritative Moon sign, discard that reasoning and rewrite from the authoritative chart fact.',
+  ].join(' ');
+}
+
+function resolveAuthoritativeFacts(cfg: RunConfig, selemene: SelemeneEngineOutput[]): AuthoritativeFacts {
+  const panchanga = selemene.find((o) => o.engine_id === 'panchanga' && o.result && !o._error)?.result;
+  const moon = moonRashiFromPanchanga(panchanga);
+
+  let sunRashi: string | undefined;
+  const sunPlacement = cfg.placements?.find((p: any) => (p.planet || '').toLowerCase() === 'sun');
+  if (sunPlacement?.sign) {
+    sunRashi = sunPlacement.sign;
+  } else {
+    const pSun = panchanga?.sun_rashi || panchanga?.sun?.rashi;
+    if (pSun) sunRashi = pSun;
+  }
+
+  // NEW: Human Design (engine key: human-design)
+  const hd = selemene.find((o) => o.engine_id === 'human-design' && o.result && !o._error)?.result;
+  const hdProfile = hd?.profile || (cfg as any).hd_profile;
+  const hdType = hd?.hd_type || hd?.type;
+  const hdAuthority = hd?.authority;
+  const hdDefinition = hd?.definition;
+
+  // NEW: Gene Keys (engine key: gene-keys)
+  const gk = selemene.find((o) => o.engine_id === 'gene-keys' && o.result && !o._error)?.result;
+  const act = gk?.activation_sequence || {};
+
+  // NEW: Numerology (engine key: numerology)
+  const num = selemene.find((o) => o.engine_id === 'numerology' && o.result && !o._error)?.result;
+
+  // NEW: Vimshottari details (engine key: vimshottari) — enhance existing mahadasha
+  const vim = selemene.find((o) => o.engine_id === 'vimshottari' && o.result && !o._error)?.result;
+  const cur = vim?.current_period || {};
+  const birthNak = vim?.birth_nakshatra?.name;
+
+  const facts: AuthoritativeFacts = {
+    lagna: cfg.lagna || panchanga?.lagna || panchanga?.ascendant || panchanga?.lagna_sign,
+    moon: moon.rashi !== 'UNKNOWN' ? { rashi: moon.rashi, nakshatra: moon.nakshatra, longitude: moon.longitude } : undefined,
+    sun: sunRashi ? { rashi: sunRashi } : undefined,
+    atmakaraka: cfg.atmakaraka || panchanga?.atmakaraka,
+    current_mahadasha: cfg.mahadasha?.current_lord || (panchanga?.mahadasha?.current_lord) || cur.mahadasha?.planet,
+    next_mahadasha: cfg.mahadasha?.next_lord || (panchanga?.mahadasha?.next_lord),
+    // NEW multi-system sections
+    human_design: (hdProfile || hdType || hdAuthority || hdDefinition) ? {
+      profile: hdProfile,
+      hd_type: hdType,
+      authority: hdAuthority,
+      definition: hdDefinition,
+    } : undefined,
+    gene_keys: (act.lifes_work || act.evolution || act.radiance || act.purpose) ? {
+      lifes_work: act.lifes_work,
+      evolution: act.evolution,
+      radiance: act.radiance,
+      purpose: act.purpose,
+    } : undefined,
+    numerology: num ? {
+      life_path: num.life_path?.value,
+      expression: num.expression?.value,
+      soul_urge: num.soul_urge?.value,
+      personality: num.personality?.value,
+    } : undefined,
+    vimshottari: (cur.mahadasha || cur.antardasha || cur.pratyantardasha || birthNak) ? {
+      current_mahadasha: cur.mahadasha?.planet,
+      current_antardasha: cur.antardasha?.planet,
+      current_pratyantardasha: cur.pratyantardasha?.planet,
+      birth_nakshatra: birthNak,
+    } : undefined,
+  };
+  return facts;
+}
+
+function buildAuthoritativeFactsMandate(subject: string, facts?: AuthoritativeFacts): string {
+  if (!facts) return '';
+  const lines: string[] = [];
+  lines.push(`════════════════════════════════════════════════════════════════════════`);
+  lines.push(`CRITICAL AUTHORITATIVE FACTS FOR ${subject} — MANDATORY COMPLIANCE`);
+  lines.push(`════════════════════════════════════════════════════════════════════════`);
+  lines.push(`STOP. Read these facts FIRST. They are LOCKED and CANNOT be changed.`);
+  lines.push(`Any draft that contradicts these facts will be REJECTED and regenerated.`);
+  lines.push(``);
+  if (facts.lagna) lines.push(`• Lagna (rising sign): ${facts.lagna} ← LOCKED`);
+  if (facts.moon) {
+    const deg = typeof facts.moon.longitude === 'number' ? ` @ ${facts.moon.longitude.toFixed(3)}°` : '';
+    const nak = facts.moon.nakshatra ? `, Nakshatra ${facts.moon.nakshatra}` : '';
+    lines.push(`• Moon rashi: ${facts.moon.rashi}${deg}${nak} ← LOCKED (per panchanga lunar_longitude)`);
+  }
+  if (facts.sun) lines.push(`• Sun rashi: ${facts.sun.rashi} ← LOCKED`);
+  if (facts.atmakaraka) lines.push(`• Atmakaraka (soul significator): ${facts.atmakaraka} ← LOCKED`);
+  if (facts.current_mahadasha) lines.push(`• Current Mahadasha lord: ${facts.current_mahadasha} ← LOCKED`);
+  if (facts.next_mahadasha) lines.push(`• Next Mahadasha lord: ${facts.next_mahadasha} ← LOCKED`);
+  // NEW multi-system mandate lines (explicit contradictions only)
+  if (facts.human_design) {
+    const h = facts.human_design;
+    const parts: string[] = [];
+    if (h.profile) parts.push(`Profile ${h.profile}`);
+    if (h.hd_type) parts.push(h.hd_type);
+    if (h.authority) parts.push(`${h.authority} Authority`);
+    if (h.definition) parts.push(`${h.definition} Definition`);
+    if (parts.length) lines.push(`• Human Design: ${parts.join(', ')} ← LOCKED`);
+  }
+  if (facts.gene_keys) {
+    const g = facts.gene_keys;
+    const parts: string[] = [];
+    if (g.lifes_work) parts.push(`Life's Work ${g.lifes_work.join('/')}`);
+    if (g.evolution) parts.push(`Evolution ${g.evolution.join('/')}`);
+    if (g.radiance) parts.push(`Radiance ${g.radiance.join('/')}`);
+    if (g.purpose) parts.push(`Purpose ${g.purpose.join('/')}`);
+    if (parts.length) lines.push(`• Gene Keys: ${parts.join(', ')} ← LOCKED`);
+  }
+  if (facts.numerology) {
+    const n = facts.numerology;
+    const parts: string[] = [];
+    if (n.life_path) parts.push(`Life Path ${n.life_path}`);
+    if (n.expression) parts.push(`Expression ${n.expression}`);
+    if (n.soul_urge) parts.push(`Soul Urge ${n.soul_urge}`);
+    if (n.personality) parts.push(`Personality ${n.personality}`);
+    if (parts.length) lines.push(`• Numerology: ${parts.join(', ')} ← LOCKED`);
+  }
+  if (facts.vimshottari) {
+    const v = facts.vimshottari;
+    const parts: string[] = [];
+    if (v.current_mahadasha) parts.push(`Mahadasha ${v.current_mahadasha}`);
+    if (v.current_antardasha) parts.push(`Antardasha ${v.current_antardasha}`);
+    if (v.current_pratyantardasha) parts.push(`Pratyantardasha ${v.current_pratyantardasha}`);
+    if (v.birth_nakshatra) parts.push(`Birth Nakshatra ${v.birth_nakshatra}`);
+    if (parts.length) lines.push(`• Vimshottari: ${parts.join(', ')} ← LOCKED`);
+  }
+  lines.push(``);
+  lines.push(`DO NOT WRITE any of these contradictions:`);
+  if (facts.gene_keys?.lifes_work) {
+    const [a, b] = facts.gene_keys.lifes_work;
+    lines.push(`  ✗ "Life's Work" with any number other than ${a}/${b}`);
+  }
+  if (facts.gene_keys?.evolution) {
+    const [a, b] = facts.gene_keys.evolution;
+    lines.push(`  ✗ "Evolution" with any number other than ${a}/${b}`);
+  }
+  if (facts.numerology?.life_path) {
+    lines.push(`  ✗ "Life Path" with any number other than ${facts.numerology.life_path}`);
+  }
+  if (facts.human_design?.authority) {
+    lines.push(`  ✗ Authority as anything other than "${facts.human_design.authority}"`);
+  }
+  if (facts.human_design?.profile) {
+    lines.push(`  ✗ Profile as anything other than "${facts.human_design.profile}"`);
+  }
+  if (facts.vimshottari?.current_mahadasha) {
+    lines.push(`  ✗ "Mahadasha" with anything other than ${facts.vimshottari.current_mahadasha}`);
+  }
+  if (facts.vimshottari?.current_antardasha) {
+    lines.push(`  ✗ "Antardasha" with anything other than ${facts.vimshottari.current_antardasha}`);
+  }
+  if (facts.vimshottari?.current_pratyantardasha) {
+    lines.push(`  ✗ "Pratyantardasha" with anything other than ${facts.vimshottari.current_pratyantardasha}`);
+  }
+  lines.push(``);
+  lines.push(`════════════════════════════════════════════════════════════════════════`);
+  return lines.join('\n');
+}
+
+// Short reminder appended to user prompts and prepended to system prompts
+function buildFactsReminder(facts: AuthoritativeFacts): string {
+  const items: string[] = [];
+  if (facts.lagna) items.push(`Lagna: ${facts.lagna}`);
+  if (facts.moon?.rashi) items.push(`Moon rashi: ${facts.moon.rashi} (${facts.moon.nakshatra || ''})`);
+  if (facts.sun?.rashi) items.push(`Sun rashi: ${facts.sun.rashi}`);
+  if (facts.atmakaraka) items.push(`Atmakaraka: ${facts.atmakaraka}`);
+  if (facts.gene_keys?.lifes_work) items.push(`GK Life's Work: ${facts.gene_keys.lifes_work.join('/')}`);
+  if (facts.gene_keys?.evolution) items.push(`GK Evolution: ${facts.gene_keys.evolution.join('/')}`);
+  if (facts.gene_keys?.radiance) items.push(`GK Radiance: ${facts.gene_keys.radiance.join('/')}`);
+  if (facts.gene_keys?.purpose) items.push(`GK Purpose: ${facts.gene_keys.purpose.join('/')}`);
+  if (facts.numerology?.life_path) items.push(`Num Life Path: ${facts.numerology.life_path}`);
+  if (facts.numerology?.expression) items.push(`Num Expression: ${facts.numerology.expression}`);
+  if (facts.numerology?.soul_urge) items.push(`Num Soul Urge: ${facts.numerology.soul_urge}`);
+  if (facts.numerology?.personality) items.push(`Num Personality: ${facts.numerology.personality}`);
+  if (facts.human_design?.profile) items.push(`HD Profile: ${facts.human_design.profile}`);
+      if (facts.human_design?.hd_type) items.push(`HD Type: ${facts.human_design.hd_type}`);
+  if (facts.human_design?.authority) items.push(`HD Authority: ${facts.human_design.authority}`);
+  if (facts.human_design?.definition) items.push(`HD Definition: ${facts.human_design.definition}`);
+  if (facts.vimshottari?.current_mahadasha) items.push(`Mahadasha: ${facts.vimshottari.current_mahadasha}`);
+  if (facts.vimshottari?.current_antardasha) items.push(`Antardasha: ${facts.vimshottari.current_antardasha}`);
+  if (facts.vimshottari?.current_pratyantardasha) items.push(`Pratyantardasha: ${facts.vimshottari.current_pratyantardasha}`);
+  if (items.length === 0) return '';
+  return `LOCKED FACTS — Use ONLY these exact values. Any contradiction is a FAILURE:\n${items.map(i => `• ${i}`).join('\n')}`;
+}
+
+function sliceFromHeader(raw: string, firstHeader: string): string {
+  const idx = raw.indexOf(firstHeader);
+  return idx >= 0 ? raw.slice(idx).trim() : raw.trim();
+}
+
+function detectMetaLeakage(markdown: string): string | undefined {
+  const match = META_LEAKAGE_PATTERNS.find((pattern) => pattern.test(markdown));
+  return match ? `meta scratchpad leaked (${match})` : undefined;
+}
+
+function detectMoonPollution(markdown: string, moon?: AuthoritativeMoon): string | undefined {
+  if (!moon) return undefined;
+  const badSigns = ['Karka', 'Cancer', 'Vrishabha', 'Taurus'].filter((sign) => sign !== moon.rashi);
+  // TIGHTENED: Only match direct assignments, not general mentions
+  // "Moon in Cancer", "Cancer Moon", "Moon rashi Cancer" — direct assignments
+  // NOT: "Moon...whatever...Cancer" within 80 chars
+  const moonPatterns = [
+    new RegExp(`\\b(?:moon|chandra)\\s+(?:in|is|as|rashi)\\s+(?:${badSigns.join('|')})\\b`, 'i'),
+    new RegExp(`\\b(?:${badSigns.join('|')})\\s+(?:moon|chandra)\\b`, 'i'),
+  ];
+  const match = moonPatterns.find((pattern) => pattern.test(markdown));
+  return match ? `Moon-sign pollution detected (${match})` : undefined;
+}
+
+function detectFactContradiction(markdown: string, facts?: AuthoritativeFacts): string | undefined {
+  if (!facts) return undefined;
+  const text = markdown;
+
+  // Moon (explicit contradictions only)
+  if (facts.moon?.rashi) {
+    const badMoon = ['Karka', 'Cancer', 'Vrishabha', 'Taurus'].filter((sign) => sign !== facts.moon!.rashi);
+    const moonPats = [
+      new RegExp(`\\b(?:moon|chandra)\\b[^.]{0,40}?\\b(?:in|is|as|falls\\s+in|placed\\s+in|rests\\s+in|occupies)\\b[^.]{0,20}?\\b(?:${badMoon.join('|')})\\b`, 'i'),
+      new RegExp(`\\b(?:${badMoon.join('|')})\\s+(?:moon|chandra)\\b`, 'i'),
+      new RegExp(`\\b(?:moon|chandra)\\b[^.\\n]{0,40}\\brashi\\b[^.\\n]{0,30}\\b(?:${badMoon.join('|')})\\b`, 'i'),
+    ];
+    if (moonPats.some((p) => p.test(text))) return `explicit Moon rashi contradiction (not ${facts.moon.rashi})`;
+  }
+
+  // Lagna / rising / ascendant (explicit only)
+  if (facts.lagna) {
+    const otherLagnas = ['Mesha','Aries','Vrishabha','Taurus','Mithuna','Gemini','Karka','Cancer','Simha','Leo','Tula','Libra','Vrishchika','Scorpio','Dhanu','Sagittarius','Makara','Capricorn','Kumbha','Aquarius','Meena','Pisces']
+      .filter((s) => !facts.lagna!.toLowerCase().includes(s.toLowerCase().slice(0, 3)));
+    if (otherLagnas.length > 0) {
+      const lagnaPat = new RegExp(`\\b(?:lagna|rising|ascendant|asc)\\s+(?:in|is|as|falls in|placed in)\\s+(?:${otherLagnas.join('|')})\\b`, 'i');
+      if (lagnaPat.test(text)) return `explicit Lagna contradiction (not ${facts.lagna})`;
+    }
+  }
+
+  // Sun rashi (explicit)
+  if (facts.sun?.rashi) {
+    const badSun = ['Mesha','Aries','Vrishabha','Taurus','Mithuna','Gemini','Karka','Cancer','Simha','Leo','Kanya','Virgo','Tula','Libra','Vrishchika','Scorpio','Dhanu','Sagittarius','Makara','Capricorn','Kumbha','Aquarius','Meena','Pisces']
+      .filter((s) => s.toLowerCase() !== facts.sun!.rashi.toLowerCase());
+    if (badSun.length) {
+      const sunPat = new RegExp(`\\b(?:sun|surya)\\s+(?:in|is|as|falls in|placed in|occupies|rashi)\\s+(?:${badSun.join('|')})\\b`, 'i');
+      if (sunPat.test(text)) return `explicit Sun rashi contradiction (not ${facts.sun.rashi})`;
+    }
+  }
+
+  // Atmakaraka (explicit)
+  if (facts.atmakaraka) {
+    const wrongAK = new RegExp(`\\batmakaraka\\b[^.\\n]{0,30}\\b(?:is|in|as)\\s+(?!${facts.atmakaraka})`, 'i');
+    if (wrongAK.test(text)) return `explicit Atmakaraka contradiction (not ${facts.atmakaraka})`;
+  }
+
+  // Current Mahadasha (explicit lord name)
+  // IMPORTANT: Only match direct assignments, not comma-separated lists
+  if (facts.current_mahadasha) {
+    const badMD = ['Surya','Sun','Chandra','Moon','Mangal','Mars','Budha','Mercury','Guru','Jupiter','Shukra','Venus','Shani','Saturn','Rahu','Ketu']
+      .filter((p) => p.toLowerCase() !== facts.current_mahadasha!.toLowerCase());
+    if (badMD.length) {
+      const patterns = [
+        new RegExp(`\\b(?:current\\s+)?mahadasha\\s+(?:of|is|lord)\\s+(${badMD.join("|")})\\b`, "i"),
+        new RegExp(`\\b(${badMD.join("|")})\\s+mahadasha\\b`, "i"),
+      ];
+      if (patterns.some(p => p.test(text))) return `explicit current Mahadasha contradiction (not ${facts.current_mahadasha})`;
+    }
+  }
+
+  // NEW: Human Design profile / type / authority / definition (explicit only)
+  if (facts.human_design) {
+    const h = facts.human_design;
+    if (h.profile) {
+      const wrongProfiles = ['1/3','1/4','2/4','2/5','3/5','3/6','4/6','4/1','5/1','5/2','6/2','6/3'].filter(p => p !== h.profile);
+      const profPat = new RegExp(`\\b(?:profile|hd profile|human design profile)\\b[^.]{0,30}\\b(?:${wrongProfiles.join('|')})\\b`, 'i');
+      if (profPat.test(text)) return `explicit HD profile contradiction (not ${h.profile})`;
+    }
+    if (h.hd_type) {
+      const wrongTypes = ['Manifestor','Generator','Manifesting Generator','Projector','Reflector'].filter(t => !h.hd_type!.toLowerCase().includes(t.toLowerCase().slice(0,4)));
+      if (wrongTypes.length) {
+        const typePat = new RegExp(`\\b(?:type|hd type|human design type)\\b[^.]{0,30}\\b(?:${wrongTypes.join('|')})\\b`, 'i');
+        if (typePat.test(text)) return `explicit HD type contradiction (not ${h.hd_type})`;
+      }
+    }
+    if (h.authority) {
+      const wrongAuth = ['Emotional','Sacral','Splenic','Ego','Self','Lunar','Mental','None'].filter(a => a.toLowerCase() !== h.authority!.toLowerCase());
+      const authPat = new RegExp(`\\b(?:authority|emotional authority|authority is)\\b[^.]{0,30}\\b(?:${wrongAuth.join('|')})\\b`, 'i');
+      if (authPat.test(text)) return `explicit HD authority contradiction (not ${h.authority})`;
+    }
+  }
+
+  // NEW: Gene Keys activation sequence (explicit main ones)
+  // IMPORTANT: Only match when the specific sequence name is mentioned, not generic "gene key"
+  if (facts.gene_keys) {
+    const g = facts.gene_keys;
+    const checkGK = (label: string, pair?: [number, number]) => {
+      if (!pair) return undefined;
+      const [a, b] = pair;
+      // Only trigger on explicit "[Label] is/has/= [wrong number]" patterns
+      const labelVariants = label.toLowerCase().replace(/'/g, "'?").replace(/\s+/g, "\\s*");
+      const pat = new RegExp(`\\b${labelVariants}\\b[^.\\n]{0,20}\\b(\\d+)(?:[/,\\s]+(\\d+))?\\b`, 'i');
+      const match = text.match(pat);
+      if (match) {
+        const n1 = parseInt(match[1], 10);
+        const n2 = match[2] ? parseInt(match[2], 10) : undefined;
+        if (n2 !== undefined) {
+          const isCorrect = (n1 === a && n2 === b) || (n1 === b && n2 === a);
+          if (!isCorrect) return `explicit Gene Key ${label} contradiction (not ${a}/${b})`;
+        } else {
+          if (n1 !== a && n1 !== b) return `explicit Gene Key ${label} contradiction (not ${a}/${b})`;
+        }
+      }
+      return undefined;
+    };
+    const res1 = checkGK("Life's Work", g.lifes_work); if (res1) return res1;
+    const res2 = checkGK("Evolution", g.evolution); if (res2) return res2;
+    const res3 = checkGK("Radiance", g.radiance); if (res3) return res3;
+    const res4 = checkGK("Purpose", g.purpose); if (res4) return res4;
+  }
+
+  // NEW: Numerology core numbers (explicit)
+  if (facts.numerology) {
+    const n = facts.numerology;
+    const numChecks: Array<[string, number | undefined]> = [
+      ["life path", n.life_path],
+      ["expression", n.expression],
+      ["soul urge", n.soul_urge],
+      ["personality", n.personality],
+    ];
+    for (const [label, val] of numChecks) {
+      if (!val) continue;
+      const wrong = Array.from({length:33}, (_,i)=>i+1).filter(v => v !== val);
+      const pat = new RegExp(`\\b(?:${label})\\b[^.]{0,30}\\b(?:${wrong.join("|")})\\b`, "i");
+      if (pat.test(text)) return `explicit Numerology ${label} contradiction (not ${val})`;
+    }
+  }
+
+  // NEW: Vimshottari sub-periods (explicit lord)
+  // IMPORTANT: Only match direct assignments, not comma-separated lists
+  if (facts.vimshottari) {
+    const v = facts.vimshottari;
+    const lords = ["Surya","Sun","Chandra","Moon","Mangal","Mars","Budha","Mercury","Guru","Jupiter","Shukra","Venus","Shani","Saturn","Rahu","Ketu"];
+    if (v.current_antardasha) {
+      const bad = lords.filter(p => p.toLowerCase() !== v.current_antardasha!.toLowerCase());
+      const patterns = [
+        new RegExp(`\\b(?:antardasha|sub.?dasha)\\s+(?:of|is)\\s+(${bad.join("|")})\\b`, "i"),
+        new RegExp(`\\b(${bad.join("|")})\\s+(?:antardasha|sub.?dasha)\\b`, "i"),
+      ];
+      if (patterns.some(p => p.test(text))) return `explicit Antardasha contradiction (not ${v.current_antardasha})`;
+    }
+    if (v.current_pratyantardasha) {
+      const bad = lords.filter(p => p.toLowerCase() !== v.current_pratyantardasha!.toLowerCase());
+      const patterns = [
+        new RegExp(`\\b(?:pratyantardasha|praty.?antardasha)\\s+(?:of|is)\\s+(${bad.join("|")})\\b`, "i"),
+        new RegExp(`\\b(${bad.join("|")})\\s+(?:pratyantardasha|praty.?antardasha)\\b`, "i"),
+      ];
+      if (patterns.some(p => p.test(text))) return `explicit Pratyantardasha contradiction (not ${v.current_pratyantardasha})`;
+    }
+  }
+
+  return undefined;
+}
+
+function validateMarkdownDraft(raw: string, firstHeader: string, moon?: AuthoritativeMoon, facts?: AuthoritativeFacts): { content: string; issue?: string } {
+  const content = sliceFromHeader(raw, firstHeader);
+  const issue = detectMetaLeakage(content) ?? detectMoonPollution(content, moon) ?? detectFactContradiction(content, facts);
+  return { content, issue };
+}
+
+async function generateMarkdownPass(opts: {
+  label: string;
+  firstHeader: string;
+  cachePath: string;
+  useCache: boolean;
+  model: string;
+  client: NvidiaClient;
+  systemPrompt: string;
+  userPrompt: string;
+  authoritativeMoon?: AuthoritativeMoon;
+  authoritativeFacts?: AuthoritativeFacts;
+  maxTokens?: number;
+  temperature?: number;
+  retryTemperature?: number;
+  fallbackClients?: PassClientOption[];
+}): Promise<string> {
+  const {
+    label,
+    firstHeader,
+    cachePath,
+    useCache,
+    model,
+    client,
+    systemPrompt,
+    userPrompt,
+    authoritativeMoon,
+    authoritativeFacts,
+    maxTokens = 8192,
+    temperature = 0.2,           // Lowered from 0.5 to reduce hallucination
+    retryTemperature = 0.1,      // Lowered from 0.2
+    fallbackClients = [],
+  } = opts;
+  if (useCache && existsSync(cachePath)) {
+    const cached = await readFile(cachePath, 'utf-8');
+    const validated = validateMarkdownDraft(cached, firstHeader, authoritativeMoon, authoritativeFacts);
+    if (!validated.issue) {
+      console.log(`  ✓ ${label} cached (${(validated.content.length / 1024).toFixed(1)} KB)`);
+      return validated.content;
+    }
+    console.log(`  ⚠ ${label} cache invalid: ${validated.issue}; regenerating`);
+  }
+
+  let lastIssue = '';
+  let lastOutput = '';
+  const passClients: PassClientOption[] = [
+    { name: 'primary', client },
+    ...fallbackClients,
+  ];
+
+  // Build a short facts reminder to append to user prompt
+  const factsReminder = authoritativeFacts ? buildFactsReminder(authoritativeFacts) : '';
+
+  for (const passClient of passClients) {
+    // More attempts: 3 for primary, 2 for fallbacks (was 2/1)
+    const attempts = passClient.name === 'primary' ? 3 : 2;
+    if (passClient.name !== 'primary') {
+      console.log(`    ↻ ${label} retrying via ${passClient.name}`);
+    }
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      const retryHint = attempt === 1
+        ? ''
+        : `CORRECTION: previous draft failed validation because ${lastIssue}. Return only the final markdown beginning with "${firstHeader}". Do not include planning text or speculative reasoning that contradicts authoritative chart facts (lagna, moon rashi, sun, atmakaraka, mahadasha).`;
+      try {
+        // Build system prompt with facts at the BEGINNING (primacy effect)
+        const systemContent = [
+          factsReminder ? `AUTHORITATIVE FACTS — USE ONLY THESE VALUES:\n${factsReminder}` : '',
+          systemPrompt,
+          STRUCTURED_OUTPUT_ONLY_RULES,
+          retryHint,
+        ].filter(Boolean).join('\n\n');
+
+        // Build user prompt with facts at the END (recency effect)
+        const userContent = userPrompt + (factsReminder ? `\n\n---\n${factsReminder}` : '');
+
+        const res = await passClient.client.callWithRetry({
+          model,
+          messages: [
+            { role: 'system', content: systemContent },
+            { role: 'user', content: userContent },
+          ],
+          max_tokens: maxTokens,
+          temperature: attempt === 1 ? temperature : retryTemperature,
+          timeout_ms: 300_000,
+        });
+        const validated = validateMarkdownDraft(res.content, firstHeader, authoritativeMoon, authoritativeFacts);
+        if (!validated.issue) {
+          await writeFile(cachePath, validated.content);
+          console.log(`    ✓ ${label} ${res.latency_ms}ms · ${res.completion_tokens}tk · ${validated.content.length} chars`);
+          return validated.content;
+        }
+        lastIssue = validated.issue;
+        lastOutput = validated.content || res.content;
+        console.log(`    ⚠ ${label} validation failed: ${lastIssue}`);
+      } catch (err: any) {
+        lastIssue = err?.message || String(err);
+        console.log(`    ⚠ ${label} provider ${passClient.name} failed: ${lastIssue}`);
+      }
+    }
+  }
+
+  console.warn(`  ⚠ ${label} validation exhausted all retries — proceeding with last output despite: ${lastIssue}`);
+  return lastOutput || '';
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// LAYERED ANNEALING PIPELINE (A/B test vs single-pass)
+// 4-phase progressive cooling: creative → structural → numeric → dasha
+// Each phase operates on the output of the previous one.
+// ──────────────────────────────────────────────────────────────────────
+
+interface AnnealingLayer {
+  label: string;
+  temperature: number;
+  maxTokens: number;
+  validate: (text: string, facts?: AuthoritativeFacts) => string | undefined;
+  buildSystemPrompt: (facts: AuthoritativeFacts) => string;
+  buildUserPrompt: (draft: string, facts: AuthoritativeFacts) => string;
+}
+
+/** Validate ONLY meta leakage + Moon pollution (creative layer) */
 // ──────────────────────────────────────────────────────────────────────
 // Build chart summary for prompts (digest of placements + Selemene)
 // ──────────────────────────────────────────────────────────────────────
 
 function buildChartSummary(cfg: RunConfig, selemene: SelemeneEngineOutput[]): any {
+  const authoritativeMoon = resolveAuthoritativeMoon(selemene);
   const summary: any = {
     subject: cfg.subject,
     birth: `${cfg.birth_date} ${cfg.birth_time ?? ''} ${cfg.timezone ?? ''}`.trim(),
@@ -123,6 +702,12 @@ function buildChartSummary(cfg: RunConfig, selemene: SelemeneEngineOutput[]): an
     atmakaraka: cfg.atmakaraka,
     placements: cfg.placements,
     birth_nakshatra: cfg.birth_nakshatra,    // hardened docx value
+    authoritative_moon: authoritativeMoon,
+    authoritative_constraints: authoritativeMoon
+      ? [buildAuthoritativeMoonMandate(cfg.subject, authoritativeMoon)]
+      : [],
+    authoritative_facts: resolveAuthoritativeFacts(cfg, selemene),
+    authoritative_facts_mandate: buildAuthoritativeFactsMandate(cfg.subject, resolveAuthoritativeFacts(cfg, selemene)),
   };
   // Hardened Reference Data principle: docx-supplied mahadasha wins.
   // Selemene mahadasha is used ONLY as fallback when docx doesn't provide it.
@@ -327,7 +912,7 @@ async function main() {
   console.log(`  Output:  ${cfg.output_dir}`);
 
   await mkdir(cfg.output_dir, { recursive: true });
-  const slug = cfg.subject.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+  const slug = cfg.subject.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   // Cache-aware run-dir: shared helper from autoresearch-integratedreading/defaults.ts.
   // Reuses most recent prior ts-shaped subdir when --use-cache; otherwise fresh ts dir.
@@ -339,8 +924,15 @@ async function main() {
   if (reusedPrior) console.log(`  ↻ Reusing prior run dir for --use-cache`);
   console.log(`  Run:     ${runDir}`);
 
-  const nvidiaKey = loadNvidiaKey();
-  const nvidia = new NvidiaClient(nvidiaKey);
+  // LlmClient pulls NVIDIA_API_KEY + OPENROUTER_API_KEY itself; we still call
+  // loadNvidiaKey() for the existing preflight log line but no longer require it.
+  try { loadNvidiaKey(); } catch { /* allow OpenRouter-only runs */ }
+  const nvidia = new NvidiaClient();
+  const avail = (nvidia as any).availability;
+  const fallbackClients: PassClientOption[] = [];
+  if (avail.openrouter) fallbackClients.push({ name: 'openrouter', client: new NvidiaClient({ provider: 'openrouter', quiet: true }) });
+  if (avail.nim) fallbackClients.push({ name: 'nim', client: new NvidiaClient({ provider: 'nim', quiet: true }) });
+  console.log(`  ✓ LlmClient: nim=${avail.nim} ollama=${avail.ollama} openrouter=${avail.openrouter} mode=${avail.selected}`);
 
   // ── Phase 1: Fetch Selemene (real chart data) ───────────────────
   const selemeneCachePath = join(runDir, `01_selemene_${slug}.json`);
@@ -388,40 +980,73 @@ async function main() {
   // ── Build chart summary + engine results for NVIDIA prompts ─────
   const chartSummary = buildChartSummary(cfg, selemene);
   const engineResults = buildEngineResultsForPrompts(selemene);
+  const authoritativeMoonMandate = buildAuthoritativeMoonMandate(cfg.subject, chartSummary.authoritative_moon);
+  const factsMandate = chartSummary.authoritative_facts_mandate || '';
+  const af = chartSummary.authoritative_facts || {};
+  const extra = [
+    af.human_design ? 'hd' : '',
+    af.gene_keys ? 'gk' : '',
+    af.numerology ? 'num' : '',
+    af.vimshottari ? 'vim' : '',
+  ].filter(Boolean).join('+');
+  console.log(`  ✓ Authoritative facts: lagna=${af.lagna || 'n/a'} moon=${af.moon?.rashi || 'n/a'} sun=${af.sun?.rashi || 'n/a'} ak=${af.atmakaraka || 'n/a'} md=${af.current_mahadasha || 'n/a'}${extra ? ' +'+extra : ''}`);
 
   // ── Phase 2 + 3 (parallel): Aletheios + Pichet pillars ─────────
   const aletheiosCachePath = join(runDir, `04_aletheios_${slug}.md`);
   const pichetCachePath = join(runDir, `05_pichet_${slug}.md`);
   let aletheios: string, pichet: string;
   if (useCache && existsSync(aletheiosCachePath) && existsSync(pichetCachePath)) {
-    aletheios = await readFile(aletheiosCachePath, 'utf-8');
-    pichet = await readFile(pichetCachePath, 'utf-8');
-    console.log(`  ✓ Pillars cached`);
+    const cachedAletheios = await readFile(aletheiosCachePath, 'utf-8');
+    const cachedPichet = await readFile(pichetCachePath, 'utf-8');
+    const validAletheios = validateMarkdownDraft(cachedAletheios, `## Aletheios — Structural-Pattern Witness for ${cfg.subject}`, chartSummary.authoritative_moon, chartSummary.authoritative_facts);
+    const validPichet = validateMarkdownDraft(cachedPichet, `## Pichet — Embodied Reading for ${cfg.subject}`, chartSummary.authoritative_moon, chartSummary.authoritative_facts);
+    if (!validAletheios.issue && !validPichet.issue) {
+      aletheios = validAletheios.content;
+      pichet = validPichet.content;
+      console.log(`  ✓ Pillars cached`);
+    } else {
+      console.log(`  ⚠ Pillar cache invalid; regenerating`);
+      aletheios = '';
+      pichet = '';
+    }
   } else {
+    aletheios = '';
+    pichet = '';
+  }
+  if (!aletheios || !pichet) {
     console.log(`  → Running Aletheios + Pichet pillars (gpt-oss-120b, parallel)...`);
-    const [aRes, pRes] = await Promise.all([
-      nvidia.callWithRetry({
+    [aletheios, pichet] = await Promise.all([
+      generateMarkdownPass({
+        label: 'Aletheios',
+        firstHeader: `## Aletheios — Structural-Pattern Witness for ${cfg.subject}`,
+        cachePath: aletheiosCachePath,
+        useCache,
         model: MODELS.GPT_OSS_120B,
-        messages: [
-          { role: 'system', content: ANATOMIST_PERSONA + '\n\n' + KOSHA_GRAMMAR + '\n\nROLE: Aletheios. Pillar function: structural-pattern witness.' },
-          { role: 'user', content: aletheiosPillarPrompt(cfg.subject, engineResults, chartSummary) },
-        ],
-        max_tokens: 4096, temperature: 0.4, timeout_ms: 240_000,
+        client: nvidia,
+        systemPrompt: [ANATOMIST_PERSONA, KOSHA_GRAMMAR, authoritativeMoonMandate, factsMandate, 'ROLE: Aletheios. Pillar function: structural-pattern witness.'].filter(Boolean).join('\n\n'),
+        userPrompt: aletheiosPillarPrompt(cfg.subject, engineResults, chartSummary),
+        authoritativeMoon: chartSummary.authoritative_moon,
+        authoritativeFacts: chartSummary.authoritative_facts,
+        maxTokens: 4096,
+        temperature: 0.4,
+        fallbackClients,
       }),
-      nvidia.callWithRetry({
+      generateMarkdownPass({
+        label: 'Pichet',
+        firstHeader: `## Pichet — Embodied Reading for ${cfg.subject}`,
+        cachePath: pichetCachePath,
+        useCache,
         model: MODELS.GPT_OSS_120B,
-        messages: [
-          { role: 'system', content: ANATOMIST_PERSONA + '\n\n' + KOSHA_GRAMMAR + '\n\nROLE: Pichet. Pillar function: embodied-felt witness.' },
-          { role: 'user', content: pichetPillarPrompt(cfg.subject, engineResults, chartSummary) },
-        ],
-        max_tokens: 4096, temperature: 0.6, timeout_ms: 240_000,
+        client: nvidia,
+        systemPrompt: [ANATOMIST_PERSONA, KOSHA_GRAMMAR, authoritativeMoonMandate, factsMandate, 'ROLE: Pichet. Pillar function: embodied-felt witness.'].filter(Boolean).join('\n\n'),
+        userPrompt: pichetPillarPrompt(cfg.subject, engineResults, chartSummary),
+        authoritativeMoon: chartSummary.authoritative_moon,
+        authoritativeFacts: chartSummary.authoritative_facts,
+        maxTokens: 4096,
+        temperature: 0.6,
+        fallbackClients,
       }),
     ]);
-    aletheios = aRes.content;
-    pichet = pRes.content;
-    await writeFile(aletheiosCachePath, aletheios);
-    await writeFile(pichetCachePath, pichet);
-    console.log(`    ✓ Aletheios ${aRes.latency_ms}ms · Pichet ${pRes.latency_ms}ms`);
   }
 
   // ── Phase 4-6: Three-pass synthesis (gpt-oss-120b) ─────────────────
@@ -431,59 +1056,71 @@ async function main() {
   const synthBCachePath = join(runDir, `06b_synthesis_${slug}.md`);
   const synthCCachePath = join(runDir, `06c_synthesis_${slug}.md`);
   let passA: string, passB: string, passC: string;
-  const SYNTH_MODEL = MODELS.GPT_OSS_120B;
+  // Select best available model: OpenAI GPT-4o/4.5 → NIM gpt-oss-120b
+  const avail = (nvidia as any).availability || {};
+  const SYNTH_MODEL = avail.openai ? 'gpt-4o' : MODELS.GPT_OSS_120B;
+  console.log(`  → Synthesis model: ${SYNTH_MODEL} (openai=${avail.openai}, nim=${avail.nim})`);
+  
+  // CRITICAL: factsMandate FIRST so LLM sees authoritative facts before persona/grammar
+  const synthesisSystemPrompt = [factsMandate, authoritativeMoonMandate, ANATOMIST_PERSONA, KOSHA_GRAMMAR, DYADIC_LOOP].filter(Boolean).join('\n\n');
 
-  if (useCache && existsSync(synthACachePath)) {
-    passA = await readFile(synthACachePath, 'utf-8');
-    console.log(`  ✓ Synthesis Pass A cached (${(passA.length / 1024).toFixed(1)} KB)`);
-  } else {
-    console.log(`  → Synthesis Pass A — Opening + Parts I-IV (gpt-oss-120b)...`);
-    const aRes = await nvidia.callWithRetry({
-      model: SYNTH_MODEL,
-      messages: [
-        { role: 'system', content: ANATOMIST_PERSONA + '\n\n' + KOSHA_GRAMMAR + '\n\n' + DYADIC_LOOP },
-        { role: 'user', content: synthesisPromptA(cfg.subject, aletheios, pichet, chartSummary, {}) },
-      ],
-      max_tokens: 8192, temperature: 0.5, timeout_ms: 300_000,
-    });
-    passA = aRes.content;
-    await writeFile(synthACachePath, passA);
-    console.log(`    ✓ Pass A ${aRes.latency_ms}ms · ${aRes.completion_tokens}tk · ${passA.length} chars`);
-  }
-  if (useCache && existsSync(synthBCachePath)) {
-    passB = await readFile(synthBCachePath, 'utf-8');
-    console.log(`  ✓ Synthesis Pass B cached (${(passB.length / 1024).toFixed(1)} KB)`);
-  } else {
-    console.log(`  → Synthesis Pass B — Parts V-VIII (gpt-oss-120b)...`);
-    const bRes = await nvidia.callWithRetry({
-      model: SYNTH_MODEL,
-      messages: [
-        { role: 'system', content: ANATOMIST_PERSONA + '\n\n' + KOSHA_GRAMMAR + '\n\n' + DYADIC_LOOP },
-        { role: 'user', content: synthesisPromptB(cfg.subject, aletheios, pichet, chartSummary, {}, passA) },
-      ],
-      max_tokens: 8192, temperature: 0.5, timeout_ms: 300_000,
-    });
-    passB = bRes.content;
-    await writeFile(synthBCachePath, passB);
-    console.log(`    ✓ Pass B ${bRes.latency_ms}ms · ${bRes.completion_tokens}tk · ${passB.length} chars`);
-  }
-  if (useCache && existsSync(synthCCachePath)) {
-    passC = await readFile(synthCCachePath, 'utf-8');
-    console.log(`  ✓ Synthesis Pass C cached (${(passC.length / 1024).toFixed(1)} KB)`);
-  } else {
-    console.log(`  → Synthesis Pass C — Parts IX-XI (gpt-oss-120b)...`);
-    const cRes = await nvidia.callWithRetry({
-      model: SYNTH_MODEL,
-      messages: [
-        { role: 'system', content: ANATOMIST_PERSONA + '\n\n' + KOSHA_GRAMMAR + '\n\n' + DYADIC_LOOP },
-        { role: 'user', content: synthesisPromptC(cfg.subject, aletheios, pichet, chartSummary, {}, passA, passB) },
-      ],
-      max_tokens: 8192, temperature: 0.5, timeout_ms: 300_000,
-    });
-    passC = cRes.content;
-    await writeFile(synthCCachePath, passC);
-    console.log(`    ✓ Pass C ${cRes.latency_ms}ms · ${cRes.completion_tokens}tk · ${passC.length} chars`);
-  }
+  // ── Phase 4-6: Three-pass synthesis with per-pass temperature annealing ─────────────────
+  // A/B-tested architecture (default since 2026-06-06):
+  //   Pass A (Identity/Structure): T=0.35 — creative + structural facts
+  //   Pass B (Wealth/Career/Love): T=0.25 — mixed structural + numeric
+  //   Pass C (Timeline/Dasha):     T=0.15 — dasha triple + numeric heavy
+  // Lower T in later passes suppresses hallucination of harder constraints
+  // without sacrificing creative voice in early passes.
+  const synthTemps = { A: { temp: 0.35, retry: 0.25 }, B: { temp: 0.25, retry: 0.15 }, C: { temp: 0.15, retry: 0.08 } };
+
+  console.log(`  → Synthesis Pass A — Opening + Parts I-IV (gpt-oss-120b, T=${synthTemps.A.temp})...`);
+  passA = await generateMarkdownPass({
+    label: 'Pass A',
+    firstHeader: `# Integrated Reading — ${cfg.subject}`,
+    cachePath: synthACachePath,
+    useCache,
+    model: SYNTH_MODEL,
+    client: nvidia,
+    systemPrompt: synthesisSystemPrompt,
+    userPrompt: synthesisPromptA(cfg.subject, aletheios, pichet, chartSummary, {}),
+    authoritativeMoon: chartSummary.authoritative_moon,
+    authoritativeFacts: chartSummary.authoritative_facts,
+    temperature: synthTemps.A.temp,
+    retryTemperature: synthTemps.A.retry,
+    fallbackClients,
+  });
+  console.log(`  → Synthesis Pass B — Parts V-VIII (gpt-oss-120b, T=${synthTemps.B.temp})...`);
+  passB = await generateMarkdownPass({
+    label: 'Pass B',
+    firstHeader: '## Part V — Wealth & Money',
+    cachePath: synthBCachePath,
+    useCache,
+    model: SYNTH_MODEL,
+    client: nvidia,
+    systemPrompt: synthesisSystemPrompt,
+    userPrompt: synthesisPromptB(cfg.subject, aletheios, pichet, chartSummary, {}, passA),
+    authoritativeMoon: chartSummary.authoritative_moon,
+    authoritativeFacts: chartSummary.authoritative_facts,
+    temperature: synthTemps.B.temp,
+    retryTemperature: synthTemps.B.retry,
+    fallbackClients,
+  });
+  console.log(`  → Synthesis Pass C — Parts IX-XI (gpt-oss-120b, T=${synthTemps.C.temp})...`);
+  passC = await generateMarkdownPass({
+    label: 'Pass C',
+    firstHeader: '## Part IX — The Master Timeline',
+    cachePath: synthCCachePath,
+    useCache,
+    model: SYNTH_MODEL,
+    client: nvidia,
+    systemPrompt: synthesisSystemPrompt,
+    userPrompt: synthesisPromptC(cfg.subject, aletheios, pichet, chartSummary, {}, passA, passB),
+    authoritativeMoon: chartSummary.authoritative_moon,
+    authoritativeFacts: chartSummary.authoritative_facts,
+    temperature: synthTemps.C.temp,
+    retryTemperature: synthTemps.C.retry,
+    fallbackClients,
+  });
   const fullSynthesis = passA.trimEnd() + '\n\n' + passB.trim() + '\n\n' + passC.trimStart();
   await writeFile(join(runDir, `06_synthesis_${slug}.md`), fullSynthesis);
   const wordCount = fullSynthesis.split(/\s+/).filter(Boolean).length;

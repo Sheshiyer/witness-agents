@@ -1,21 +1,24 @@
 #!/usr/bin/env node --import tsx
 // ─── /integratedreading — Unified Mode Orchestrator ────────────────────
-// Single runner for all reading modes: composite-dyad, composite-triad,
-// partner-synastry, business-partners, family-penta, team-synergy.
+// Single runner for all reading modes including the new default:
+//   solo-integrated (1 subject, 5-systems convergence — the Selemene default)
+//   partner-synastry, business-partners, composite-triad, family-penta, team-synergy, etc.
 //
 // Mode-specific knowledge lives in scripts/integratedreading/modes/<mode>.md
 // (per docs/plans/2026-05-14-reading-modes-design.md § Section 1).
 //
 // CLI:
 //   node --import tsx scripts/integratedreading-mode.ts \
-//     --mode <name> \
-//     --subjects-dir <path>         # contains 01_*.json, 02_*.json, ... (lexical order)
-//     --output-dir <path>
+//     --subjects-dir <path>         # dir or single .json file
+//     --output-dir <path> \
+//     [--mode <name> | --auto]      # --auto (or --mode auto) selects solo-integrated for 1 subject, partner-synastry for romantic dyad, etc.
 //     [--use-cache]                 # reuse most recent prior .runs/ subdir
 //     [--skip-solos]                # don't auto-chain solo synthesis
 //     [--dry-run]                   # parse + validate + print plan, no API calls
 //
-// Closes #38 (P1.1).
+// --auto makes the integrated 5-systems pipeline the default process (see INTEGRATED_5SYSTEMS_GAP_ANALYSIS.md).
+//
+// Closes #38 (P1.1) + 5-systems default wiring.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -32,6 +35,12 @@ import {
   type PassSpec,
   type RegisterBand,
 } from './integratedreading/modes/parser.js';
+import { moonRashiFromPanchanga } from './integratedreading/selemene/mapper.js';
+import {
+  fetchAllEngines,
+  loadSelemeneKey,
+  type SelemeneEngineOutput,
+} from './integratedreading/selemene/fetcher.js';
 import { resolveLevel, type ConsciousnessLevel } from './integratedreading/level-resolver.js';
 import { composeLexiconBlock, KNOWN_ENGINE_IDS } from './integratedreading/engine-lexicons-parser.js';
 import { renderByTopology } from './integratedreading/render/svg/index.js';
@@ -48,7 +57,9 @@ import {
   KOSHA_GRAMMAR,
   DYADIC_LOOP,
 } from './integratedreading/system-prompts.js';
-import { NvidiaClient } from './integratedreading/nvidia-client.js';
+// LlmClient is a drop-in replacement for NvidiaClient with full fallback chain:
+// NIM → Ollama (local or gateway) → OpenRouter. Honors LLM_PROVIDER=auto|nim|ollama|openrouter.
+import { LlmClient as NvidiaClient } from './integratedreading/llm-client.js';
 import {
   SYNTH_MODELS,
   findOrCreateCachedRunDir,
@@ -60,12 +71,13 @@ import {
 // ────────────────────────────────────────────────────────────────────────
 
 interface CliArgs {
-  mode: string;
+  mode: string | undefined;
   subjectsDir: string;
   outputDir: string;
   useCache: boolean;
   skipSolos: boolean;
   dryRun: boolean;
+  auto: boolean;
   /**
    * Admin/CLI override of the user's stored consciousness_level (1-5).
    * From CLI we treat the runner as admin by convention — this is the
@@ -87,9 +99,10 @@ function parseArgs(argv: string[]): CliArgs {
   const subjectsDir = getFlag('subjects-dir');
   const outputDir = getFlag('output-dir');
   const rawLevel = getFlag('level');
+  const auto = hasFlag('auto') || mode === 'auto';
 
-  if (!mode || !subjectsDir || !outputDir) {
-    console.error('Usage: integratedreading-mode.ts --mode <name> --subjects-dir <path> --output-dir <path> [--use-cache] [--skip-solos] [--dry-run] [--level 1-5]');
+  if ((!mode && !auto) || !subjectsDir || !outputDir) {
+    console.error('Usage: integratedreading-mode.ts --subjects-dir <path> --output-dir <path> [--mode <name> | --auto] [--use-cache] [--skip-solos] [--dry-run] [--level 1-5]');
     process.exit(1);
   }
 
@@ -104,12 +117,13 @@ function parseArgs(argv: string[]): CliArgs {
   }
 
   return {
-    mode,
-    subjectsDir: resolve(subjectsDir),
-    outputDir: resolve(outputDir),
+    mode: mode || undefined,
+    subjectsDir,
+    outputDir,
     useCache: hasFlag('use-cache'),
     skipSolos: hasFlag('skip-solos'),
     dryRun: hasFlag('dry-run'),
+    auto,
     level,
   };
 }
@@ -187,6 +201,483 @@ function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 }
 
+interface AuthoritativeMoon {
+  rashi: string;
+  nakshatra?: string;
+  longitude?: number;
+  source: 'solo-cache' | 'live-panchanga';
+}
+
+interface AuthoritativeFacts {
+  lagna?: string;
+  moon?: {
+    rashi: string;
+    nakshatra?: string;
+    longitude?: number;
+  };
+  sun?: {
+    rashi: string;
+  };
+  atmakaraka?: string;
+  current_mahadasha?: string;
+  next_mahadasha?: string;
+  // NEW multi-system (sourced from Selemene engines: human-design, gene-keys, numerology, vimshottari)
+  human_design?: {
+    profile?: string;
+    hd_type?: string;
+    authority?: string;
+    definition?: string;
+  };
+  gene_keys?: {
+    lifes_work?: [number, number];
+    evolution?: [number, number];
+    radiance?: [number, number];
+    purpose?: [number, number];
+  };
+  numerology?: {
+    life_path?: number;
+    expression?: number;
+    soul_urge?: number;
+    personality?: number;
+  };
+  vimshottari?: {
+    current_mahadasha?: string;
+    current_antardasha?: string;
+    current_pratyantardasha?: string;
+    birth_nakshatra?: string;
+  };
+}
+
+interface PassClientOption {
+  name: string;
+  client: NvidiaClient;
+}
+
+const STRUCTURED_OUTPUT_ONLY_RULES = [
+  'FINAL OUTPUT ONLY — NO META COMMENTARY:',
+  'Return ONLY the final user-facing reading content for this pass.',
+  'NEVER output: planning notes, scratchpad, calculations, uncertainty, meta commentary, or self-corrections.',
+  'FORBIDDEN anywhere in output (including implied reasoning):',
+  '  - "The user wants", "Wait,", "I need to", "Let\'s", "Now, let\'s"',
+  '  - "Key requirements", "Key constraints", "Structure required", "Chart facts to respect"',
+  '  - "Need a table", "Word count:", "Given the lack of"',
+  '  - Any sentence starting with "First," or "Step 1:" describing your own process',
+  'If a chart fact is uncertain, STATE THE LOCKED FACT VERBATIM rather than reasoning about it.',
+].join('\n');
+
+const META_LEAKAGE_PATTERNS: RegExp[] = [
+  /(^|\n)The user wants\b/i,
+  /(^|\n)Key requirements\b/i,
+  /(^|\n)Key constraints\b/i,
+  /(^|\n)Wait,\s/i,
+  /(^|\n)I need to\b/i,
+  /(^|\n)Let'?s\b/i,
+  /(^|\n)Need a table\b/i,
+  /(^|\n)Structure required:?\b/i,
+  /(^|\n)Chart facts to respect:?\b/i,
+  /(^|\n)Word count:\s*\d/i,
+  /(^|\n)Now, let'?s\b/i,
+  /(^|\n)Given the lack of specific planetary placements/i,
+];
+
+function detectMetaLeakage(markdown: string): string | undefined {
+  const match = META_LEAKAGE_PATTERNS.find((pattern) => pattern.test(markdown));
+  return match ? `meta scratchpad leaked (${match})` : undefined;
+}
+
+function detectMoonPollution(markdown: string, moon?: AuthoritativeMoon): string | undefined {
+  if (!moon) return undefined;
+  const badSigns = ['Karka', 'Cancer', 'Vrishabha', 'Taurus'].filter((sign) => sign !== moon.rashi);
+  const moonPatterns = [
+    // Direct assignment only: "Moon is in Karka" or "Chandra placed in Cancer"
+    new RegExp(`\\b(?:moon|chandra)\\s+(?:in|is|as|falls\\s+in|placed\\s+in|rests\\s+in|occupies)\\s+(?:${badSigns.join('|')})\\b`, 'i'),
+    // Reversed: "Karka Moon" or "Cancer chandra"
+    new RegExp(`\\b(?:${badSigns.join('|')})\\s+(?:moon|chandra)\\b`, 'i'),
+    // NOTE: Removed gap-based regex that caused false positives in synastry
+    // when discussing partner's chart in same passage
+  ];
+  const match = moonPatterns.find((pattern) => pattern.test(markdown));
+  return match ? `Moon-sign pollution detected (${match})` : undefined;
+}
+
+function detectFactContradiction(markdown: string, facts?: AuthoritativeFacts): string | undefined {
+  if (!facts) return undefined;
+  const text = markdown;
+
+  if (facts.moon?.rashi) {
+    const badMoon = ['Karka', 'Cancer', 'Vrishabha', 'Taurus'].filter((sign) => sign !== facts.moon!.rashi);
+    const moonPats = [
+      // Direct assignment only — avoid false positives in synastry where partner's chart is discussed
+      new RegExp(`\\b(?:moon|chandra)\\s+(?:in|is|as|falls\\s+in|placed\\s+in|rests\\s+in|occupies)\\s+(?:${badMoon.join('|')})\\b`, 'i'),
+      new RegExp(`\\b(?:${badMoon.join('|')})\\s+(?:moon|chandra)\\b`, 'i'),
+    ];
+    if (moonPats.some((p) => p.test(text))) return `explicit Moon rashi contradiction (not ${facts.moon.rashi})`;
+  }
+
+  if (facts.lagna) {
+    const otherLagnas = ['Mesha','Aries','Vrishabha','Taurus','Mithuna','Gemini','Karka','Cancer','Simha','Leo','Tula','Libra','Vrishchika','Scorpio','Dhanu','Sagittarius','Makara','Capricorn','Kumbha','Aquarius','Meena','Pisces']
+      .filter((s) => !facts.lagna!.toLowerCase().includes(s.toLowerCase().slice(0, 3)));
+    if (otherLagnas.length > 0) {
+      const lagnaPat = new RegExp(`\\b(?:lagna|rising|ascendant|asc)\\s+(?:in|is|as|falls in|placed in)\\s+(?:${otherLagnas.join('|')})\\b`, 'i');
+      if (lagnaPat.test(text)) return `explicit Lagna contradiction (not ${facts.lagna})`;
+    }
+  }
+
+  if (facts.sun?.rashi) {
+    const badSun = ['Mesha','Aries','Vrishabha','Taurus','Mithuna','Gemini','Karka','Cancer','Simha','Leo','Kanya','Virgo','Tula','Libra','Vrishchika','Scorpio','Dhanu','Sagittarius','Makara','Capricorn','Kumbha','Aquarius','Meena','Pisces']
+      .filter((s) => s.toLowerCase() !== facts.sun!.rashi.toLowerCase());
+    if (badSun.length) {
+      const sunPat = new RegExp(`\\b(?:sun|surya)\\s+(?:in|is|as|falls in|placed in|occupies|rashi)\\s+(?:${badSun.join('|')})\\b`, 'i');
+      if (sunPat.test(text)) return `explicit Sun rashi contradiction (not ${facts.sun.rashi})`;
+    }
+  }
+
+  if (facts.atmakaraka) {
+    const wrongAK = new RegExp(`\\batmakaraka\\b[^.\\n]{0,30}\\b(?:is|in|as)\\s+(?!${facts.atmakaraka})`, 'i');
+    if (wrongAK.test(text)) return `explicit Atmakaraka contradiction (not ${facts.atmakaraka})`;
+  }
+
+  if (facts.current_mahadasha) {
+    const badMD = ['Surya','Sun','Chandra','Moon','Mangal','Mars','Budha','Mercury','Guru','Jupiter','Shukra','Venus','Shani','Saturn','Rahu','Ketu']
+      .filter((p) => p.toLowerCase() !== facts.current_mahadasha!.toLowerCase());
+    if (badMD.length) {
+      const patterns = [
+        new RegExp(`\\b(?:current\\s+)?mahadasha\\s+(?:of|is|lord)\\s+(${badMD.join("|")})\\b`, "i"),
+        new RegExp(`\\b(${badMD.join("|")})\\s+mahadasha\\b`, "i"),
+      ];
+      if (patterns.some(p => p.test(text))) return `explicit current Mahadasha contradiction (not ${facts.current_mahadasha})`;
+    }
+  }
+
+  // NEW: Human Design profile / type / authority / definition (explicit only)
+  if (facts.human_design) {
+    const h = facts.human_design;
+    if (h.profile) {
+      const wrongProfiles = ['1/3','1/4','2/4','2/5','3/5','3/6','4/6','4/1','5/1','5/2','6/2','6/3'].filter(p => p !== h.profile);
+      const profPat = new RegExp(`\\b(?:profile|hd profile|human design profile)\\b[^.]{0,30}\\b(?:${wrongProfiles.join('|')})\\b`, 'i');
+      if (profPat.test(text)) return `explicit HD profile contradiction (not ${h.profile})`;
+    }
+    if (h.hd_type) {
+      const wrongTypes = ['Manifestor','Generator','Manifesting Generator','Projector','Reflector'].filter(t => !h.hd_type!.toLowerCase().includes(t.toLowerCase().slice(0,4)));
+      if (wrongTypes.length) {
+        const typePat = new RegExp(`\\b(?:type|hd type|human design type)\\b[^.]{0,30}\\b(?:${wrongTypes.join('|')})\\b`, 'i');
+        if (typePat.test(text)) return `explicit HD type contradiction (not ${h.hd_type})`;
+      }
+    }
+    if (h.authority) {
+      const wrongAuth = ['Emotional','Sacral','Splenic','Ego','Self','Lunar','Mental','None'].filter(a => a.toLowerCase() !== h.authority!.toLowerCase());
+      const authPat = new RegExp(`\\b(?:authority|emotional authority|authority is)\\b[^.]{0,30}\\b(?:${wrongAuth.join('|')})\\b`, 'i');
+      if (authPat.test(text)) return `explicit HD authority contradiction (not ${h.authority})`;
+    }
+  }
+
+  // NEW: Gene Keys activation sequence (explicit main ones)
+  // IMPORTANT: Only match when the specific sequence name is mentioned, not generic "gene key"
+  if (facts.gene_keys) {
+    const g = facts.gene_keys;
+    const checkGK = (label: string, pair?: [number, number]) => {
+      if (!pair) return undefined;
+      const [a, b] = pair;
+      // Only trigger on explicit "[Label] is/has/= [wrong number]" patterns
+      const labelVariants = label.toLowerCase().replace(/'/g, "'?").replace(/\s+/g, "\\s*");
+      const pat = new RegExp(`\\b${labelVariants}\\b[^.\\n]{0,20}\\b(\\d+)(?:[/,\\s]+(\\d+))?\\b`, 'i');
+      const match = text.match(pat);
+      if (match) {
+        const n1 = parseInt(match[1], 10);
+        const n2 = match[2] ? parseInt(match[2], 10) : undefined;
+        if (n2 !== undefined) {
+          const isCorrect = (n1 === a && n2 === b) || (n1 === b && n2 === a);
+          if (!isCorrect) return `explicit Gene Key ${label} contradiction (not ${a}/${b})`;
+        } else {
+          if (n1 !== a && n1 !== b) return `explicit Gene Key ${label} contradiction (not ${a}/${b})`;
+        }
+      }
+      return undefined;
+    };
+    const res1 = checkGK("Life's Work", g.lifes_work); if (res1) return res1;
+    const res2 = checkGK("Evolution", g.evolution); if (res2) return res2;
+    const res3 = checkGK("Radiance", g.radiance); if (res3) return res3;
+    const res4 = checkGK("Purpose", g.purpose); if (res4) return res4;
+  }
+
+  // NEW: Numerology core numbers (explicit)
+  if (facts.numerology) {
+    const n = facts.numerology;
+    const numChecks: Array<[string, number | undefined]> = [
+      ["life path", n.life_path],
+      ["expression", n.expression],
+      ["soul urge", n.soul_urge],
+      ["personality", n.personality],
+    ];
+    for (const [label, val] of numChecks) {
+      if (!val) continue;
+      const wrong = Array.from({length:33}, (_,i)=>i+1).filter(v => v !== val);
+      const pat = new RegExp(`\\b(?:${label})\\b[^.]{0,30}\\b(?:${wrong.join("|")})\\b`, "i");
+      if (pat.test(text)) return `explicit Numerology ${label} contradiction (not ${val})`;
+    }
+  }
+
+  // NEW: Vimshottari sub-periods (explicit lord)
+  // IMPORTANT: Only match direct assignments, not comma-separated lists
+  if (facts.vimshottari) {
+    const v = facts.vimshottari;
+    const lords = ["Surya","Sun","Chandra","Moon","Mangal","Mars","Budha","Mercury","Guru","Jupiter","Shukra","Venus","Shani","Saturn","Rahu","Ketu"];
+    if (v.current_antardasha) {
+      const bad = lords.filter(p => p.toLowerCase() !== v.current_antardasha!.toLowerCase());
+      const patterns = [
+        new RegExp(`\\b(?:antardasha|sub.?dasha)\\s+(?:of|is)\\s+(${bad.join("|")})\\b`, "i"),
+        new RegExp(`\\b(${bad.join("|")})\\s+(?:antardasha|sub.?dasha)\\b`, "i"),
+      ];
+      if (patterns.some(p => p.test(text))) return `explicit Antardasha contradiction (not ${v.current_antardasha})`;
+    }
+    if (v.current_pratyantardasha) {
+      const bad = lords.filter(p => p.toLowerCase() !== v.current_pratyantardasha!.toLowerCase());
+      const patterns = [
+        new RegExp(`\\b(?:pratyantardasha|praty.?antardasha)\\s+(?:of|is)\\s+(${bad.join("|")})\\b`, "i"),
+        new RegExp(`\\b(${bad.join("|")})\\s+(?:pratyantardasha|praty.?antardasha)\\b`, "i"),
+      ];
+      if (patterns.some(p => p.test(text))) return `explicit Pratyantardasha contradiction (not ${v.current_pratyantardasha})`;
+    }
+  }
+
+  return undefined;
+}
+
+function validatePassDraft(markdown: string, soloRuns: SoloRun[]): string | undefined {
+  const metaLeak = detectMetaLeakage(markdown);
+  if (metaLeak) return metaLeak;
+  for (const run of soloRuns) {
+    // In multi-subject modes (synastry, etc.), filter out text about OTHER subjects
+    // to avoid false positives when partner's chart is discussed in same pass
+    const otherSubjects = soloRuns
+      .filter((r) => r.slug !== run.slug)
+      .map((r) => r.subject);
+    const relevantText = extractSubjectRelevantText(markdown, run.subject, otherSubjects);
+    
+    const moonIssue = detectMoonPollution(relevantText, run.authoritativeMoon);
+    if (moonIssue) return moonIssue;
+    const factIssue = detectFactContradiction(relevantText, run.authoritativeFacts);
+    if (factIssue) return factIssue;
+  }
+  return undefined;
+}
+
+/** Extract text relevant to a specific subject, excluding paragraphs about other subjects.
+ *  Uses simple heuristics: paragraphs mentioning other subject names are excluded.
+ */
+function extractSubjectRelevantText(markdown: string, subject: string, otherSubjects: string[]): string {
+  if (otherSubjects.length === 0) return markdown;
+  
+  const paragraphs = markdown.split(/\n\n+/);
+  const otherNames = otherSubjects.flatMap((s) => {
+    const parts = s.split(/\s+/);
+    return [s, ...parts.filter((p) => p.length > 3)]; // include full name and significant parts
+  });
+  
+  return paragraphs
+    .filter((para) => {
+      // Keep paragraph if it mentions current subject OR doesn't mention any other subject
+      const mentionsCurrent = para.toLowerCase().includes(subject.toLowerCase().slice(0, 10));
+      const mentionsOther = otherNames.some((name) => 
+        para.toLowerCase().includes(name.toLowerCase().slice(0, Math.min(name.length, 15)))
+      );
+      return mentionsCurrent || !mentionsOther;
+    })
+    .join('\n\n');
+}
+
+function readPanchangaFromSoloCache(synthesisPath: string, slug: string): any | undefined {
+  const selemenePath = join(dirname(synthesisPath), `01_selemene_${slug}.json`);
+  if (!existsSync(selemenePath)) return undefined;
+  try {
+    const outputs = JSON.parse(readFileSync(selemenePath, 'utf-8')) as SelemeneEngineOutput[];
+    return outputs.find((o) => o.engine_id === 'panchanga' && o.result && !o._error)?.result;
+  } catch {
+    return undefined;
+  }
+}
+
+async function fetchPanchangaForSubject(cfg: SubjectConfig): Promise<any | undefined> {
+  if (!cfg.birth_date) return undefined;
+  const selemeneKey = await loadSelemeneKey();
+  if (!selemeneKey) return undefined;
+  const [panchanga] = await fetchAllEngines({
+    date: cfg.birth_date,
+    time: cfg.birth_time,
+    timezone: cfg.timezone ?? 'Asia/Kolkata',
+    latitude: cfg.latitude,
+    longitude: cfg.longitude,
+    name: cfg.subject,
+  }, {
+    api_key: selemeneKey,
+    engines: ['panchanga'],
+  });
+  if (!panchanga || panchanga._error) return undefined;
+  return panchanga.result;
+}
+
+async function resolveAuthoritativeMoon(cfg: SubjectConfig, slug: string, synthesisPath: string): Promise<AuthoritativeMoon | undefined> {
+  const cached = moonRashiFromPanchanga(readPanchangaFromSoloCache(synthesisPath, slug));
+  if (cached.rashi !== 'UNKNOWN') return { ...cached, source: 'solo-cache' };
+
+  const live = moonRashiFromPanchanga(await fetchPanchangaForSubject(cfg));
+  if (live.rashi !== 'UNKNOWN') return { ...live, source: 'live-panchanga' };
+
+  return undefined;
+}
+
+function assertMoonIntegrity(cfg: SubjectConfig, run: SoloRun): void {
+  if (run.slug !== 'vandana-g') return;
+  if (!run.authoritativeMoon) {
+    throw new Error(
+      `Unable to resolve authoritative Moon rashi for ${cfg.subject}; refusing to trust cached synthesis ${run.synthesisPath}`,
+    );
+  }
+  if (run.authoritativeMoon.rashi !== 'Kanya') {
+    throw new Error(
+      `Authoritative Moon rashi mismatch for ${cfg.subject}: expected Kanya, got ${run.authoritativeMoon.rashi}`,
+    );
+  }
+
+  const pollutionPatterns = [
+    /\b(?:moon|chandra)[^.\n]{0,80}\b(?:karka|cancer|vrishabha|taurus)\b/i,
+    /\b(?:karka|cancer|vrishabha|taurus)\b[^.\n]{0,80}\b(?:moon|chandra)\b/i,
+    /\b(?:moon|chandra)\s+(?:in|as|is|falls in)\s+(?:karka|cancer|vrishabha|taurus)\b/i,
+  ];
+  if (pollutionPatterns.some((pattern) => pattern.test(run.synthesis))) {
+    throw new Error(
+      `Detected polluted Moon-rashi cache for ${cfg.subject} in ${run.synthesisPath}; delete the cached solo run and rerun with authoritative panchanga.`,
+    );
+  }
+}
+
+function buildAuthoritativeMoonMandates(soloRuns: SoloRun[]): string {
+  return soloRuns
+    .filter((run) => run.authoritativeMoon)
+    .map((run) => {
+      const moon = run.authoritativeMoon!;
+      const degree = typeof moon.longitude === 'number' ? ` @ ${moon.longitude.toFixed(3)}°` : '';
+      const nakshatra = moon.nakshatra ? ` (Nakshatra ${moon.nakshatra})` : '';
+      return `AUTHORITATIVE ${run.subject} Moon rashi: ${moon.rashi}${degree}${nakshatra}. Treat this as fixed chart truth and reject any contrary Moon-sign inference.`;
+    })
+    .join('\n');
+}
+
+async function resolveAuthoritativeFacts(cfg: SubjectConfig, slug: string, synthesisPath: string): Promise<AuthoritativeFacts | undefined> {
+  // Prefer the selemene json sibling to the synthesis (now loads full engines for multi-system facts)
+  const selemenePath = join(dirname(synthesisPath), `01_selemene_${slug}.json`);
+  let outputs: any[] = [];
+  let panchanga: any | undefined;
+  if (existsSync(selemenePath)) {
+    try {
+      outputs = JSON.parse(readFileSync(selemenePath, 'utf-8')) as any[];
+      panchanga = outputs.find((o: any) => o.engine_id === 'panchanga' && o.result && !o._error)?.result;
+    } catch {}
+  }
+  if ((!panchanga || outputs.length < 5) && cfg.birth_date) {
+    // live fallback for the relevant engines (panchanga + the 4 new + vim)
+    const selemeneKey = await loadSelemeneKey();
+    if (selemeneKey) {
+      outputs = await fetchAllEngines({
+        date: cfg.birth_date,
+        time: cfg.birth_time,
+        timezone: cfg.timezone ?? 'Asia/Kolkata',
+        latitude: cfg.latitude,
+        longitude: cfg.longitude,
+        name: cfg.subject,
+      }, { api_key: selemeneKey, engines: ['panchanga', 'human-design', 'gene-keys', 'numerology', 'vimshottari'] });
+      panchanga = outputs.find((o: any) => o.engine_id === 'panchanga' && o.result && !o._error)?.result;
+    }
+  }
+
+  const moon = moonRashiFromPanchanga(panchanga);
+
+  // Extract new systems from outputs (cache or live)
+  const hd = outputs.find((o: any) => o.engine_id === 'human-design' && o.result && !o._error)?.result;
+  const gk = outputs.find((o: any) => o.engine_id === 'gene-keys' && o.result && !o._error)?.result;
+  const num = outputs.find((o: any) => o.engine_id === 'numerology' && o.result && !o._error)?.result;
+  const vim = outputs.find((o: any) => o.engine_id === 'vimshottari' && o.result && !o._error)?.result;
+  const act = gk?.activation_sequence || {};
+  const cur = vim?.current_period || {};
+  const birthNak = vim?.birth_nakshatra?.name;
+
+  const facts: AuthoritativeFacts = {
+    lagna: cfg.lagna || panchanga?.lagna || panchanga?.ascendant,
+    moon: moon.rashi !== 'UNKNOWN' ? { rashi: moon.rashi, nakshatra: moon.nakshatra, longitude: moon.longitude } : undefined,
+    sun: (cfg as any).sun_rashi || panchanga?.sun_rashi ? { rashi: (cfg as any).sun_rashi || panchanga?.sun_rashi } : undefined,
+    atmakaraka: cfg.atmakaraka || panchanga?.atmakaraka,
+    current_mahadasha: cfg.mahadasha?.current_lord || panchanga?.mahadasha?.current_lord || cur.mahadasha?.planet,
+    next_mahadasha: cfg.mahadasha?.next_lord || panchanga?.mahadasha?.next_lord,
+    // NEW multi-system
+    human_design: (hd?.profile || hd?.hd_type || hd?.authority || hd?.definition || (cfg as any).hd_profile) ? {
+      profile: hd?.profile || (cfg as any).hd_profile,
+      hd_type: hd?.hd_type || hd?.type,
+      authority: hd?.authority,
+      definition: hd?.definition,
+    } : undefined,
+    gene_keys: (act.lifes_work || act.evolution || act.radiance || act.purpose) ? {
+      lifes_work: act.lifes_work,
+      evolution: act.evolution,
+      radiance: act.radiance,
+      purpose: act.purpose,
+    } : undefined,
+    numerology: num ? {
+      life_path: num.life_path?.value,
+      expression: num.expression?.value,
+      soul_urge: num.soul_urge?.value,
+      personality: num.personality?.value,
+    } : undefined,
+    vimshottari: (cur.mahadasha || cur.antardasha || cur.pratyantardasha || birthNak) ? {
+      current_mahadasha: cur.mahadasha?.planet,
+      current_antardasha: cur.antardasha?.planet,
+      current_pratyantardasha: cur.pratyantardasha?.planet,
+      birth_nakshatra: birthNak,
+    } : undefined,
+  };
+  return (facts.lagna || facts.moon || facts.atmakaraka || facts.current_mahadasha || facts.human_design || facts.gene_keys || facts.numerology || facts.vimshottari) ? facts : undefined;
+}
+
+function buildAuthoritativeFactsMandates(soloRuns: SoloRun[]): string {
+  const blocks = soloRuns
+    .filter((run) => run.authoritativeFacts)
+    .map((run) => {
+      const f = run.authoritativeFacts!;
+      const lines: string[] = [];
+      lines.push(`════════════════════════════════════════════════════════════════════════`);
+      lines.push(`CRITICAL AUTHORITATIVE FACTS FOR ${run.subject} — MANDATORY COMPLIANCE`);
+      lines.push(`════════════════════════════════════════════════════════════════════════`);
+      lines.push(`STOP. Read these facts FIRST. They are LOCKED and CANNOT be changed.`);
+      lines.push(``);
+      if (f.lagna) lines.push(`• Lagna: ${f.lagna} ← LOCKED`);
+      if (f.moon) {
+        const deg = typeof f.moon.longitude === 'number' ? ` @ ${f.moon.longitude.toFixed(3)}°` : '';
+        const nak = f.moon.nakshatra ? ` (${f.moon.nakshatra})` : '';
+        lines.push(`• Moon: ${f.moon.rashi}${deg}${nak} ← LOCKED`);
+      }
+      if (f.sun) lines.push(`• Sun: ${f.sun.rashi} ← LOCKED`);
+      if (f.atmakaraka) lines.push(`• Atmakaraka: ${f.atmakaraka} ← LOCKED`);
+      if (f.current_mahadasha) lines.push(`• Current Mahadasha: ${f.current_mahadasha} ← LOCKED`);
+      // Multi-system facts
+      if (f.human_design) {
+        const h = f.human_design;
+        const p: string[] = [];
+        if (h.profile) p.push(`Profile ${h.profile}`);
+        if (h.hd_type) p.push(h.hd_type);
+        if (h.authority) p.push(`${h.authority} Authority`);
+        if (p.length) lines.push(`• Human Design: ${p.join(', ')} ← LOCKED`);
+      }
+      if (f.gene_keys?.lifes_work) lines.push(`• Gene Keys Life's Work: ${f.gene_keys.lifes_work.join('/')} ← LOCKED`);
+      if (f.gene_keys?.evolution) lines.push(`• Gene Keys Evolution: ${f.gene_keys.evolution.join('/')} ← LOCKED`);
+      if (f.numerology?.life_path) lines.push(`• Numerology Life Path: ${f.numerology.life_path} ← LOCKED`);
+      if (f.vimshottari?.current_antardasha) lines.push(`• Vimshottari Antardasha: ${f.vimshottari.current_antardasha} ← LOCKED`);
+      lines.push(``);
+      lines.push(`DO NOT contradict these facts. Any draft that does will be REJECTED.`);
+      lines.push(`════════════════════════════════════════════════════════════════════════`);
+      return lines.join('\n');
+    });
+  return blocks.join('\n\n');
+}
+
 // ────────────────────────────────────────────────────────────────────────
 // Solo synthesis lookup + auto-chain
 // ────────────────────────────────────────────────────────────────────────
@@ -211,6 +702,8 @@ interface SoloRun {
   slug: string;
   synthesisPath: string;
   synthesis: string;
+  authoritativeMoon?: AuthoritativeMoon;
+  authoritativeFacts?: AuthoritativeFacts;
 }
 
 async function chainSolo(cfg: SubjectConfig, cfgFilePath: string): Promise<void> {
@@ -273,6 +766,14 @@ async function ensureSolos(
       };
     }
   }
+
+  await Promise.all(subjects.map(async (cfg, i) => {
+    const run = existing[i];
+    if (!run) return;
+    run.authoritativeMoon = await resolveAuthoritativeMoon(cfg, run.slug, run.synthesisPath);
+    run.authoritativeFacts = await resolveAuthoritativeFacts(cfg, run.slug, run.synthesisPath);
+    assertMoonIntegrity(cfg, run);
+  }));
 
   return existing as SoloRun[];
 }
@@ -353,6 +854,7 @@ async function executePass(
   soloRuns: SoloRun[],
   register: RegisterBand,
   lexiconBlock: string,
+  fallbackClients: PassClientOption[],
 ): Promise<PassResult> {
   // Resolve per-register pass template. If the mode doc declares a
   // register_variants override for this pass+register, use that template;
@@ -378,6 +880,23 @@ async function executePass(
       soloRuns.map((s) => `### ${s.subject.toUpperCase()}\n${s.synthesis.slice(0, 14000)}`).join('\n\n')
     : '';
 
+  // Build a concise facts reminder to append at the END of the user prompt (recency effect)
+  const factsReminder = soloRuns
+    .filter((s) => s.authoritativeFacts)
+    .map((s) => {
+      const f = s.authoritativeFacts!;
+      const items: string[] = [];
+      if (f.lagna) items.push(`Lagna: ${f.lagna}`);
+      if (f.moon?.rashi) items.push(`Moon: ${f.moon.rashi}`);
+      if (f.sun?.rashi) items.push(`Sun: ${f.sun.rashi}`);
+      if (f.atmakaraka) items.push(`AK: ${f.atmakaraka}`);
+      if (f.vimshottari?.current_mahadasha) items.push(`MD: ${f.vimshottari.current_mahadasha}`);
+      if (f.human_design?.profile) items.push(`HD: ${f.human_design.profile}`);
+      return `${s.subject}: ${items.join(' · ')}`;
+    })
+    .join('\n');
+  const factsBlock = factsReminder ? `\n\n---\nLOCKED FACTS — State ONLY these values:\n${factsReminder}` : '';
+
   // For L1-L3 register, prefer the traditional Vedic register guidance.
   // For L4-L5, use the framework-native ANATOMIST_PERSONA + KOSHA_GRAMMAR
   // + DYADIC_LOOP block. Both registers still receive the mode's overlay
@@ -398,34 +917,76 @@ anti-dependency telos. Stay in the practical, age-ranged, honest-prediction
 register.`
     : `${ANATOMIST_PERSONA}\n\n${KOSHA_GRAMMAR}\n\n${DYADIC_LOOP}`;
 
-  const system = `${registerHeader}\n\n` +
+  // CRITICAL: Bridge mandates (containing authoritative facts) FIRST so LLM sees them before persona/rules
+  const system = `## MANDATORY FACTS — READ FIRST\n\n${ctx.bridge_mandates}\n\n` +
+    `${registerHeader}\n\n` +
     (ctx.lessons_summary ? `${ctx.lessons_summary}\n\n` : '') +
-    `## Mode Overlay Rules\n\n${ctx.overlay_summary}\n\n## Bridge Mandates\n\n${ctx.bridge_mandates}` +
+    `## Mode Overlay Rules\n\n${ctx.overlay_summary}` +
     (lexiconBlock ? `\n\n${lexiconBlock}` : '');
 
   const model = pass.model ?? SYNTH_MODELS.PRIMARY;
-  const result = await client.callWithRetry({
-    model,
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: userPrompt + soloContext },
-    ],
-    max_tokens: 8192,
-    temperature: 0.5,
-    timeout_ms: 360_000,
-  }, 1);
+  let lastIssue = '';
+  let lastOutput = '';
+  const passClients: PassClientOption[] = [
+    { name: 'primary', client },
+    ...fallbackClients,
+  ];
 
-  const content = result.content;
-  const words = content.split(/\s+/).filter(Boolean).length;
-  const xrefs = countCrossRefs(content).total;
+  for (const passClient of passClients) {
+    const attempts = passClient.name === 'primary' ? 2 : 1;
+    if (passClient.name !== 'primary') {
+      console.log(`      ↻ ${pass.id} retrying via ${passClient.name}`);
+    }
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      const retryHint = attempt === 1
+        ? ''
+        : `CORRECTION: previous draft failed validation because ${lastIssue}. Return only the final pass content with no planning text or speculative reasoning that contradicts authoritative facts (lagna, moon, sun, atmakaraka, mahadasha).`;
+      try {
+        const result = await passClient.client.callWithRetry({
+          model,
+          messages: [
+            { role: 'system', content: [system, STRUCTURED_OUTPUT_ONLY_RULES, retryHint].filter(Boolean).join('\n\n') },
+            { role: 'user', content: userPrompt + soloContext + factsBlock },
+          ],
+          max_tokens: 8192,
+          temperature: attempt === 1 ? 0.5 : 0.2,
+          timeout_ms: 360_000,
+        }, 1);
 
+        const content = result.content.trim();
+        const issue = validatePassDraft(content, soloRuns);
+        if (!issue) {
+          const words = content.split(/\s+/).filter(Boolean).length;
+          const xrefs = countCrossRefs(content).total;
+          return {
+            pass,
+            content,
+            words,
+            xrefs,
+            latency_ms: result.latency_ms,
+            model: result.model,
+          };
+        }
+        lastIssue = issue;
+        lastOutput = content;
+        console.log(`      ⚠ ${pass.id} validation failed: ${lastIssue}`);
+      } catch (err: any) {
+        lastIssue = err?.message || String(err);
+        console.log(`      ⚠ ${pass.id} provider ${passClient.name} failed: ${lastIssue}`);
+      }
+    }
+  }
+
+  console.warn(`  ⚠ ${pass.id} validation exhausted all retries — proceeding with last output despite: ${lastIssue}`);
+  const words = lastOutput.split(/\s+/).filter(Boolean).length;
+  const xrefs = countCrossRefs(lastOutput).total;
   return {
     pass,
-    content,
+    content: lastOutput,
     words,
     xrefs,
-    latency_ms: result.latency_ms,
-    model,
+    latency_ms: 0,
+    model: 'fallback',
   };
 }
 
@@ -441,6 +1002,7 @@ async function runLinear(
   runDir: string,
   register: RegisterBand,
   lexiconBlock: string,
+  fallbackClients: PassClientOption[],
 ): Promise<PassResult[]> {
   const results: PassResult[] = [];
   let assembled = '';
@@ -448,12 +1010,16 @@ async function runLinear(
     const cachePath = join(runDir, `pass_${pass.id}.md`);
     if (existsSync(cachePath)) {
       const cached = readFileSync(cachePath, 'utf-8');
-      const words = cached.split(/\s+/).filter(Boolean).length;
-      const xrefs = countCrossRefs(cached).total;
-      console.log(`    ✓ Pass ${pass.id} cached: ${words}w · ${xrefs} xrefs`);
-      results.push({ pass, content: cached, words, xrefs, latency_ms: 0, model: pass.model ?? SYNTH_MODELS.PRIMARY });
-      assembled += '\n\n' + cached;
-      continue;
+      const issue = validatePassDraft(cached, soloRuns);
+      if (!issue) {
+        const words = cached.split(/\s+/).filter(Boolean).length;
+        const xrefs = countCrossRefs(cached).total;
+        console.log(`    ✓ Pass ${pass.id} cached: ${words}w · ${xrefs} xrefs`);
+        results.push({ pass, content: cached, words, xrefs, latency_ms: 0, model: pass.model ?? SYNTH_MODELS.PRIMARY });
+        assembled += '\n\n' + cached;
+        continue;
+      }
+      console.log(`    ⚠ Pass ${pass.id} cache invalid: ${issue}; regenerating`);
     }
     console.log(`    → Pass ${pass.id} (${pass.title})…`);
     const ctx: InterpolationContext = {
@@ -462,7 +1028,7 @@ async function runLinear(
       pass_title: pass.title,
       target_words: String(pass.target_words),
     };
-    const result = await executePass(client, pass, doc, ctx, soloRuns, register, lexiconBlock);
+    const result = await executePass(client, pass, doc, ctx, soloRuns, register, lexiconBlock, fallbackClients);
     await writeFile(cachePath, result.content);
     console.log(`      ${result.latency_ms}ms · ${result.words}w · ${result.xrefs} xrefs (target ${pass.target_words}w, model ${result.model})`);
     results.push(result);
@@ -479,6 +1045,7 @@ async function runHierarchical(
   runDir: string,
   register: RegisterBand,
   lexiconBlock: string,
+  fallbackClients: PassClientOption[],
 ): Promise<PassResult[]> {
   // Hierarchical: first pass is outline; subsequent passes carry it forward.
   const [outlinePass, ...expansions] = doc.frontmatter.pass_plan;
@@ -487,11 +1054,22 @@ async function runHierarchical(
   let outlineResult: PassResult;
   if (existsSync(outlineCachePath)) {
     outlineContent = readFileSync(outlineCachePath, 'utf-8');
-    const words = outlineContent.split(/\s+/).filter(Boolean).length;
-    const xrefs = countCrossRefs(outlineContent).total;
-    console.log(`    ✓ Outline cached: ${words}w · ${xrefs} xrefs`);
-    outlineResult = { pass: outlinePass, content: outlineContent, words, xrefs, latency_ms: 0, model: outlinePass.model ?? SYNTH_MODELS.PRIMARY };
+    const issue = validatePassDraft(outlineContent, soloRuns);
+    if (!issue) {
+      const words = outlineContent.split(/\s+/).filter(Boolean).length;
+      const xrefs = countCrossRefs(outlineContent).total;
+      console.log(`    ✓ Outline cached: ${words}w · ${xrefs} xrefs`);
+      outlineResult = { pass: outlinePass, content: outlineContent, words, xrefs, latency_ms: 0, model: outlinePass.model ?? SYNTH_MODELS.PRIMARY };
+    } else {
+      console.log(`    ⚠ Outline cache invalid: ${issue}; regenerating`);
+      outlineContent = '';
+      outlineResult = undefined as unknown as PassResult;
+    }
   } else {
+    outlineContent = '';
+    outlineResult = undefined as unknown as PassResult;
+  }
+  if (!outlineContent) {
     console.log(`    → Outline pass (${outlinePass.title})…`);
     const ctx: InterpolationContext = {
       ...baseCtx,
@@ -499,7 +1077,7 @@ async function runHierarchical(
       pass_title: outlinePass.title,
       target_words: String(outlinePass.target_words),
     };
-    outlineResult = await executePass(client, outlinePass, doc, ctx, soloRuns, register, lexiconBlock);
+    outlineResult = await executePass(client, outlinePass, doc, ctx, soloRuns, register, lexiconBlock, fallbackClients);
     outlineContent = outlineResult.content;
     await writeFile(outlineCachePath, outlineContent);
     console.log(`      ${outlineResult.latency_ms}ms · ${outlineResult.words}w · ${outlineResult.xrefs} xrefs`);
@@ -511,12 +1089,16 @@ async function runHierarchical(
     const cachePath = join(runDir, `pass_${pass.id}.md`);
     if (existsSync(cachePath)) {
       const cached = readFileSync(cachePath, 'utf-8');
-      const words = cached.split(/\s+/).filter(Boolean).length;
-      const xrefs = countCrossRefs(cached).total;
-      console.log(`    ✓ Pass ${pass.id} cached: ${words}w · ${xrefs} xrefs`);
-      results.push({ pass, content: cached, words, xrefs, latency_ms: 0, model: pass.model ?? SYNTH_MODELS.PRIMARY });
-      assembled += '\n\n' + cached;
-      continue;
+      const issue = validatePassDraft(cached, soloRuns);
+      if (!issue) {
+        const words = cached.split(/\s+/).filter(Boolean).length;
+        const xrefs = countCrossRefs(cached).total;
+        console.log(`    ✓ Pass ${pass.id} cached: ${words}w · ${xrefs} xrefs`);
+        results.push({ pass, content: cached, words, xrefs, latency_ms: 0, model: pass.model ?? SYNTH_MODELS.PRIMARY });
+        assembled += '\n\n' + cached;
+        continue;
+      }
+      console.log(`    ⚠ Pass ${pass.id} cache invalid: ${issue}; regenerating`);
     }
     console.log(`    → Pass ${pass.id} (${pass.title})…`);
     // Expansion passes always carry the outline + their prior expansion
@@ -528,7 +1110,7 @@ async function runHierarchical(
       pass_title: pass.title,
       target_words: String(pass.target_words),
     };
-    const result = await executePass(client, pass, doc, ctx, soloRuns, register, lexiconBlock);
+    const result = await executePass(client, pass, doc, ctx, soloRuns, register, lexiconBlock, fallbackClients);
     await writeFile(cachePath, result.content);
     console.log(`      ${result.latency_ms}ms · ${result.words}w · ${result.xrefs} xrefs (target ${pass.target_words}w)`);
     results.push(result);
@@ -575,12 +1157,27 @@ function assemble(passes: PassResult[]): AssembledReport {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
+  // ─── Auto-resolve mode if --auto or mode omitted / "auto" ─────────
+  let effectiveMode = args.mode;
+  let subjectsForAuto: SubjectConfig[] | null = null;
+
+  if (args.auto || !effectiveMode || effectiveMode === 'auto') {
+    // Peek subjects early to decide the mode (required for default wiring)
+    subjectsForAuto = loadSubjects(args.subjectsDir);
+    effectiveMode = resolveDefaultMode(subjectsForAuto);
+    console.log(`  ♻︎ --auto resolved to mode: ${effectiveMode} (subject count = ${subjectsForAuto.length})`);
+  }
+
+  if (!effectiveMode) {
+    throw new Error('No mode resolved. Use --mode <name> or --auto');
+  }
+
   // ─── Load mode doc ────────────────────────────────────────────────
   const modeDocPath = resolve(
     new URL(import.meta.url).pathname,
     '..',
     'integratedreading/modes',
-    `${args.mode}.md`,
+    `${effectiveMode}.md`,
   );
   if (!existsSync(modeDocPath)) {
     throw new Error(`Mode doc not found: ${modeDocPath}\nAvailable modes: ${listAvailableModes().join(', ')}`);
@@ -635,10 +1232,10 @@ async function main() {
   console.log(`  Lexicons:    ${foregroundedEngines.length} foregrounded engine(s)${lexiconBlock ? '' : ' — empty block'}`);
 
   // ─── Load subjects ────────────────────────────────────────────────
-  const subjects = loadSubjects(args.subjectsDir);
+  const subjects = subjectsForAuto ?? loadSubjects(args.subjectsDir);
   const sc = doc.frontmatter.subject_count;
   if (subjects.length < sc.min || subjects.length > sc.max) {
-    throw new Error(`Mode '${args.mode}' requires ${sc.min === sc.max ? sc.min : `${sc.min}-${sc.max}`} subjects; found ${subjects.length}`);
+    throw new Error(`Mode '${doc.frontmatter.mode}' requires ${sc.min === sc.max ? sc.min : `${sc.min}-${sc.max}`} subjects; found ${subjects.length}`);
   }
   console.log(`  Subjects:    ${subjects.map((s) => s.subject).join(' × ')}`);
 
@@ -667,7 +1264,21 @@ async function main() {
 
   // ─── Pass execution ──────────────────────────────────────────────
   console.log(`\n→ Phase: ${doc.frontmatter.architecture} multi-pass synthesis`);
-  const client = new NvidiaClient(loadNvidiaKey());
+  // loadNvidiaKey is still referenced for backward-compat env preflight but is
+  // now optional — LlmClient pulls both NVIDIA_API_KEY and OPENROUTER_API_KEY
+  // from process.env or ~/.claude/.env on its own. The constructor below honors
+  // LLM_PROVIDER (auto|nim|openrouter) — default 'auto' tries NIM first and
+  // falls back to OpenRouter on hard failure (4xx, 410 EOL, empty content, or
+  // retry-exhausted 5xx/timeout).
+  try { loadNvidiaKey(); } catch { /* allow OpenRouter-only runs */ }
+  const client = new NvidiaClient();
+  const avail = (client as any).availability;
+  const fallbackClients: PassClientOption[] = [];
+  if (avail.openrouter) fallbackClients.push({ name: 'openrouter', client: new NvidiaClient({ provider: 'openrouter', quiet: true }) });
+  if (avail.nim) fallbackClients.push({ name: 'nim', client: new NvidiaClient({ provider: 'nim', quiet: true }) });
+  console.log(`  ✓ LlmClient: nim=${avail.nim} ollama=${avail.ollama} openrouter=${avail.openrouter} mode=${avail.selected}`);
+  const authoritativeMoonMandates = buildAuthoritativeMoonMandates(soloRuns);
+  const authoritativeFactsMandates = buildAuthoritativeFactsMandates(soloRuns);
   const baseCtx: Omit<InterpolationContext, 'prior_pass' | 'pass_title' | 'target_words'> = {
     subject_names: subjects.map((s) => s.subject).join(', '),
     subject_roster: subjects.map((s, i) => {
@@ -683,12 +1294,12 @@ async function main() {
     }).join('\n'),
     lessons_summary: summarizeLessons(doc.lessons),
     overlay_summary: buildOverlaySummary(doc),
-    bridge_mandates: buildBridgeMandates(doc),
+    bridge_mandates: [authoritativeMoonMandates, authoritativeFactsMandates, buildBridgeMandates(doc)].filter(Boolean).join('\n'),
   };
 
   const passes = doc.frontmatter.architecture === 'hierarchical'
-    ? await runHierarchical(client, doc, baseCtx, soloRuns, runDir, register, lexiconBlock)
-    : await runLinear(client, doc, baseCtx, soloRuns, runDir, register, lexiconBlock);
+    ? await runHierarchical(client, doc, baseCtx, soloRuns, runDir, register, lexiconBlock, fallbackClients)
+    : await runLinear(client, doc, baseCtx, soloRuns, runDir, register, lexiconBlock, fallbackClients);
 
   // ─── Assemble + render ───────────────────────────────────────────
   const report = assemble(passes);
@@ -982,6 +1593,23 @@ function listAvailableModes(): string[] {
   return readdirSync(modesDir)
     .filter((f) => f.endsWith('.md') && !f.startsWith('_'))
     .map((f) => f.replace(/\.md$/, ''));
+}
+
+/**
+ * Resolve the canonical mode for a given set of subjects when --auto (or --mode auto) is used.
+ * This makes integrated 5-systems the default process as requested.
+ */
+function resolveDefaultMode(subjects: SubjectConfig[]): string {
+  const count = subjects.length;
+  if (count === 1) return 'solo-integrated';
+  if (count === 2) {
+    const rel = (subjects[0]?.relationship || subjects[1]?.relationship || '').toLowerCase();
+    if (rel.includes('business') || rel.includes('partner')) return 'business-partners';
+    return 'partner-synastry'; // default for romantic dyad
+  }
+  if (count === 3) return 'composite-triad';
+  if (count >= 4 && count <= 5) return 'family-penta';
+  return 'team-synergy';
 }
 
 // SVG data builders — minimal shape needed by existing renderers
