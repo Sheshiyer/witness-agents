@@ -1,0 +1,17 @@
+{
+  "name": "@witness/orchestration",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Atomic Fact-Locked Orchestration core — generic coordination for multi-perspective witness agents (Phase 2 extraction target)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

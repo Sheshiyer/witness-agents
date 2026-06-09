@@ -62,6 +62,7 @@
   - Retrieval cost/latency in cost-routing and budgets.
   - Full test coverage + metrics dashboards.
 - Waves: 3+
+- **Status (2026-06-09):** P2-W1 closed with full evidence on #99. Graphs (W2) front-loaded and completed. Living validation evidence package + review harness created (`docs/p2-grounding-validation-evidence.md`, `docs/P2-GROUNDING-REVIEW-HARNESS.md`). P3 skeleton work (extraction provider, index scope, streaming/actor grounding, ADR-003) started in parallel (see evidence file "P3 Skeleton Work Started in Parallel" section and new ADR). Awaiting human fidelity review notes to formally close P2 gate, then immediate continuation into full P3 waves.
 
 ### Phase 3 — Full NEM ecosystem leverage + future-proofing
 - Goal: Add extraction pipeline, private per-subject indexes, advanced observability, prepare for actor-model.
