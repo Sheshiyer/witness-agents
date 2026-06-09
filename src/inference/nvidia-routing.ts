@@ -63,3 +63,29 @@ export function estimateNvidiaCost(model: string, promptTokens: number, completi
   if (!costs) return 0;
   return (promptTokens * costs.prompt_per_million + completionTokens * costs.completion_per_million) / 1_000_000;
 }
+
+// Retrieval cost estimator (P2 T11).
+// For NVIDIA NeMo Retriever (embedding + rerank), costs are typically separate from generation.
+// Current hosted NIMs for individuals are free/credit-quota; placeholder returns 0.
+// Future: populate per-embedding-model rates when NVIDIA publishes paid tiers.
+interface RetrievalCost {
+  embeddingPerMillion?: number;
+  rerankPerQuery?: number;
+}
+
+export const NVIDIA_RETRIEVAL_COSTS: Record<string, RetrievalCost> = {
+  // Example placeholders (update when real pricing available)
+  default: { embeddingPerMillion: 0, rerankPerQuery: 0 },
+};
+
+export function estimateRetrievalCost(
+  embeddingModel: string,
+  queryTokens: number,
+  passages: number,
+  rerankQueries = 1,
+): number {
+  const c = NVIDIA_RETRIEVAL_COSTS[embeddingModel] || NVIDIA_RETRIEVAL_COSTS.default;
+  const emb = (queryTokens * (c.embeddingPerMillion || 0)) / 1_000_000;
+  const rer = (c.rerankPerQuery || 0) * rerankQueries;
+  return emb + rer;
+}

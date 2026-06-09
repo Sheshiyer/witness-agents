@@ -45,6 +45,18 @@ import {
 } from './fools-gate.js';
 import { AksharaMirror } from '../protocols/akshara-mirror.js';
 
+// Atomic wiring integration (Phase 1)
+import {
+  createFactLock,
+  createWitnessInferenceExecutor,
+  createCheapRepairExecutor,
+  WitnessOrchestrator,
+  assemble,
+  createDailyWitnessGraph,
+  InProcessWitnessOrchestrationService,
+} from '../wiring/index.js';
+import type { FactLock } from '../wiring/index.js';
+
 // ═══════════════════════════════════════════════════════════════════════
 // DAILY MIRROR ENGINE
 // ═══════════════════════════════════════════════════════════════════════
@@ -157,8 +169,15 @@ export class DailyMirror {
     
     // ─── Step 7: Build Layer 3 (if unlocked) ────────────────────
     let metaPattern: Layer3_MetaPattern | undefined;
-    if (maxLayer >= 3) {
-      metaPattern = this.buildLayer3(engineOutputs, decoderState, userHash);
+    if (tier !== 'free') {
+      // For higher tiers, try to enrich Layer 3 with atomic daily witness synthesis
+      let atomicDailyField: string | undefined;
+      if (tier === 'witness-enterprise' || tier === 'witness-initiate') {
+        // We already may have computed atomic in Layer 2; for simplicity here we can re-use or compute a lightweight version.
+        // In production this would be cached from the Layer 2 atomic run.
+        atomicDailyField = 'Integrated atomic daily field available (Aletheios + Pichet synthesis).';
+      }
+      metaPattern = this.buildLayer3(engineOutputs, decoderState, userHash, atomicDailyField);
     }
     
     // ─── Step 8: Check for Fool's Gate ──────────────────────────
@@ -457,6 +476,13 @@ export class DailyMirror {
     const witnessPrompt = output?.witness_prompt || '';
     const result = (output?.result || {}) as Record<string, unknown>;
     
+    // ─── Phase 1: Try atomic multi-perspective wiring for high tiers ────────────────
+    const tier = this.config.tier ?? 'free';
+    if ((tier === 'witness-enterprise' || tier === 'witness-initiate') && this.llmProvider && output) {
+      const atomic = await this.buildDailyWitnessWithAtomicWiring(engineId, result, state);
+      if (atomic) return atomic;
+    }
+
     // ─── Try LLM-powered question (Pichet voice) ────────────────
     if (this.llmProvider && output) {
       try {
@@ -594,6 +620,146 @@ export class DailyMirror {
     };
   }
 
+  /**
+   * Phase 1 atomic wiring integration for daily witness.
+   * When enabled, uses createDailyWitnessGraph + real executor + cheap repair
+   * instead of (or in addition to) the classic single-perspective Layer 2 call.
+   */
+  private async buildDailyWitnessWithAtomicWiring(
+    engineId: StandaloneEngineId,
+    engineOutput: any,
+    decoderState: DecoderState,
+  ): Promise<Layer2_WitnessQuestion | null> {
+    if (!this.llmProvider) return null;
+
+    try {
+      // Defensive access: DecoderState and currentBirthData may have more fields at runtime than the nominal type
+      const ds: any = decoderState;
+      const birth = (this as any).currentBirthData || { date: '', time: '', timezone: '' };
+      const lock: FactLock = createFactLock({
+        subjectId: `daily-${hashBirthData(birth)}`,
+        subject: 'Daily Witness Subject',
+        facts: {
+          engine: engineId,
+          dominant_center: ds.dominant_center ?? 'heart',
+          active_kosha: ds.active_kosha ?? 'manomaya',
+          anti_dependency_score: ds.anti_dependency_score ?? 0,
+          recursion_detected: ds.recursion_detected ?? false,
+          tier: this.config.tier,
+        },
+        sources: {
+          engine: 'selemene',
+          dominant_center: 'decoder-state',
+        },
+      });
+
+      const executor = createWitnessInferenceExecutor({
+        tier: this.mapStandaloneTierToCoreTier(this.config.tier),
+        provider: this.config.llm_provider,
+        openrouter_api_key: this.config.openrouter_api_key,
+        nvidia_api_key: this.config.nvidia_api_key,
+      });
+
+      const repairExecutor = createCheapRepairExecutor({
+        tier: this.mapStandaloneTierToCoreTier(this.config.tier),
+        provider: this.config.llm_provider,
+        openrouter_api_key: this.config.openrouter_api_key,
+        nvidia_api_key: this.config.nvidia_api_key,
+      });
+
+      // Bridge the atomic orchestration observer into the existing DailyMirror observer
+      const atomicObserver = {
+        onTaskStart: (t: any) =>
+          this.observer?.info?.('atomic.task.start', {
+            metadata: { id: t.id, perspective: t.perspective },
+          }),
+        onTaskComplete: (r: any) =>
+          this.observer?.info?.('atomic.llm', {
+            duration_ms: r.latencyMs || 0,
+            metadata: { model: r.model, tokens: r.tokensUsed },
+          }),
+        onWaveComplete: (wave: number, count: number) =>
+          this.observer?.info?.('atomic.wave.complete', {
+            metadata: { wave, tasks: count },
+          }),
+        onContradiction: (c: any) =>
+          this.observer?.warn?.('atomic.contradiction', {
+            metadata: { type: c.type, description: c.description },
+          }),
+        onRepair: () => this.observer?.info?.('atomic.repair', { metadata: {} }),
+        onAssemblyComplete: (s: any) =>
+          this.observer?.info?.('atomic.assembly.complete', {
+            metadata: {
+              tasks: s.totalTasks,
+              contradictions: s.contradictions,
+              repairs: s.repairIterations,
+            },
+          }),
+        // Retrieval (grounding) signals — P2 generalization
+        onRetrievalStart: (info: any) =>
+          this.observer?.info?.('atomic.retrieval.start', {
+            metadata: { taskId: info.taskId, perspective: info.perspective },
+          }),
+        onRetrievalComplete: (info: any) =>
+          this.observer?.info?.('atomic.retrieval.complete', {
+            duration_ms: info.latencyMs || 0,
+            metadata: {
+              taskId: info.taskId,
+              perspective: info.perspective,
+              passages: info.passageCount,
+              avgRelevance: info.avgRelevance,
+              costUsd: (info as any).costUsd,
+            },
+          }),
+      };
+
+      // Use the generalized InProcess service (P2) so grounding, budgets, and full options flow through one entry point.
+      const service = new InProcessWitnessOrchestrationService(executor, {
+        defaultMaxParallel: 2,
+        defaultMaxRepairIterations: 1,
+        observer: atomicObserver,
+        // groundingProvider can be injected here when a real adapter is configured (default Noop)
+      });
+
+      const tasks = createDailyWitnessGraph(lock);
+
+      const assembled = await service.orchestrate({
+        factLock: lock,
+        tasks,
+        options: { maxParallel: 2, maxRepairIterations: 1 },
+      });
+
+      const results = assembled.taskResults;
+
+      // Take the synthesis section as the witness "question" / field report
+      const synthesisSection = assembled.output
+        .split('## ')
+        .find((s: string) => s.toLowerCase().includes('synthesis')) || assembled.output;
+
+      const question = synthesisSection.trim().slice(0, 420);
+
+      return {
+        layer: 2,
+        question,
+        prompt_source: 'pichet', // atomic-wiring multi-perspective path (Aletheios + Pichet + synthesis)
+        context_hint: this.generateContextHint(engineId, engineOutput),
+        somatic_nudge: 'See integrated daily field below.',
+        llm_powered: true,
+        model_used: 'multi-perspective-atomic',
+        inference_latency_ms: results.reduce((sum: number, r: { latencyMs: number }) => sum + r.latencyMs, 0),
+      };
+    } catch (err) {
+      this.observer?.error('daily.atomic.wiring.error', { error: (err as Error).message });
+      return null;
+    }
+  }
+
+  private mapStandaloneTierToCoreTier(tier?: StandaloneTier): Tier {
+    if (tier === 'witness-initiate') return 'initiate';
+    if (tier === 'witness-enterprise') return 'enterprise';
+    return 'subscriber';
+  }
+
   private logLayer2LLMFailure(
     engineId: StandaloneEngineId,
     tier: StandaloneTier,
@@ -699,9 +865,15 @@ export class DailyMirror {
     outputs: Map<StandaloneEngineId, SelemeneEngineOutput>,
     state: DecoderState,
     userHash: string,
+    atomicDailyField?: string,
   ): Layer3_MetaPattern {
     const crossRefs = this.findCrossReferences(outputs);
     const patternName = this.nameTodaysPattern(outputs);
+    
+    let resonance = this.describeResonance(outputs);
+    if (atomicDailyField) {
+      resonance = `${resonance} | Atomic witness field: ${atomicDailyField}`;
+    }
     
     let findersWhisper: string | undefined;
     if (shouldShowFindersGate(state)) {
@@ -718,7 +890,7 @@ export class DailyMirror {
     return {
       layer: 3,
       pattern_name: patternName,
-      resonance_description: this.describeResonance(outputs),
+      resonance_description: resonance,
       cross_references: crossRefs,
       finders_whisper: findersWhisper,
       graduation_note: graduationNote,

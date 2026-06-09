@@ -40,6 +40,9 @@ export type { HandoffPacket, WorkerBootstrap } from './integration/handoff-packe
 // ─── Standalone Product: The Daily Witness ───────────────────────────
 export * from './standalone/index.js';
 
+// ─── Phase 1: Atomic Fact-Locked Agent Wiring (experimental) ──────────
+export * as Wiring from './wiring/index.js';
+
 import { InterpretationPipeline } from './pipeline/interpreter.js';
 import type { PipelineConfig } from './pipeline/interpreter.js';
 
