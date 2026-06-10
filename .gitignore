@@ -8,3 +8,7 @@ supabase/.temp/
 .playwright-mcp/
 .comparison-output/
 .premium-assets/
+.asset-run-inputs/
+.asset-run-readings/
+.premium-assets-*/
+.asset-chain-audit.json
