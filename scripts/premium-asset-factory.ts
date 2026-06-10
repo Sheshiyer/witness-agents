@@ -37,11 +37,13 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
+import { homedir } from 'node:os';
 
 const DEFAULT_INPUT_DIR = '.batch-inputs';
 const DEFAULT_READING_DIR = '.batch-outputs';
 const DEFAULT_OUTPUT_DIR = '.premium-assets';
 const CHROME_BIN = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const SELEMENE_BASE_URL = process.env.SELEMENE_BASE_URL || 'https://selemene.tryambakam.space';
 
 type AssetStatus = 'ready' | 'pending' | 'failed' | 'skipped';
 
@@ -168,6 +170,44 @@ function loadEngineData(path: string): Record<string, any> {
   return out;
 }
 
+function loadSelemeneKeySync(): string | undefined {
+  if (process.env.SELEMENE_API_KEY) return process.env.SELEMENE_API_KEY;
+  const envPath = join(homedir(), '.claude', '.env');
+  if (!existsSync(envPath)) return undefined;
+  const txt = readFileSync(envPath, 'utf-8');
+  const match = txt.match(/^SELEMENE_API_KEY=(\S+)/m);
+  if (match) {
+    process.env.SELEMENE_API_KEY = match[1];
+    return match[1];
+  }
+  return undefined;
+}
+
+function fetchCurrentPanchangaSync(birthData: any): any | undefined {
+  const key = loadSelemeneKeySync();
+  if (!key || !birthData?.date) return undefined;
+
+  try {
+    const body = JSON.stringify({
+      birth_data: birthData,
+      current_time: new Date().toISOString(),
+      options: { mode: 'daily' },
+    });
+    const output = execFileSync('curl', [
+      '-sf',
+      '-X', 'POST',
+      `${SELEMENE_BASE_URL}/api/v1/engines/panchanga/calculate`,
+      '-H', 'Content-Type: application/json',
+      '-H', `X-API-Key: ${key}`,
+      '-d', body,
+    ], { encoding: 'utf-8', timeout: 45_000 });
+    const parsed = JSON.parse(output);
+    return parsed?.result ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function personIds(inputDir: string): string[] {
   return readdirSync(inputDir)
     .filter(file => file.endsWith('.json'))
@@ -203,11 +243,19 @@ function extractFacts(engineData: Record<string, any>): Record<string, unknown> 
     }
 
     if (engineId === 'panchanga') {
-      facts.panchanga_vara = result.vara_name;
-      facts.panchanga_tithi = result.tithi_name;
-      facts.panchanga_nakshatra = result.nakshatra_name;
-      facts.panchanga_yoga = result.yoga_name;
-      facts.panchanga_karana = result.karana_name;
+      facts.natal_panchanga_vara = result.vara_name;
+      facts.natal_panchanga_tithi = result.tithi_name;
+      facts.natal_panchanga_nakshatra = result.nakshatra_name;
+      facts.natal_panchanga_yoga = result.yoga_name;
+      facts.natal_panchanga_karana = result.karana_name;
+    }
+
+    if (engineId === 'current-panchanga') {
+      facts.current_panchanga_vara = result.vara_name;
+      facts.current_panchanga_tithi = result.tithi_name;
+      facts.current_panchanga_nakshatra = result.nakshatra_name;
+      facts.current_panchanga_yoga = result.yoga_name;
+      facts.current_panchanga_karana = result.karana_name;
     }
 
     if (engineId === 'biofield') {
@@ -259,7 +307,7 @@ function gateSourcePack(personId: string, reading: string, sourceText: string, f
     });
   }
 
-  const expectedNakshatra = plainFactValue(facts.panchanga_nakshatra);
+  const expectedNakshatra = plainFactValue(facts.natal_panchanga_nakshatra);
   if (expectedNakshatra) {
     const knownNakshatras = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
     const mentioned = knownNakshatras.filter(name => new RegExp(`\\b${name.replace(/ /g, '\\s+')}\\b`, 'i').test(text));
@@ -291,6 +339,15 @@ function gateSourcePack(personId: string, reading: string, sourceText: string, f
         detail: 'Input contains somatic engines, but source text says somatic data is absent or unavailable.',
       });
     }
+  }
+
+  const hasCurrentPanchanga = !!facts.current_panchanga_tithi || !!facts.current_panchanga_nakshatra;
+  if (!hasCurrentPanchanga && /today'?s?\s+(vedic|cosmic|panchanga)|today'?s?\s+nakshatra|lunar day you are living in/i.test(sourceText)) {
+    findings.push({
+      code: 'natal_panchanga_used_as_current_weather',
+      severity: 'blocker',
+      detail: 'Source text describes Panchanga as today/current weather, but only natal/birth Panchanga is present.',
+    });
   }
 
   return findings;
@@ -351,16 +408,29 @@ function sanitizeSomaticFalseAbsence(text: string, hasSomaticData: boolean): str
     .replace(/Because there are no engine outputs to reference[^\n.]*[.]/gi, 'Because somatic engine outputs are available, use the biofield and face-reading anchors carefully.');
 }
 
+function sanitizePanchangaScope(text: string, hasCurrentPanchanga: boolean): string {
+  if (hasCurrentPanchanga) return text;
+  return text
+    .replace(/The lunar day you are living in is/gi, 'The natal lunar day recorded at birth is')
+    .replace(/The day of the week,/gi, 'The natal weekday,')
+    .replace(/is guiding your energies/gi, 'marks the birth-imprint pattern')
+    .replace(/Today's cosmic moment/gi, 'Natal Panchanga imprint')
+    .replace(/today's cosmic moment/gi, 'natal Panchanga imprint')
+    .replace(/today's Vedic weather/gi, 'current-day Panchanga')
+    .replace(/Vedic weather/gi, 'current-day Panchanga');
+}
+
 function buildNarrativeDossier(personName: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>): string {
   const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
-  const safeReading = sanitizeSomaticFalseAbsence(reading, hasSomaticData);
+  const hasCurrentPanchanga = !!facts.current_panchanga_tithi || !!facts.current_panchanga_nakshatra;
+  const safeReading = sanitizePanchangaScope(sanitizeSomaticFalseAbsence(reading, hasSomaticData), hasCurrentPanchanga);
   const western = extractSection(safeReading, 'western-systems');
   const vedic = extractSection(safeReading, 'vedic-systems');
   const somatic = buildSomaticNarrative(facts, engineData, extractSection(reading, 'somatic-systems'));
   const synthesis = extractSection(safeReading, 'section-synthesis');
   const factLines = Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n');
 
-  return `# Personal Companion Dossier: ${personName}\n\nThis dossier is written for ${personName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Decision And Identity Thread\n\n${western || 'No decision and identity narrative section is available.'}\n\n## Timing And Life-Rhythm Thread\n\n${vedic || 'No timing and life-rhythm narrative section is available.'}\n\n## Body And Integration Thread\n\n${somatic || 'No body and integration narrative section is available.'}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personName} can listen to, revisit, study, and practice with.\n`;
+  return `# Personal Companion Dossier: ${personName}\n\nThis dossier is written for ${personName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Panchanga Scope\n\nNatal Panchanga describes the birth moment. Current Panchanga, when present, describes the current-day five-limb Panchanga. Do not treat natal Panchanga as current-day timing.\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Decision And Identity Thread\n\n${western || 'No decision and identity narrative section is available.'}\n\n## Timing And Life-Rhythm Thread\n\n${vedic || 'No timing and life-rhythm narrative section is available.'}\n\n## Body And Integration Thread\n\n${somatic || 'No body and integration narrative section is available.'}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personName} can listen to, revisit, study, and practice with.\n`;
 }
 
 function buildSomaticNarrative(facts: Record<string, unknown>, engineData: Record<string, any>, generatedSomatic: string): string {
@@ -395,7 +465,7 @@ function buildSomaticAnchor(facts: Record<string, unknown>, engineData: Record<s
 }
 
 function buildAudioBrief(personName: string, facts: Record<string, unknown>): string {
-  return `# Audio Experience Brief: ${personName}\n\nCreate a long-form audio companion, not a mechanical report. The experience should feel like two thoughtful hosts guiding ${personName} through their own premium personal reading.\n\n## Tone\n\nWarm, grounded, reflective, and specific. Avoid theatrical mysticism. Avoid diagnosis. Make the audio feel lived-in: explain what the patterns may feel like in decisions, relationships, body signals, timing, and practice.\n\n## Structure\n\n1. Opening orientation: how to listen to this reading.\n2. Core pattern: the most important repeating theme.\n3. Timing and decision rhythm.\n4. Relationship and collaboration field.\n5. Body-level integration.\n6. Practical reflection prompts.\n7. Closing integration: one small practice for the next week.\n\n## Must Anchor\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n\n## Avoid\n\nDo not list every system. Do not sound like a database. Do not invent missing systems. Do not make deterministic predictions.\n`;
+  return `# Audio Experience Brief: ${personName}\n\nCreate a long-form audio companion, not a mechanical report. The experience should feel like two thoughtful hosts guiding ${personName} through their own premium personal reading.\n\n## Tone\n\nWarm, grounded, reflective, and specific. Avoid theatrical mysticism. Avoid diagnosis. Make the audio feel lived-in: explain what the patterns may feel like in decisions, relationships, body signals, timing, and practice.\n\n## Structure\n\n1. Opening orientation: how to listen to this reading.\n2. Core pattern: the most important repeating theme.\n3. Timing and decision rhythm.\n4. Relationship and collaboration field.\n5. Body-level integration.\n6. Practical reflection prompts.\n7. Closing integration: one small practice for the next week.\n\n## Must Anchor\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n\n## Panchanga Scope\n\nBirth/natal Panchanga is not current-day timing. Only describe current-day five-limb Panchanga when Current Panchanga anchors are present.\n\n## Avoid\n\nDo not list every system. Do not sound like a database. Do not invent missing systems. Do not make deterministic predictions.\n`;
 }
 
 function buildStudyGuideBrief(personName: string): string {
@@ -523,7 +593,7 @@ function exportPdf(htmlPath: string, pdfPath: string): AssetStatus {
 function reflectionQuestions(personName: string, facts: Record<string, unknown>): string {
   const authority = facts.human_design_authority ? `Your Human Design authority is ${facts.human_design_authority}.` : '';
   const dasha = facts.vimshottari_mahadasha ? `Your current Vimshottari mahadasha is ${facts.vimshottari_mahadasha}.` : '';
-  const nakshatra = facts.panchanga_nakshatra ? `Your Panchanga nakshatra signal is ${facts.panchanga_nakshatra}.` : '';
+  const nakshatra = facts.natal_panchanga_nakshatra ? `Your natal Panchanga nakshatra signal is ${facts.natal_panchanga_nakshatra}.` : '';
 
   return `# Reflection Questions for ${personName}\n\nThese questions are generated from the locked facts and reading outputs. They are prompts for self-observation, not prescriptions.\n\n${[authority, dasha, nakshatra].filter(Boolean).join(' ')}\n\n## Decision\n\n1. What decision currently asks for more time before action?\n2. What changes when you wait for the emotional signal to stabilize?\n3. Which choice feels clear in the body after a full day of distance?\n\n## Relationship\n\n4. Where are you seeking completion through another person instead of noticing your own pattern?\n5. Which collaborations genuinely bridge your split, and which ones only distract from it?\n6. What kind of support helps you become more honest rather than more dependent?\n\n## Body\n\n7. Where does urgency show up first: throat, chest, gut, jaw, breath, or posture?\n8. What physical cue tells you a yes is becoming clear?\n9. What physical cue tells you a no is being overridden?\n\n## Timing\n\n10. What cycle is asking to complete before the next commitment begins?\n11. What is the difference between pressure from timing and clarity from timing?\n12. What would become easier if you treated this period as observation rather than verdict?\n\n## Practice\n\n13. What is one small experiment you can run this week without over-identifying with the result?\n14. What lesson from a recent mistake is now mature enough to share?\n15. What daily ritual would help you remember the reading without becoming dependent on it?\n`;
 }
@@ -822,6 +892,11 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   mkdirSync(localDir, { recursive: true });
 
   const engineData = loadEngineData(inputPath);
+  const birthData = Array.isArray(JSON.parse(readFileSync(inputPath, 'utf-8')))
+    ? JSON.parse(readFileSync(inputPath, 'utf-8'))[0]?.birth_data
+    : undefined;
+  const currentPanchanga = fetchCurrentPanchangaSync(birthData);
+  if (currentPanchanga) engineData['current-panchanga'] = currentPanchanga;
   const facts = extractFacts(engineData);
   const reading = readFileSync(readingPath, 'utf-8');
   const sourcePackDir = writeSourcePack(personName, personId, packDir, reading, facts, engineData);
