@@ -26,8 +26,10 @@
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
+    "openai": "^6.42.0",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0"
   }

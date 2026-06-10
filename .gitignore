@@ -6,3 +6,4 @@ dist/
 .env.local
 supabase/.temp/
 .playwright-mcp/
+.comparison-output/

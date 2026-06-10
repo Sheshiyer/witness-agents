@@ -82,7 +82,7 @@ async function extractGeneKeys(): Promise<Passage[]> {
     // Shadow description
     if (gk.shadow_description) {
       passages.push({
-        id: `selemene:gene-keys:${number}:shadow_description`,
+        id: `sw:gk:${number}:shadow_description`,
         text: `Gene Key ${number} - ${name} - Shadow (${gk.shadow || 'Shadow'}): ${gk.shadow_description}`,
         metadata: {
           system: 'gene-keys',
@@ -98,7 +98,7 @@ async function extractGeneKeys(): Promise<Passage[]> {
     // Gift description
     if (gk.gift_description) {
       passages.push({
-        id: `selemene:gene-keys:${number}:gift_description`,
+        id: `sw:gk:${number}:gift_description`,
         text: `Gene Key ${number} - ${name} - Gift (${gk.gift || 'Gift'}): ${gk.gift_description}`,
         metadata: {
           system: 'gene-keys',
@@ -114,7 +114,7 @@ async function extractGeneKeys(): Promise<Passage[]> {
     // Siddhi description
     if (gk.siddhi_description) {
       passages.push({
-        id: `selemene:gene-keys:${number}:siddhi_description`,
+        id: `sw:gk:${number}:siddhi_description`,
         text: `Gene Key ${number} - ${name} - Siddhi (${gk.siddhi || 'Siddhi'}): ${gk.siddhi_description}`,
         metadata: {
           system: 'gene-keys',
@@ -130,7 +130,7 @@ async function extractGeneKeys(): Promise<Passage[]> {
     // Life theme
     if (gk.life_theme) {
       passages.push({
-        id: `selemene:gene-keys:${number}:life_theme`,
+        id: `sw:gk:${number}:life_theme`,
         text: `Gene Key ${number} - ${name} - Life Theme: ${gk.life_theme}`,
         metadata: {
           system: 'gene-keys',
@@ -172,7 +172,7 @@ async function extractHDGates(): Promise<Passage[]> {
 
     if (g.description) {
       passages.push({
-        id: `selemene:human-design:gate:${number}:description`,
+        id: `sw:hd:g:${number}:desc`,
         text: `Human Design Gate ${number} - ${name} (${g.keynote || 'Keynote'}): ${g.description}`,
         metadata: {
           system: 'human-design',
@@ -215,7 +215,7 @@ async function extractHDTypes(): Promise<Passage[]> {
     // Main description
     if (t.description) {
       passages.push({
-        id: `selemene:human-design:type:${typeKey}:description`,
+        id: `sw:hd:type:${typeKey}:desc`,
         text: `Human Design Type: ${name} - ${t.description}`,
         metadata: {
           system: 'human-design',
@@ -231,7 +231,7 @@ async function extractHDTypes(): Promise<Passage[]> {
     if (t.strategy) {
       const strategyText = `${name}'s strategy is "${t.strategy}". Signature when aligned: ${t.signature || 'alignment'}. Not-self theme when misaligned: ${t.not_self_theme || 'resistance'}.`;
       passages.push({
-        id: `selemene:human-design:type:${typeKey}:strategy`,
+        id: `sw:hd:type:${typeKey}:strategy`,
         text: `Human Design Type Strategy: ${strategyText}`,
         metadata: {
           system: 'human-design',
@@ -247,7 +247,7 @@ async function extractHDTypes(): Promise<Passage[]> {
     if (t.characteristics && t.characteristics.length > 0) {
       const charText = t.characteristics.join('. ');
       passages.push({
-        id: `selemene:human-design:type:${typeKey}:characteristics`,
+        id: `sw:hd:type:${typeKey}:characteristics`,
         text: `Human Design ${name} Characteristics: ${charText}`,
         metadata: {
           system: 'human-design',
@@ -287,7 +287,7 @@ async function extractHDProfiles(): Promise<Passage[]> {
 
     if (l.description) {
       passages.push({
-        id: `selemene:human-design:profile-line:${number}:description`,
+        id: `selemene:human-design:profile-line:${number}:desc`,
         text: `Human Design Profile Line ${number} - ${name} (${l.theme || 'Theme'}): ${l.description}`,
         metadata: {
           system: 'human-design',
@@ -317,7 +317,7 @@ async function extractHDProfiles(): Promise<Passage[]> {
 
     if (p.description) {
       passages.push({
-        id: `selemene:human-design:profile:${profileKey}:description`,
+        id: `sw:hd:prof:${profileKey}:desc`,
         text: `Human Design Profile ${name}: ${p.description}`,
         metadata: {
           system: 'human-design',
@@ -331,7 +331,7 @@ async function extractHDProfiles(): Promise<Passage[]> {
 
     if (p.life_theme) {
       passages.push({
-        id: `selemene:human-design:profile:${profileKey}:life_theme`,
+        id: `sw:hd:prof:${profileKey}:life_theme`,
         text: `Human Design Profile ${name} Life Theme: ${p.life_theme}`,
         metadata: {
           system: 'human-design',
@@ -369,7 +369,7 @@ async function extractHDAuthorities(): Promise<Passage[]> {
 
     if (a.description) {
       passages.push({
-        id: `selemene:human-design:authority:${authKey}:description`,
+        id: `sw:hd:auth:${authKey}:desc`,
         text: `Human Design Authority: ${name} - ${a.description}`,
         metadata: {
           system: 'human-design',
@@ -384,7 +384,7 @@ async function extractHDAuthorities(): Promise<Passage[]> {
     if (a.how_it_works?.mechanism) {
       const mechanismText = `${a.how_it_works.mechanism}${a.how_it_works.timing ? `. Timing: ${a.how_it_works.timing}` : ''}`;
       passages.push({
-        id: `selemene:human-design:authority:${authKey}:mechanism`,
+        id: `sw:hd:auth:${authKey}:mech`,
         text: `Human Design ${name} Mechanism: ${mechanismText}`,
         metadata: {
           system: 'human-design',
@@ -399,7 +399,7 @@ async function extractHDAuthorities(): Promise<Passage[]> {
     if (a.decision_process && a.decision_process.length > 0) {
       const processText = a.decision_process.join('. ');
       passages.push({
-        id: `selemene:human-design:authority:${authKey}:decision_process`,
+        id: `sw:hd:auth:${authKey}:proc`,
         text: `Human Design ${name} Decision Process: ${processText}`,
         metadata: {
           system: 'human-design',
@@ -438,7 +438,7 @@ async function extractHDCenters(): Promise<Passage[]> {
 
     const definedText = `${name} (${c.type || 'Center'}): Function - ${c.function || 'Energy center'}. When Defined: ${c.when_defined || 'Consistent energy'}. When Undefined: ${c.when_undefined || 'Open to conditioning'}.`;
     passages.push({
-      id: `selemene:human-design:center:${centerKey}:description`,
+      id: `sw:hd:ctr:${centerKey}:desc`,
       text: `Human Design Center: ${definedText}`,
       metadata: {
         system: 'human-design',
@@ -477,7 +477,7 @@ async function extractHDChannels(): Promise<Passage[]> {
     if (ch.description) {
       const gatesStr = ch.gates ? `Gates ${ch.gates.join('-')}` : '';
       passages.push({
-        id: `selemene:human-design:channel:${channelKey}:description`,
+        id: `sw:hd:ch:${channelKey}:desc`,
         text: `Human Design Channel ${name} (${gatesStr}): ${ch.description}`,
         metadata: {
           system: 'human-design',
@@ -520,7 +520,7 @@ async function extractIChing(): Promise<Passage[]> {
     // Meaning
     if (h.meaning) {
       passages.push({
-        id: `selemene:i-ching:hexagram:${number}:meaning`,
+        id: `sw:ic:${number}:meaning`,
         text: `I-Ching Hexagram ${number} - ${name}${chineseName}: ${h.meaning}`,
         metadata: {
           system: 'i-ching',
@@ -536,7 +536,7 @@ async function extractIChing(): Promise<Passage[]> {
     // Judgment
     if (h.judgment) {
       passages.push({
-        id: `selemene:i-ching:hexagram:${number}:judgment`,
+        id: `sw:ic:${number}:judgment`,
         text: `I-Ching Hexagram ${number} - ${name} - Judgment: ${h.judgment}`,
         metadata: {
           system: 'i-ching',
@@ -552,7 +552,7 @@ async function extractIChing(): Promise<Passage[]> {
     // Image
     if (h.image) {
       passages.push({
-        id: `selemene:i-ching:hexagram:${number}:image`,
+        id: `sw:ic:${number}:image`,
         text: `I-Ching Hexagram ${number} - ${name} - Image: ${h.image}`,
         metadata: {
           system: 'i-ching',
@@ -568,7 +568,7 @@ async function extractIChing(): Promise<Passage[]> {
     // Divination
     if (h.divination) {
       passages.push({
-        id: `selemene:i-ching:hexagram:${number}:divination`,
+        id: `sw:ic:${number}:divination`,
         text: `I-Ching Hexagram ${number} - ${name} - Divination: ${h.divination}`,
         metadata: {
           system: 'i-ching',
@@ -617,7 +617,7 @@ async function extractEnneagram(): Promise<Passage[]> {
     if (t.core_motivation) {
       const coreText = `Core Motivation: ${t.core_motivation}. Core Fear: ${t.core_fear || 'Unknown'}. Core Desire: ${t.core_desire || 'Unknown'}.`;
       passages.push({
-        id: `selemene:enneagram:type:${number}:core`,
+        id: `sw:enn:${number}:core`,
         text: `Enneagram Type ${number} - ${name}: ${coreText}`,
         metadata: {
           system: 'enneagram',
@@ -634,7 +634,7 @@ async function extractEnneagram(): Promise<Passage[]> {
     if (t.vice && t.virtue) {
       const vvText = `Vice (passion): ${t.vice}. Virtue (when healthy): ${t.virtue}.`;
       passages.push({
-        id: `selemene:enneagram:type:${number}:vice_virtue`,
+        id: `sw:enn:${number}:vice_virtue`,
         text: `Enneagram Type ${number} - ${name} - ${vvText}`,
         metadata: {
           system: 'enneagram',
@@ -652,7 +652,7 @@ async function extractEnneagram(): Promise<Passage[]> {
       for (const [wingNum, wing] of Object.entries(t.wings)) {
         if (wing.description) {
           passages.push({
-            id: `selemene:enneagram:type:${number}:wing_${wingNum}`,
+            id: `sw:enn:${number}:wing_${wingNum}`,
             text: `Enneagram Type ${number} Wing ${wingNum} (${wing.name || `${number}w${wingNum}`}): ${wing.description}`,
             metadata: {
               system: 'enneagram',
@@ -670,7 +670,7 @@ async function extractEnneagram(): Promise<Passage[]> {
     // Integration/Disintegration arrows
     if (t.arrows?.integration?.description) {
       passages.push({
-        id: `selemene:enneagram:type:${number}:integration`,
+        id: `sw:enn:${number}:integration`,
         text: `Enneagram Type ${number} - ${name} Integration (to ${t.arrows.integration.direction}): ${t.arrows.integration.description}`,
         metadata: {
           system: 'enneagram',
@@ -685,7 +685,7 @@ async function extractEnneagram(): Promise<Passage[]> {
 
     if (t.arrows?.disintegration?.description) {
       passages.push({
-        id: `selemene:enneagram:type:${number}:disintegration`,
+        id: `sw:enn:${number}:disintegration`,
         text: `Enneagram Type ${number} - ${name} Disintegration (to ${t.arrows.disintegration.direction}): ${t.arrows.disintegration.description}`,
         metadata: {
           system: 'enneagram',
@@ -728,7 +728,7 @@ async function extractTarot(): Promise<Passage[]> {
     // Main description
     if (c.description) {
       passages.push({
-        id: `selemene:tarot:major:${number}:description`,
+        id: `sw:tarot:major:${number}:desc`,
         text: `Tarot Major Arcana ${number} - ${name}: ${c.description}`,
         metadata: {
           system: 'tarot',
@@ -744,7 +744,7 @@ async function extractTarot(): Promise<Passage[]> {
     // Upright meaning
     if (c.upright_meaning) {
       passages.push({
-        id: `selemene:tarot:major:${number}:upright`,
+        id: `sw:tarot:major:${number}:upright`,
         text: `Tarot ${name} Upright: ${c.upright_meaning}`,
         metadata: {
           system: 'tarot',
@@ -760,7 +760,7 @@ async function extractTarot(): Promise<Passage[]> {
     // Reversed meaning
     if (c.reversed_meaning) {
       passages.push({
-        id: `selemene:tarot:major:${number}:reversed`,
+        id: `sw:tarot:major:${number}:reversed`,
         text: `Tarot ${name} Reversed: ${c.reversed_meaning}`,
         metadata: {
           system: 'tarot',
@@ -776,7 +776,7 @@ async function extractTarot(): Promise<Passage[]> {
     // Spiritual lesson
     if (c.spiritual_lesson) {
       passages.push({
-        id: `selemene:tarot:major:${number}:spiritual_lesson`,
+        id: `sw:tarot:major:${number}:spiritual_lesson`,
         text: `Tarot ${name} Spiritual Lesson: ${c.spiritual_lesson}`,
         metadata: {
           system: 'tarot',
@@ -820,7 +820,7 @@ async function extractVimshottari(): Promise<Passage[]> {
       const qualitiesStr = n.qualities ? ` Qualities: ${n.qualities.join(', ')}.` : '';
       const fullText = `${n.description}${qualitiesStr}`;
       passages.push({
-        id: `selemene:vimshottari:nakshatra:${number}:description`,
+        id: `sw:vim:nakshatra:${number}:desc`,
         text: `Nakshatra ${number} - ${name} (Ruler: ${n.ruling_planet || 'Unknown'}, Deity: ${n.deity || 'Unknown'}): ${fullText}`,
         metadata: {
           system: 'vimshottari',
@@ -854,7 +854,7 @@ async function extractVimshottari(): Promise<Passage[]> {
       if (p.represents) {
         const fullText = `${p.represents}${p.psychological_function ? ` Psychological function: ${p.psychological_function}` : ''}`;
         passages.push({
-          id: `selemene:vimshottari:planet:${planetKey}:description`,
+          id: `sw:vim:planet:${planetKey}:desc`,
           text: `Vedic Astrology Planet ${name}: ${fullText}`,
           metadata: {
             system: 'vimshottari',
@@ -898,7 +898,7 @@ async function extractVedicClock(): Promise<Passage[]> {
 
       if (e.description) {
         passages.push({
-          id: `selemene:vedic-clock:element:${elementKey}:description`,
+          id: `sw:vc:element:${elementKey}:desc`,
           text: `Five Elements - ${name}: ${e.description}`,
           metadata: {
             system: 'vedic-clock',
@@ -913,7 +913,7 @@ async function extractVedicClock(): Promise<Passage[]> {
       if (e.characteristics && e.characteristics.length > 0) {
         const charText = e.characteristics.join('. ');
         passages.push({
-          id: `selemene:vedic-clock:element:${elementKey}:characteristics`,
+          id: `sw:vc:element:${elementKey}:characteristics`,
           text: `Five Elements - ${name} Characteristics: ${charText}`,
           metadata: {
             system: 'vedic-clock',
@@ -950,7 +950,7 @@ async function extractVedicClock(): Promise<Passage[]> {
       if (o.description) {
         const timeStr = o.time_range ? ` (${o.time_range})` : '';
         passages.push({
-          id: `selemene:vedic-clock:organ:${organKey}:description`,
+          id: `sw:vc:organ:${organKey}:desc`,
           text: `TCM Organ Clock - ${name}${timeStr}: ${o.description}`,
           metadata: {
             system: 'vedic-clock',
@@ -984,7 +984,7 @@ async function extractVedicClock(): Promise<Passage[]> {
       if (p.integrated_practices && p.integrated_practices.length > 0) {
         const practiceText = p.integrated_practices.join('. ');
         passages.push({
-          id: `selemene:vedic-clock:practice:${practiceKey}:integrated`,
+          id: `sw:vc:practice:${practiceKey}:integrated`,
           text: `${name} Element Integrated Practices: ${practiceText}`,
           metadata: {
             system: 'vedic-clock',
