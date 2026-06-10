@@ -3,221 +3,329 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Witness Agents Interpretation → Asset Flow</title>
+  <title>Witness Interpretation Architecture Whitepaper</title>
   <style>
     :root {
-      --bg: #0b1020;
-      --panel: #111a33;
-      --panel-2: #172241;
-      --ink: #eef4ff;
-      --muted: #a9b7d0;
-      --line: #2f426f;
-      --cyan: #69d2ff;
-      --gold: #f5c66b;
-      --green: #79e6a3;
-      --red: #ff7e8a;
-      --purple: #b99cff;
-      --orange: #ffa765;
+      --bg: #f8f3e8;
+      --ink: #171411;
+      --muted: #665f55;
+      --paper: #fffdf7;
+      --line: #ded2bd;
+      --line-dark: #b79e74;
+      --gold: #a87416;
+      --indigo: #17213f;
+      --blue: #2b65c8;
+      --green: #287a55;
+      --red: #b34545;
+      --violet: #6b4bb8;
+      --shadow: 0 24px 80px rgba(49, 36, 18, .12);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: radial-gradient(circle at top left, #1d2c5c 0, var(--bg) 42rem);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(168,116,22,.16), transparent 28rem),
+        linear-gradient(180deg, #fbf7ee 0%, var(--bg) 70%);
       color: var(--ink);
-      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font: 16px/1.62 ui-serif, Georgia, Cambria, "Times New Roman", serif;
     }
-    main { max-width: 1280px; margin: 0 auto; padding: 36px 24px 72px; }
-    header { margin-bottom: 28px; }
-    .eyebrow { color: var(--cyan); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 12px; }
-    h1 { margin: 10px 0 12px; font-size: clamp(34px, 5vw, 64px); line-height: 1.02; }
-    .subtitle { color: var(--muted); max-width: 860px; font-size: 18px; }
+    main { max-width: 1220px; margin: 0 auto; padding: 48px 24px 88px; }
+    header { display: grid; grid-template-columns: 1.2fr .8fr; gap: 28px; align-items: end; margin-bottom: 32px; }
+    .eyebrow { font: 700 12px/1.2 ui-sans-serif, system-ui; color: var(--gold); letter-spacing: .18em; text-transform: uppercase; }
+    h1 { margin: 12px 0 14px; font-size: clamp(42px, 7vw, 86px); line-height: .95; letter-spacing: -.045em; font-weight: 560; }
+    .subtitle { color: var(--muted); max-width: 760px; font-size: 19px; }
+    .meta-card { background: var(--indigo); color: #fff; border-radius: 24px; padding: 24px; box-shadow: var(--shadow); }
+    .meta-card strong { display: block; color: #f3ce7b; margin-bottom: 7px; font: 700 12px/1.2 ui-sans-serif, system-ui; letter-spacing: .13em; text-transform: uppercase; }
+    .meta-card p { margin: 0; color: #dce5ff; }
+    section { background: rgba(255,253,247,.76); border: 1px solid var(--line); border-radius: 28px; padding: 30px; margin-top: 24px; box-shadow: 0 12px 36px rgba(70,48,20,.06); }
+    section.plain { background: transparent; border: 0; box-shadow: none; padding: 8px 0; }
+    h2 { margin: 0 0 16px; font-size: clamp(26px, 3vw, 42px); line-height: 1.05; letter-spacing: -.025em; }
+    h3 { margin: 0 0 8px; font-size: 20px; }
+    p { margin: 0 0 12px; }
+    .muted { color: var(--muted); }
     .grid { display: grid; gap: 18px; }
-    .cards { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin: 26px 0; }
-    .card { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.025)); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: 0 18px 55px rgba(0,0,0,.22); }
-    .card h3 { margin: 0 0 8px; font-size: 18px; }
-    .card p { margin: 0; color: var(--muted); }
-    .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
-    .p-blue { background: rgba(105,210,255,.14); color: var(--cyan); }
-    .p-gold { background: rgba(245,198,107,.16); color: var(--gold); }
-    .p-green { background: rgba(121,230,163,.14); color: var(--green); }
-    .p-purple { background: rgba(185,156,255,.15); color: var(--purple); }
-    .p-red { background: rgba(255,126,138,.15); color: var(--red); }
-    section { margin-top: 34px; }
-    h2 { font-size: 28px; margin: 0 0 16px; }
-    .flow-wrap { overflow-x: auto; background: rgba(10,16,34,.72); border: 1px solid var(--line); border-radius: 24px; padding: 22px; }
-    svg { width: 1220px; max-width: none; height: auto; display: block; }
-    .node { fill: var(--panel); stroke: var(--line); stroke-width: 1.5; rx: 14; }
-    .node-blue { fill: #122945; stroke: #2c8fbd; }
-    .node-gold { fill: #352811; stroke: #b48b35; }
-    .node-green { fill: #113421; stroke: #39a967; }
-    .node-purple { fill: #241a46; stroke: #7f62c7; }
-    .node-red { fill: #3a1720; stroke: #c45161; }
-    .label { fill: var(--ink); font-size: 14px; font-weight: 700; }
-    .small { fill: var(--muted); font-size: 11px; font-weight: 500; }
-    .edge { stroke: #6f86bd; stroke-width: 2; fill: none; marker-end: url(#arrow); }
-    .edge-gate { stroke: var(--red); stroke-dasharray: 6 5; }
-    .swimlanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-    .lane { border: 1px solid var(--line); background: rgba(255,255,255,.035); border-radius: 18px; padding: 16px; }
-    .lane h3 { margin: 0 0 10px; color: var(--gold); }
-    ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
-    code { color: #d8e6ff; background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 6px; }
-    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 16px; border: 1px solid var(--line); }
-    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    th { color: var(--cyan); background: rgba(105,210,255,.08); }
-    td { color: var(--muted); }
-    tr:last-child td { border-bottom: 0; }
+    .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card { background: var(--paper); border: 1px solid var(--line); border-radius: 20px; padding: 20px; }
+    .card.dark { background: var(--indigo); color: #fff; border-color: #2d3a63; }
+    .card.dark p { color: #cdd8f5; }
+    .tag { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font: 700 11px/1 ui-sans-serif, system-ui; text-transform: uppercase; letter-spacing: .09em; margin-bottom: 12px; }
+    .gold { color: #6f4500; background: #f8e5b4; }
+    .blue { color: #123e88; background: #dce9ff; }
+    .green { color: #0d5c3b; background: #d9f4e7; }
+    .red { color: #8b2020; background: #ffe0e0; }
+    .violet { color: #482d93; background: #e9e2ff; }
+    .formula { background: #111827; color: #eff6ff; border-radius: 20px; padding: 20px; font: 15px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; }
+    .formula .dim { color: #9fb1d2; }
+    .diagram { overflow-x: auto; border-radius: 24px; background: #111827; padding: 24px; border: 1px solid #26324a; }
+    svg { display: block; min-width: 1040px; width: 100%; height: auto; }
+    .node { fill: #fffdf7; stroke: #d8c9ad; stroke-width: 2; rx: 18; }
+    .node-dark { fill: #17213f; stroke: #435176; }
+    .node-gold { fill: #fff2ca; stroke: #c99734; }
+    .node-green { fill: #ddf6e7; stroke: #48a773; }
+    .node-red { fill: #ffe0e0; stroke: #d06060; }
+    .node-violet { fill: #eee8ff; stroke: #8368d8; }
+    .svg-label { fill: #171411; font: 700 16px ui-sans-serif, system-ui; }
+    .svg-label-light { fill: #fff; font: 700 16px ui-sans-serif, system-ui; }
+    .svg-small { fill: #665f55; font: 12px ui-sans-serif, system-ui; }
+    .svg-small-light { fill: #cdd8f5; font: 12px ui-sans-serif, system-ui; }
+    .arrow { stroke: #c7b38e; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    .arrow-red { stroke: #d06060; stroke-width: 3; fill: none; stroke-dasharray: 8 7; marker-end: url(#arrow-red); }
+    .matrix { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 20px; border: 1px solid var(--line); background: var(--paper); }
+    .matrix th, .matrix td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+    .matrix th { font: 700 12px/1.2 ui-sans-serif, system-ui; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); background: #fff8e8; }
+    .matrix td { color: var(--muted); }
+    .matrix tr:last-child td { border-bottom: 0; }
+    ul { color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+    .callout { border-left: 5px solid var(--gold); background: #fff8e8; padding: 16px 18px; border-radius: 14px; color: #4d3920; }
+    .flow-steps { counter-reset: step; display: grid; gap: 14px; }
+    .step { counter-increment: step; display: grid; grid-template-columns: 52px 1fr; gap: 16px; align-items: start; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+    .step::before { content: counter(step); display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--indigo); color: #fff; font: 700 16px ui-sans-serif, system-ui; }
+    @media (max-width: 860px) { header, .two, .three, .four { grid-template-columns: 1fr; } main { padding: 28px 14px 56px; } section { padding: 22px; } }
   </style>
 </head>
 <body>
 <main>
   <header>
-    <div class="eyebrow">Witness Agents Architecture</div>
-    <h1>Interpretation → Asset Flow</h1>
-    <p class="subtitle">A visual map of how user intake, mode policy, deterministic Selemene engine data, interpretation outputs, source gates, and NotebookLM assets connect. The goal is to prevent assumptions and keep generated assets grounded in deterministic anchors.</p>
+    <div>
+      <div class="eyebrow">Whitepaper Diagram</div>
+      <h1>Witness Interpretation Architecture</h1>
+      <p class="subtitle">A visual, mathematical, and conceptual map of how a reading becomes grounded interpretation and then becomes deliverable assets without assuming relationship type, timing context, or missing data.</p>
+    </div>
+    <div class="meta-card">
+      <strong>Core Thesis</strong>
+      <p>The interpreter is not a text generator. It is a constrained transformation system: user context + deterministic facts + mode/register policy → audited narrative → recipient-ready assets.</p>
+    </div>
   </header>
 
-  <div class="grid cards">
-    <div class="card"><span class="pill p-blue">Entry</span><h3>Question First</h3><p>Every reading mode requires answered mode context before generation. Missing answers block the run.</p></div>
-    <div class="card"><span class="pill p-gold">Policy</span><h3>Mode × Register</h3><p><code>asset-mode-policy.ts</code> defines solo, married, partner, general synastry, family, and business policies across L1-L5.</p></div>
-    <div class="card"><span class="pill p-green">Facts</span><h3>Deterministic Anchors</h3><p>Engine outputs are fact anchors. Generated prose is texture only, especially for synastry/composite readings.</p></div>
-    <div class="card"><span class="pill p-red">Gate</span><h3>Block Drift</h3><p>Audit/gate blocks nakshatra drift, false somatic absence, natal Panchanga-as-current weather, and missing partner facts.</p></div>
-  </div>
+  <section id="section-1">
+    <span class="tag gold">01 · Abstract</span>
+    <h2>The System Is A Grounded Transformation Chain</h2>
+    <div class="grid two">
+      <div>
+        <p>The architecture begins with a question, not with an engine. The user or operator must state what kind of reading this is, what relationship assumptions are allowed, and what the reading is meant to illuminate. Only after that context exists can deterministic engine data become interpretation.</p>
+        <p class="muted">The chain prevents the most dangerous failure mode: treating generated prose as source truth. In this architecture, engine facts anchor; interpretation weaves; assets package; gates block drift.</p>
+      </div>
+      <div class="formula">
+        <div><span class="dim">Input:</span> C + M + L + F</div>
+        <div><span class="dim">Transform:</span> T(C, M, L, F) → R</div>
+        <div><span class="dim">Gate:</span> G(R, F, C) ∈ {pass, block}</div>
+        <div><span class="dim">Output:</span> A = package(R, F, C) only if G = pass</div>
+      </div>
+    </div>
+  </section>
 
-  <section>
-    <h2>End-to-End Flow</h2>
-    <div class="flow-wrap">
-      <svg viewBox="0 0 1220 740" role="img" aria-label="Witness Agents data flow diagram">
+  <section id="section-2">
+    <span class="tag blue">02 · Vocabulary</span>
+    <h2>The Four Primary Vectors</h2>
+    <div class="grid four">
+      <div class="card"><h3>C · Context Vector</h3><p>Answered intake questions: relationship status, family roles, business roles, commitment boundary, primary question, intended use.</p></div>
+      <div class="card"><h3>M · Mode Vector</h3><p>The semantic frame: solo, married, partner, general synastry, family, or business. It determines forbidden assumptions.</p></div>
+      <div class="card"><h3>L · Level Scalar</h3><p>The consciousness register from 1-5. Levels 1-3 use accessible/traditional language; 4-5 use architectural pattern language.</p></div>
+      <div class="card"><h3>F · Fact Matrix</h3><p>Deterministic engine facts: natal Panchanga, current Panchanga if fetched, Vimshottari, Human Design, Gene Keys, somatic data.</p></div>
+    </div>
+  </section>
+
+  <section id="section-3">
+    <span class="tag violet">03 · System Equation</span>
+    <h2>The Interpretation Function</h2>
+    <div class="grid two">
+      <div class="formula">
+        <div>R = I(F, C, M, L)</div>
+        <br>
+        <div>I = interpretive weave</div>
+        <div>F = deterministic fact matrix</div>
+        <div>C = answered intake context</div>
+        <div>M = mode policy</div>
+        <div>L = register level</div>
+      </div>
+      <div>
+        <p>The reading <strong>R</strong> is valid only when it is a function of all four inputs. If context is missing, the system cannot infer it. If mode is romantic but marriage is not confirmed, the system cannot use marital assumptions. If current Panchanga is not fetched, natal Panchanga cannot become “today’s weather.”</p>
+        <div class="callout">A valid interpretation is not “what the model said.” It is the output of a constrained function whose inputs are known and whose assumptions are declared.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-4">
+    <span class="tag green">04 · Architectural Flow</span>
+    <h2>From Question To Deliverable</h2>
+    <div class="diagram">
+      <svg viewBox="0 0 1120 620" role="img" aria-label="Architectural flow from question to deliverable assets">
         <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="#6f86bd" />
-          </marker>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c7b38e" /></marker>
+          <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d06060" /></marker>
         </defs>
+        <rect x="36" y="44" width="210" height="94" class="node-gold" rx="18" />
+        <text x="56" y="78" class="svg-label">Question Intake</text>
+        <text x="56" y="104" class="svg-small">context must be answered</text>
 
-        <rect x="30" y="40" width="220" height="98" class="node node-blue" />
-        <text x="48" y="70" class="label">User / Operator Intake</text>
-        <text x="48" y="94" class="small">mode_context JSON</text>
-        <text x="48" y="112" class="small">relationship status, roles, question</text>
+        <rect x="306" y="44" width="210" height="94" class="node-violet" rx="18" />
+        <text x="326" y="78" class="svg-label">Mode Policy</text>
+        <text x="326" y="104" class="svg-small">what may be assumed?</text>
 
-        <rect x="310" y="40" width="220" height="98" class="node node-gold" />
-        <text x="328" y="70" class="label">Mode Policy Registry</text>
-        <text x="328" y="94" class="small">asset-mode-policy.ts</text>
-        <text x="328" y="112" class="small">mode + L1-L5 register</text>
+        <rect x="576" y="44" width="210" height="94" class="node-red" rx="18" />
+        <text x="596" y="78" class="svg-label">Intake Gate</text>
+        <text x="596" y="104" class="svg-small">missing answers block</text>
 
-        <rect x="590" y="40" width="220" height="98" class="node node-red" />
-        <text x="608" y="70" class="label">Intake Gate</text>
-        <text x="608" y="94" class="small">validateModeContext()</text>
-        <text x="608" y="112" class="small">blocks missing answers</text>
+        <rect x="846" y="44" width="230" height="94" class="node-green" rx="18" />
+        <text x="866" y="78" class="svg-label">Fact Matrix</text>
+        <text x="866" y="104" class="svg-small">engine anchors, not prose</text>
 
-        <rect x="870" y="40" width="250" height="98" class="node node-green" />
-        <text x="888" y="70" class="label">Selemene Engine Data</text>
-        <text x="888" y="94" class="small">panchanga, vimshottari, HD,</text>
-        <text x="888" y="112" class="small">biofield, face-reading, etc.</text>
+        <path d="M246 91 H306" class="arrow" />
+        <path d="M516 91 H576" class="arrow" />
+        <path d="M786 91 H846" class="arrow" />
 
-        <path d="M250 89 H310" class="edge" />
-        <path d="M530 89 H590" class="edge" />
-        <path d="M810 89 H870" class="edge" />
+        <rect x="160" y="226" width="250" height="104" class="node-dark" rx="18" />
+        <text x="182" y="260" class="svg-label-light">Interpretive Weave</text>
+        <text x="182" y="286" class="svg-small-light">facts + context + mode + level</text>
 
-        <rect x="170" y="210" width="250" height="110" class="node node-purple" />
-        <text x="188" y="242" class="label">Integrated Reading Runner</text>
-        <text x="188" y="266" class="small">integratedreading-mode.ts</text>
-        <text x="188" y="284" class="small">injects mode_policy + mode_context</text>
-        <text x="188" y="302" class="small">into system prompts</text>
+        <rect x="500" y="226" width="250" height="104" class="node-dark" rx="18" />
+        <text x="522" y="260" class="svg-label-light">Narrative Texture</text>
+        <text x="522" y="286" class="svg-small-light">useful, but not authority</text>
 
-        <rect x="500" y="210" width="250" height="110" class="node node-purple" />
-        <text x="518" y="242" class="label">Interpretation Output</text>
-        <text x="518" y="266" class="small">.batch-outputs / .runs markdown</text>
-        <text x="518" y="284" class="small">narrative texture</text>
-        <text x="518" y="302" class="small">not source-of-truth facts</text>
+        <rect x="840" y="226" width="240" height="104" class="node-red" rx="18" />
+        <text x="862" y="260" class="svg-label">Consistency Gate</text>
+        <text x="862" y="286" class="svg-small">block drift before packaging</text>
 
-        <rect x="830" y="210" width="250" height="110" class="node node-green" />
-        <text x="848" y="242" class="label">Deterministic Fact Extractor</text>
-        <text x="848" y="266" class="small">premium-asset-factory.ts</text>
-        <text x="848" y="284" class="small">natal/current panchanga split</text>
-        <text x="848" y="302" class="small">partner anchors for synastry</text>
+        <path d="M960 138 C960 190 285 176 285 226" class="arrow" />
+        <path d="M410 278 H500" class="arrow" />
+        <path d="M750 278 H840" class="arrow-red" />
 
-        <path d="M700 138 C700 172 350 172 295 210" class="edge" />
-        <path d="M420 265 H500" class="edge" />
-        <path d="M750 265 H830" class="edge" />
+        <rect x="158" y="430" width="250" height="104" class="node-gold" rx="18" />
+        <text x="180" y="464" class="svg-label">Recipient Dossier</text>
+        <text x="180" y="490" class="svg-small">context + policy + anchors</text>
 
-        <rect x="60" y="400" width="270" height="116" class="node node-gold" />
-        <text x="78" y="432" class="label">Recipient Source Pack</text>
-        <text x="78" y="456" class="small">00 dossier + partner anchors</text>
-        <text x="78" y="474" class="small">00b mode policy</text>
-        <text x="78" y="492" class="small">00c answered mode context</text>
+        <rect x="498" y="430" width="250" height="104" class="node-green" rx="18" />
+        <text x="520" y="464" class="svg-label">Local Assets</text>
+        <text x="520" y="490" class="svg-small">PDF, reflection, manifest</text>
 
-        <rect x="410" y="400" width="270" height="116" class="node node-red" />
-        <text x="428" y="432" class="label">Deterministic Source Gate</text>
-        <text x="428" y="456" class="small">gateSourcePack()</text>
-        <text x="428" y="474" class="small">audit-asset-chain.ts</text>
-        <text x="428" y="492" class="small">blocks drift before upload</text>
+        <rect x="838" y="430" width="250" height="104" class="node-violet" rx="18" />
+        <text x="860" y="464" class="svg-label">Generative Assets</text>
+        <text x="860" y="490" class="svg-small">audio, video, decks, study</text>
 
-        <rect x="760" y="400" width="300" height="116" class="node node-blue" />
-        <text x="778" y="432" class="label">NotebookLM Source Upload</text>
-        <text x="778" y="456" class="small">all source-pack/*.md</text>
-        <text x="778" y="474" class="small">no raw engine dumps</text>
-        <text x="778" y="492" class="small">recipient-facing only</text>
-
-        <path d="M955 320 C955 360 195 350 195 400" class="edge" />
-        <path d="M330 458 H410" class="edge" />
-        <path d="M680 458 H760" class="edge" />
-
-        <rect x="90" y="600" width="220" height="96" class="node node-green" />
-        <text x="108" y="632" class="label">Local Assets</text>
-        <text x="108" y="656" class="small">HTML/PDF, reflection questions</text>
-        <text x="108" y="674" class="small">manifest + provenance</text>
-
-        <rect x="390" y="600" width="220" height="96" class="node node-purple" />
-        <text x="408" y="632" class="label">NotebookLM Assets</text>
-        <text x="408" y="656" class="small">audio, video, reports</text>
-        <text x="408" y="674" class="small">quiz, flashcards, mind map</text>
-
-        <rect x="690" y="600" width="260" height="96" class="node node-gold" />
-        <text x="708" y="632" class="label">Recovery / Download Only</text>
-        <text x="708" y="656" class="small">--download-only --notebook-id</text>
-        <text x="708" y="674" class="small">handles async artifact completion</text>
-
-        <path d="M195 516 V600" class="edge" />
-        <path d="M910 516 C910 565 500 560 500 600" class="edge" />
-        <path d="M610 648 H690" class="edge" />
-
-        <path d="M590 516 C590 555 1030 560 1030 450" class="edge edge-gate" />
-        <text x="970" y="548" class="small" fill="#ff7e8a">blocked if drift</text>
+        <path d="M960 330 C960 385 283 370 283 430" class="arrow" />
+        <path d="M408 482 H498" class="arrow" />
+        <path d="M748 482 H838" class="arrow" />
       </svg>
     </div>
   </section>
 
-  <section>
-    <h2>Where Assumptions Are Blocked</h2>
-    <div class="swimlanes">
-      <div class="lane"><h3>1. Reading Start</h3><ul><li><code>integratedreading-mode.ts</code> requires <code>--mode-context</code>.</li><li><code>validateModeContext()</code> prints mode-specific questions and exits if missing.</li><li>Mode policy enters prompts as <code>mode_policy</code> and <code>mode_context</code>.</li></ul></div>
-      <div class="lane"><h3>2. Fact Extraction</h3><ul><li>Engine JSON becomes deterministic anchors.</li><li>Natal Panchanga is separate from current-day Panchanga.</li><li>Synastry requires partner-level anchors; generated prose is texture only.</li></ul></div>
-      <div class="lane"><h3>3. Source Pack</h3><ul><li><code>00b-mode-register-policy.md</code> records mode/register.</li><li><code>00c-answered-mode-context.md</code> records answered questions.</li><li>NotebookLM receives source pack markdown, not raw internal engine dumps.</li></ul></div>
-      <div class="lane"><h3>4. Audit Gate</h3><ul><li>Blocks nakshatra drift.</li><li>Blocks false somatic absence.</li><li>Blocks natal Panchanga being described as current weather.</li><li>Blocks synastry without partner facts.</li></ul></div>
+  <section id="section-5">
+    <span class="tag red">05 · Gate Mathematics</span>
+    <h2>Validity Is Predicate Logic</h2>
+    <div class="grid two">
+      <div class="formula">
+        <div>G = g₁ ∧ g₂ ∧ g₃ ∧ g₄ ∧ g₅</div>
+        <br>
+        <div>g₁ = required context answered</div>
+        <div>g₂ = deterministic facts present</div>
+        <div>g₃ = no partner fact transfer</div>
+        <div>g₄ = no false absence claims</div>
+        <div>g₅ = timing scopes separated</div>
+      </div>
+      <div>
+        <p>The gate is not a style check. It is the mathematical condition under which the system is allowed to produce downstream assets. A single false predicate blocks generation.</p>
+        <p class="muted">This is why synastry without partner anchors blocks, why birth Panchanga cannot become current weather, and why available somatic data cannot be described as missing.</p>
+      </div>
     </div>
   </section>
 
-  <section>
-    <h2>Mode Matrix</h2>
-    <table>
-      <thead><tr><th>Mode</th><th>Required Intake</th><th>Forbidden Assumptions</th></tr></thead>
+  <section id="section-6">
+    <span class="tag blue">06 · Mode Space</span>
+    <h2>Relationship Type Is A Coordinate, Not A Guess</h2>
+    <table class="matrix">
+      <thead><tr><th>Mode</th><th>Primary Question</th><th>What It Must Not Assume</th></tr></thead>
       <tbody>
-        <tr><td><code>solo</code></td><td>recipient intent</td><td>relationship prediction, diagnosis, fate claims</td></tr>
-        <tr><td><code>married</code></td><td>relationship status, household status, primary question</td><td>dating frame, hypothetical vows, yes/no verdict</td></tr>
-        <tr><td><code>partner-relationship</code></td><td>relationship status, commitment status, primary question</td><td>assuming marriage, inevitability, destiny claims</td></tr>
-        <tr><td><code>general-synastry</code></td><td>connection type, primary question</td><td>romance/marriage/sexual framing unless explicitly supplied</td></tr>
-        <tr><td><code>family</code></td><td>family roles, primary question</td><td>romantic framing, blame assignment, compatibility score</td></tr>
-        <tr><td><code>business</code></td><td>business roles, decision context, primary question</td><td>romantic/family framing, investment advice, guaranteed outcomes</td></tr>
+        <tr><td>Solo</td><td>What is the recipient trying to understand in themselves?</td><td>No relationship, diagnosis, fate, or compatibility framing.</td></tr>
+        <tr><td>Married</td><td>What is the lived household or vow structure asking for?</td><td>No dating frame, no “will this work?” reduction.</td></tr>
+        <tr><td>Partner Relationship</td><td>What is the actual commitment status and question?</td><td>No marriage assumption, no destiny claim.</td></tr>
+        <tr><td>General Synastry</td><td>What kind of connection is being compared?</td><td>No romance, sexuality, or marriage unless supplied.</td></tr>
+        <tr><td>Family</td><td>What roles and lineage edges are involved?</td><td>No compatibility score, no blame, no romantic frame.</td></tr>
+        <tr><td>Business</td><td>What operational decision is being supported?</td><td>No romance/family frame, no investment advice, no guaranteed outcome.</td></tr>
       </tbody>
     </table>
   </section>
 
-  <section>
-    <h2>Key Files</h2>
-    <div class="grid cards">
-      <div class="card"><h3><code>scripts/asset-mode-policy.ts</code></h3><p>Central mode/register/intake contract.</p></div>
-      <div class="card"><h3><code>scripts/integratedreading-mode.ts</code></h3><p>Upstream reading runner. Blocks missing intake before LLM calls.</p></div>
-      <div class="card"><h3><code>scripts/premium-asset-factory.ts</code></h3><p>Downstream local/NotebookLM asset pack generator.</p></div>
-      <div class="card"><h3><code>scripts/audit-asset-chain.ts</code></h3><p>Read-only chain audit for engine → interpretation → source pack consistency.</p></div>
+  <section id="section-7">
+    <span class="tag violet">07 · Register Space</span>
+    <h2>L1-L5 Changes The Language, Not The Facts</h2>
+    <div class="grid two">
+      <div class="card">
+        <span class="tag blue">L1-L3</span>
+        <h3>Accessible / Traditional</h3>
+        <p>Define terms, stay practical, use familiar Vedic and Human Design language, avoid internal framework jargon, focus on concrete reflection.</p>
+      </div>
+      <div class="card dark">
+        <span class="tag violet">L4-L5</span>
+        <h3>Architectural / Pattern-Native</h3>
+        <p>Use field, layer, anti-dependency, kosha, timing architecture, and structural pattern language while remaining grounded in deterministic anchors.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-8">
+    <span class="tag green">08 · Fact Matrix</span>
+    <h2>Facts Are Typed By Scope</h2>
+    <div class="grid three">
+      <div class="card"><h3>Natal Facts</h3><p>Birth Panchanga, natal Human Design, Gene Keys, numerology, Vimshottari timeline. These describe imprint and structure.</p></div>
+      <div class="card"><h3>Current Facts</h3><p>Current-day Panchanga, current dasha subperiods, transits, daily clocks. These describe timing and weather.</p></div>
+      <div class="card"><h3>Somatic Facts</h3><p>Biofield, face-reading, coherence, dosha, chakra activity. If present, the system may not say body data is absent.</p></div>
+    </div>
+    <div class="formula" style="margin-top:18px;">
+      <div>F = [F_natal, F_current, F_somatic, F_partner]</div>
+      <div class="dim">A claim is valid only if it references the correct column of F.</div>
+    </div>
+  </section>
+
+  <section id="section-9">
+    <span class="tag gold">09 · Synastry Rule</span>
+    <h2>Two People Require Two Deterministic Anchor Sets</h2>
+    <div class="grid two">
+      <div>
+        <p>Synastry is not allowed to use generated compatibility prose as the source of individual chart facts. Each person must carry their own deterministic anchor set. Generated prose can describe field dynamics, but it cannot assign a nakshatra, dasha, authority, or somatic signature.</p>
+        <p class="muted">This prevents the specific failure where one person’s Moon/nakshatra is transferred to the other person in a later pass.</p>
+      </div>
+      <div class="formula">
+        <div>F_partner = [F_A, F_B]</div>
+        <div>claim(person=A) ⊂ F_A</div>
+        <div>claim(person=B) ⊂ F_B</div>
+        <div>if claim_A ∈ F_B → block</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="section-10">
+    <span class="tag red">10 · Timing Rule</span>
+    <h2>Natal Panchanga Is Not Vedic Weather</h2>
+    <div class="grid two">
+      <div class="card"><h3>Birth Panchanga</h3><p>The five limbs at the birth moment. It is an imprint, not a daily forecast.</p></div>
+      <div class="card"><h3>Current Panchanga</h3><p>The five limbs for the current moment/location. Only this can be called current timing or daily weather.</p></div>
+    </div>
+    <div class="formula" style="margin-top:18px;">
+      <div>if source = natal_panchanga → language = “birth imprint”</div>
+      <div>if source = current_panchanga → language = “current-day timing”</div>
+      <div>if source = natal and language = current → block</div>
+    </div>
+  </section>
+
+  <section id="section-11">
+    <span class="tag blue">11 · Asset Packaging</span>
+    <h2>Assets Are Product Surfaces, Not New Truth Sources</h2>
+    <div class="flow-steps">
+      <div class="step"><div><h3>Source Dossier</h3><p>A recipient-facing narrative dossier containing anchors, context, policy, and sanitized narrative texture.</p></div></div>
+      <div class="step"><div><h3>Local Premium Pack</h3><p>HTML/PDF reading, reflection questions, manifest, and local provenance.</p></div></div>
+      <div class="step"><div><h3>NotebookLM Pack</h3><p>Audio, video, slide decks, study guide, briefing, quiz, flashcards, and mind map generated from curated sources.</p></div></div>
+      <div class="step"><div><h3>Recovery Loop</h3><p>Long-running generated artifacts can be downloaded later without regenerating sources.</p></div></div>
+    </div>
+  </section>
+
+  <section id="section-12">
+    <span class="tag green">12 · Operational Checklist</span>
+    <h2>Before Any Asset Leaves The System</h2>
+    <div class="grid two">
+      <div class="card"><h3>Must Pass</h3><ul><li>Mode context answered</li><li>Correct mode selected</li><li>Correct L1-L5 register selected</li><li>Deterministic facts extracted</li><li>Source gate passes</li><li>Audit returns zero blockers</li></ul></div>
+      <div class="card"><h3>Must Not Happen</h3><ul><li>Assume marriage from romance</li><li>Assume romance from synastry</li><li>Move facts between partners</li><li>Call natal Panchanga today’s weather</li><li>Say somatic data is absent when present</li><li>Upload raw engine dumps as recipient sources</li></ul></div>
     </div>
   </section>
 </main>
