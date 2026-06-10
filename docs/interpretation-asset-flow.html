@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Witness Agents Interpretation → Asset Flow</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111a33;
+      --panel-2: #172241;
+      --ink: #eef4ff;
+      --muted: #a9b7d0;
+      --line: #2f426f;
+      --cyan: #69d2ff;
+      --gold: #f5c66b;
+      --green: #79e6a3;
+      --red: #ff7e8a;
+      --purple: #b99cff;
+      --orange: #ffa765;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top left, #1d2c5c 0, var(--bg) 42rem);
+      color: var(--ink);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 1280px; margin: 0 auto; padding: 36px 24px 72px; }
+    header { margin-bottom: 28px; }
+    .eyebrow { color: var(--cyan); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 12px; }
+    h1 { margin: 10px 0 12px; font-size: clamp(34px, 5vw, 64px); line-height: 1.02; }
+    .subtitle { color: var(--muted); max-width: 860px; font-size: 18px; }
+    .grid { display: grid; gap: 18px; }
+    .cards { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin: 26px 0; }
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.025)); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: 0 18px 55px rgba(0,0,0,.22); }
+    .card h3 { margin: 0 0 8px; font-size: 18px; }
+    .card p { margin: 0; color: var(--muted); }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+    .p-blue { background: rgba(105,210,255,.14); color: var(--cyan); }
+    .p-gold { background: rgba(245,198,107,.16); color: var(--gold); }
+    .p-green { background: rgba(121,230,163,.14); color: var(--green); }
+    .p-purple { background: rgba(185,156,255,.15); color: var(--purple); }
+    .p-red { background: rgba(255,126,138,.15); color: var(--red); }
+    section { margin-top: 34px; }
+    h2 { font-size: 28px; margin: 0 0 16px; }
+    .flow-wrap { overflow-x: auto; background: rgba(10,16,34,.72); border: 1px solid var(--line); border-radius: 24px; padding: 22px; }
+    svg { width: 1220px; max-width: none; height: auto; display: block; }
+    .node { fill: var(--panel); stroke: var(--line); stroke-width: 1.5; rx: 14; }
+    .node-blue { fill: #122945; stroke: #2c8fbd; }
+    .node-gold { fill: #352811; stroke: #b48b35; }
+    .node-green { fill: #113421; stroke: #39a967; }
+    .node-purple { fill: #241a46; stroke: #7f62c7; }
+    .node-red { fill: #3a1720; stroke: #c45161; }
+    .label { fill: var(--ink); font-size: 14px; font-weight: 700; }
+    .small { fill: var(--muted); font-size: 11px; font-weight: 500; }
+    .edge { stroke: #6f86bd; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    .edge-gate { stroke: var(--red); stroke-dasharray: 6 5; }
+    .swimlanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .lane { border: 1px solid var(--line); background: rgba(255,255,255,.035); border-radius: 18px; padding: 16px; }
+    .lane h3 { margin: 0 0 10px; color: var(--gold); }
+    ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
+    code { color: #d8e6ff; background: rgba(255,255,255,.08); padding: 2px 6px; border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 16px; border: 1px solid var(--line); }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--cyan); background: rgba(105,210,255,.08); }
+    td { color: var(--muted); }
+    tr:last-child td { border-bottom: 0; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Witness Agents Architecture</div>
+    <h1>Interpretation → Asset Flow</h1>
+    <p class="subtitle">A visual map of how user intake, mode policy, deterministic Selemene engine data, interpretation outputs, source gates, and NotebookLM assets connect. The goal is to prevent assumptions and keep generated assets grounded in deterministic anchors.</p>
+  </header>
+
+  <div class="grid cards">
+    <div class="card"><span class="pill p-blue">Entry</span><h3>Question First</h3><p>Every reading mode requires answered mode context before generation. Missing answers block the run.</p></div>
+    <div class="card"><span class="pill p-gold">Policy</span><h3>Mode × Register</h3><p><code>asset-mode-policy.ts</code> defines solo, married, partner, general synastry, family, and business policies across L1-L5.</p></div>
+    <div class="card"><span class="pill p-green">Facts</span><h3>Deterministic Anchors</h3><p>Engine outputs are fact anchors. Generated prose is texture only, especially for synastry/composite readings.</p></div>
+    <div class="card"><span class="pill p-red">Gate</span><h3>Block Drift</h3><p>Audit/gate blocks nakshatra drift, false somatic absence, natal Panchanga-as-current weather, and missing partner facts.</p></div>
+  </div>
+
+  <section>
+    <h2>End-to-End Flow</h2>
+    <div class="flow-wrap">
+      <svg viewBox="0 0 1220 740" role="img" aria-label="Witness Agents data flow diagram">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#6f86bd" />
+          </marker>
+        </defs>
+
+        <rect x="30" y="40" width="220" height="98" class="node node-blue" />
+        <text x="48" y="70" class="label">User / Operator Intake</text>
+        <text x="48" y="94" class="small">mode_context JSON</text>
+        <text x="48" y="112" class="small">relationship status, roles, question</text>
+
+        <rect x="310" y="40" width="220" height="98" class="node node-gold" />
+        <text x="328" y="70" class="label">Mode Policy Registry</text>
+        <text x="328" y="94" class="small">asset-mode-policy.ts</text>
+        <text x="328" y="112" class="small">mode + L1-L5 register</text>
+
+        <rect x="590" y="40" width="220" height="98" class="node node-red" />
+        <text x="608" y="70" class="label">Intake Gate</text>
+        <text x="608" y="94" class="small">validateModeContext()</text>
+        <text x="608" y="112" class="small">blocks missing answers</text>
+
+        <rect x="870" y="40" width="250" height="98" class="node node-green" />
+        <text x="888" y="70" class="label">Selemene Engine Data</text>
+        <text x="888" y="94" class="small">panchanga, vimshottari, HD,</text>
+        <text x="888" y="112" class="small">biofield, face-reading, etc.</text>
+
+        <path d="M250 89 H310" class="edge" />
+        <path d="M530 89 H590" class="edge" />
+        <path d="M810 89 H870" class="edge" />
+
+        <rect x="170" y="210" width="250" height="110" class="node node-purple" />
+        <text x="188" y="242" class="label">Integrated Reading Runner</text>
+        <text x="188" y="266" class="small">integratedreading-mode.ts</text>
+        <text x="188" y="284" class="small">injects mode_policy + mode_context</text>
+        <text x="188" y="302" class="small">into system prompts</text>
+
+        <rect x="500" y="210" width="250" height="110" class="node node-purple" />
+        <text x="518" y="242" class="label">Interpretation Output</text>
+        <text x="518" y="266" class="small">.batch-outputs / .runs markdown</text>
+        <text x="518" y="284" class="small">narrative texture</text>
+        <text x="518" y="302" class="small">not source-of-truth facts</text>
+
+        <rect x="830" y="210" width="250" height="110" class="node node-green" />
+        <text x="848" y="242" class="label">Deterministic Fact Extractor</text>
+        <text x="848" y="266" class="small">premium-asset-factory.ts</text>
+        <text x="848" y="284" class="small">natal/current panchanga split</text>
+        <text x="848" y="302" class="small">partner anchors for synastry</text>
+
+        <path d="M700 138 C700 172 350 172 295 210" class="edge" />
+        <path d="M420 265 H500" class="edge" />
+        <path d="M750 265 H830" class="edge" />
+
+        <rect x="60" y="400" width="270" height="116" class="node node-gold" />
+        <text x="78" y="432" class="label">Recipient Source Pack</text>
+        <text x="78" y="456" class="small">00 dossier + partner anchors</text>
+        <text x="78" y="474" class="small">00b mode policy</text>
+        <text x="78" y="492" class="small">00c answered mode context</text>
+
+        <rect x="410" y="400" width="270" height="116" class="node node-red" />
+        <text x="428" y="432" class="label">Deterministic Source Gate</text>
+        <text x="428" y="456" class="small">gateSourcePack()</text>
+        <text x="428" y="474" class="small">audit-asset-chain.ts</text>
+        <text x="428" y="492" class="small">blocks drift before upload</text>
+
+        <rect x="760" y="400" width="300" height="116" class="node node-blue" />
+        <text x="778" y="432" class="label">NotebookLM Source Upload</text>
+        <text x="778" y="456" class="small">all source-pack/*.md</text>
+        <text x="778" y="474" class="small">no raw engine dumps</text>
+        <text x="778" y="492" class="small">recipient-facing only</text>
+
+        <path d="M955 320 C955 360 195 350 195 400" class="edge" />
+        <path d="M330 458 H410" class="edge" />
+        <path d="M680 458 H760" class="edge" />
+
+        <rect x="90" y="600" width="220" height="96" class="node node-green" />
+        <text x="108" y="632" class="label">Local Assets</text>
+        <text x="108" y="656" class="small">HTML/PDF, reflection questions</text>
+        <text x="108" y="674" class="small">manifest + provenance</text>
+
+        <rect x="390" y="600" width="220" height="96" class="node node-purple" />
+        <text x="408" y="632" class="label">NotebookLM Assets</text>
+        <text x="408" y="656" class="small">audio, video, reports</text>
+        <text x="408" y="674" class="small">quiz, flashcards, mind map</text>
+
+        <rect x="690" y="600" width="260" height="96" class="node node-gold" />
+        <text x="708" y="632" class="label">Recovery / Download Only</text>
+        <text x="708" y="656" class="small">--download-only --notebook-id</text>
+        <text x="708" y="674" class="small">handles async artifact completion</text>
+
+        <path d="M195 516 V600" class="edge" />
+        <path d="M910 516 C910 565 500 560 500 600" class="edge" />
+        <path d="M610 648 H690" class="edge" />
+
+        <path d="M590 516 C590 555 1030 560 1030 450" class="edge edge-gate" />
+        <text x="970" y="548" class="small" fill="#ff7e8a">blocked if drift</text>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where Assumptions Are Blocked</h2>
+    <div class="swimlanes">
+      <div class="lane"><h3>1. Reading Start</h3><ul><li><code>integratedreading-mode.ts</code> requires <code>--mode-context</code>.</li><li><code>validateModeContext()</code> prints mode-specific questions and exits if missing.</li><li>Mode policy enters prompts as <code>mode_policy</code> and <code>mode_context</code>.</li></ul></div>
+      <div class="lane"><h3>2. Fact Extraction</h3><ul><li>Engine JSON becomes deterministic anchors.</li><li>Natal Panchanga is separate from current-day Panchanga.</li><li>Synastry requires partner-level anchors; generated prose is texture only.</li></ul></div>
+      <div class="lane"><h3>3. Source Pack</h3><ul><li><code>00b-mode-register-policy.md</code> records mode/register.</li><li><code>00c-answered-mode-context.md</code> records answered questions.</li><li>NotebookLM receives source pack markdown, not raw internal engine dumps.</li></ul></div>
+      <div class="lane"><h3>4. Audit Gate</h3><ul><li>Blocks nakshatra drift.</li><li>Blocks false somatic absence.</li><li>Blocks natal Panchanga being described as current weather.</li><li>Blocks synastry without partner facts.</li></ul></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Mode Matrix</h2>
+    <table>
+      <thead><tr><th>Mode</th><th>Required Intake</th><th>Forbidden Assumptions</th></tr></thead>
+      <tbody>
+        <tr><td><code>solo</code></td><td>recipient intent</td><td>relationship prediction, diagnosis, fate claims</td></tr>
+        <tr><td><code>married</code></td><td>relationship status, household status, primary question</td><td>dating frame, hypothetical vows, yes/no verdict</td></tr>
+        <tr><td><code>partner-relationship</code></td><td>relationship status, commitment status, primary question</td><td>assuming marriage, inevitability, destiny claims</td></tr>
+        <tr><td><code>general-synastry</code></td><td>connection type, primary question</td><td>romance/marriage/sexual framing unless explicitly supplied</td></tr>
+        <tr><td><code>family</code></td><td>family roles, primary question</td><td>romantic framing, blame assignment, compatibility score</td></tr>
+        <tr><td><code>business</code></td><td>business roles, decision context, primary question</td><td>romantic/family framing, investment advice, guaranteed outcomes</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Key Files</h2>
+    <div class="grid cards">
+      <div class="card"><h3><code>scripts/asset-mode-policy.ts</code></h3><p>Central mode/register/intake contract.</p></div>
+      <div class="card"><h3><code>scripts/integratedreading-mode.ts</code></h3><p>Upstream reading runner. Blocks missing intake before LLM calls.</p></div>
+      <div class="card"><h3><code>scripts/premium-asset-factory.ts</code></h3><p>Downstream local/NotebookLM asset pack generator.</p></div>
+      <div class="card"><h3><code>scripts/audit-asset-chain.ts</code></h3><p>Read-only chain audit for engine → interpretation → source pack consistency.</p></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
