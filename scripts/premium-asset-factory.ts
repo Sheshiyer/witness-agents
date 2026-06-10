@@ -53,6 +53,8 @@ interface CliArgs {
   outputDir: string;
   notebooklm: boolean;
   downloadOnly: boolean;
+  sourcesOnly: boolean;
+  generateOnly: boolean;
   notebookId?: string;
   noPdf: boolean;
   force: boolean;
@@ -61,6 +63,12 @@ interface CliArgs {
 interface QualityCheck {
   name: string;
   status: 'pass' | 'warn' | 'fail';
+  detail: string;
+}
+
+interface GateFinding {
+  code: string;
+  severity: 'blocker' | 'warning';
   detail: string;
 }
 
@@ -87,6 +95,10 @@ interface Manifest {
     provenance: string;
   };
   quality: QualityCheck[];
+  gate: {
+    status: 'pass' | 'blocked';
+    findings: GateFinding[];
+  };
   notebooklm: {
     enabled: boolean;
     notebookId?: string;
@@ -119,6 +131,8 @@ function parseArgs(): CliArgs {
     outputDir: String(opts.outputDir || opts.output || DEFAULT_OUTPUT_DIR),
     notebooklm: opts.notebooklm === true,
     downloadOnly: opts.downloadOnly === true || opts['download-only'] === true,
+    sourcesOnly: opts.sourcesOnly === true || opts['sources-only'] === true,
+    generateOnly: opts.generateOnly === true || opts['generate-only'] === true,
     notebookId: typeof opts.notebookId === 'string'
       ? opts.notebookId
       : (typeof opts['notebook-id'] === 'string' ? opts['notebook-id'] : undefined),
@@ -196,6 +210,23 @@ function extractFacts(engineData: Record<string, any>): Record<string, unknown> 
       facts.panchanga_karana = result.karana_name;
     }
 
+    if (engineId === 'biofield') {
+      facts.biofield_available = true;
+      facts.biofield_dominant_element = result.dominant_element || result.element || result.primary_element;
+      facts.biofield_coherence = result.coherence || result.overall_coherence || result.biofield_coherence || result.metrics?.coherence;
+      facts.biofield_vitality_index = result.metrics?.vitality_index;
+      facts.biofield_interpretation = result.interpretation;
+    }
+
+    if (engineId === 'face-reading') {
+      facts.face_reading_available = true;
+      const constitution = result.analysis?.constitution || result.constitution || {};
+      const balance = result.analysis?.elemental_balance || result.elemental_balance || {};
+      facts.face_reading_primary_dosha = result.primary_dosha || result.dosha?.primary || constitution.primary_dosha;
+      facts.face_reading_secondary_dosha = result.secondary_dosha || result.dosha?.secondary || constitution.secondary_dosha;
+      facts.face_reading_dominant_element = balance.dominant || constitution.tcm_element;
+    }
+
     if (engineId === 'numerology') {
       facts.numerology_life_path = result.life_path?.number ?? result.life_path_number;
       facts.numerology_expression = result.expression?.number ?? result.expression_number;
@@ -204,6 +235,65 @@ function extractFacts(engineData: Record<string, any>): Record<string, unknown> 
   }
 
   return Object.fromEntries(Object.entries(facts).filter(([, value]) => value !== undefined && value !== null));
+}
+
+function hasEngine(engineData: Record<string, any>, engineId: string): boolean {
+  return !!engineData[engineId] && !engineData[engineId]._error;
+}
+
+function plainFactValue(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  return String(value);
+}
+
+function gateSourcePack(personId: string, reading: string, sourceText: string, facts: Record<string, unknown>, engineData: Record<string, any>): GateFinding[] {
+  const findings: GateFinding[] = [];
+  const isSynastry = /synastry|composite|partner/i.test(personId);
+  const text = `${reading}\n\n${sourceText}`;
+
+  if (isSynastry && Object.keys(facts).length < 6) {
+    findings.push({
+      code: 'synastry_missing_deterministic_facts',
+      severity: 'blocker',
+      detail: `Synastry pass has ${Object.keys(facts).length} extracted deterministic facts. Do not upload generated synastry prose without partner fact anchors.`,
+    });
+  }
+
+  const expectedNakshatra = plainFactValue(facts.panchanga_nakshatra);
+  if (expectedNakshatra) {
+    const knownNakshatras = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
+    const mentioned = knownNakshatras.filter(name => new RegExp(`\\b${name.replace(/ /g, '\\s+')}\\b`, 'i').test(text));
+    const unexpected = mentioned.filter(name => name.toLowerCase() !== expectedNakshatra.toLowerCase());
+    if (unexpected.length > 0) {
+      findings.push({
+        code: 'nakshatra_drift',
+        severity: 'blocker',
+        detail: `Expected Panchanga Nakshatra ${expectedNakshatra}, but source text also mentions: ${[...new Set(unexpected)].join(', ')}.`,
+      });
+    }
+  }
+
+  const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
+  if (hasSomaticData) {
+    const sourceMentionsSomatic = /biofield|face reading|dosha|somatic|coherence|dominant element/i.test(sourceText);
+    const deniesSomatic = /no recorded data for .*Somatic|no somatic data|not available for .*Somatic|absence of (a )?somatic map|absence of somatic data/i.test(sourceText);
+    if (!sourceMentionsSomatic) {
+      findings.push({
+        code: 'somatic_data_omitted',
+        severity: 'blocker',
+        detail: 'Input contains somatic engines, but NotebookLM source pack does not include somatic anchors.',
+      });
+    }
+    if (deniesSomatic) {
+      findings.push({
+        code: 'somatic_false_absence',
+        severity: 'blocker',
+        detail: 'Input contains somatic engines, but source text says somatic data is absent or unavailable.',
+      });
+    }
+  }
+
+  return findings;
 }
 
 function extractVimshottariTimeline(engineData: Record<string, any>): Array<Record<string, unknown>> {
@@ -252,14 +342,56 @@ function cleanReadingForNotebook(reading: string): string {
     .trim();
 }
 
-function buildNarrativeDossier(personName: string, reading: string, facts: Record<string, unknown>): string {
-  const western = extractSection(reading, 'western-systems');
-  const vedic = extractSection(reading, 'vedic-systems');
-  const somatic = extractSection(reading, 'somatic-systems');
-  const synthesis = extractSection(reading, 'section-synthesis');
+function sanitizeSomaticFalseAbsence(text: string, hasSomaticData: boolean): string {
+  if (!hasSomaticData) return text;
+  return text
+    .replace(/the absence of a somatic map/gi, 'the deterministic somatic map')
+    .replace(/absence of somatic data/gi, 'available somatic data')
+    .replace(/no recorded data for the three Somatic Consciousness Systems[^\n.]*[.]/gi, 'Deterministic somatic data is available and should be used as the body-level anchor.')
+    .replace(/Because there are no engine outputs to reference[^\n.]*[.]/gi, 'Because somatic engine outputs are available, use the biofield and face-reading anchors carefully.');
+}
+
+function buildNarrativeDossier(personName: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>): string {
+  const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
+  const safeReading = sanitizeSomaticFalseAbsence(reading, hasSomaticData);
+  const western = extractSection(safeReading, 'western-systems');
+  const vedic = extractSection(safeReading, 'vedic-systems');
+  const somatic = buildSomaticNarrative(facts, engineData, extractSection(reading, 'somatic-systems'));
+  const synthesis = extractSection(safeReading, 'section-synthesis');
   const factLines = Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n');
 
-  return `# Personal Companion Dossier: ${personName}\n\nThis dossier is written for ${personName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(reading)}\n\n## Decision And Identity Thread\n\n${western || 'No decision and identity narrative section is available.'}\n\n## Timing And Life-Rhythm Thread\n\n${vedic || 'No timing and life-rhythm narrative section is available.'}\n\n## Body And Integration Thread\n\n${somatic || 'No body and integration narrative section is available.'}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personName} can listen to, revisit, study, and practice with.\n`;
+  return `# Personal Companion Dossier: ${personName}\n\nThis dossier is written for ${personName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Decision And Identity Thread\n\n${western || 'No decision and identity narrative section is available.'}\n\n## Timing And Life-Rhythm Thread\n\n${vedic || 'No timing and life-rhythm narrative section is available.'}\n\n## Body And Integration Thread\n\n${somatic || 'No body and integration narrative section is available.'}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personName} can listen to, revisit, study, and practice with.\n`;
+}
+
+function buildSomaticNarrative(facts: Record<string, unknown>, engineData: Record<string, any>, generatedSomatic: string): string {
+  const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
+  if (!hasSomaticData) return generatedSomatic || 'No body and integration narrative section is available.';
+
+  const anchors = [
+    facts.biofield_interpretation ? `Biofield interpretation: ${facts.biofield_interpretation}` : '',
+    facts.biofield_coherence ? `Biofield coherence: ${facts.biofield_coherence}` : '',
+    facts.biofield_vitality_index ? `Biofield vitality index: ${facts.biofield_vitality_index}` : '',
+    facts.face_reading_primary_dosha ? `Primary dosha: ${facts.face_reading_primary_dosha}` : '',
+    facts.face_reading_secondary_dosha ? `Secondary dosha: ${facts.face_reading_secondary_dosha}` : '',
+    facts.face_reading_dominant_element ? `Face-reading dominant element: ${facts.face_reading_dominant_element}` : '',
+  ].filter(Boolean).map(line => `- ${line}`).join('\n');
+
+  return `Deterministic somatic data is available and should be used as the body-level anchor. Do not say somatic data is absent.\n\n${anchors}\n\nUse this as a reflective body-awareness layer, not diagnosis or medical instruction.`;
+}
+
+function buildSomaticAnchor(facts: Record<string, unknown>, engineData: Record<string, any>): string {
+  const hasBiofield = hasEngine(engineData, 'biofield');
+  const hasFace = hasEngine(engineData, 'face-reading');
+  const lines = [
+    `Biofield data available: ${hasBiofield ? 'yes' : 'no'}`,
+    `Face-reading data available: ${hasFace ? 'yes' : 'no'}`,
+    facts.biofield_dominant_element ? `Biofield dominant element: ${facts.biofield_dominant_element}` : '',
+    facts.biofield_coherence ? `Biofield coherence: ${facts.biofield_coherence}` : '',
+    facts.face_reading_primary_dosha ? `Primary dosha: ${facts.face_reading_primary_dosha}` : '',
+    facts.face_reading_secondary_dosha ? `Secondary dosha: ${facts.face_reading_secondary_dosha}` : '',
+  ].filter(Boolean).map(line => `- ${line}`).join('\n');
+
+  return `# Somatic Anchor\n\nThis source prevents false statements about missing body-level data. Use these anchors only where they are present.\n\n${lines}\n\nIf data is available, do not say it is absent. If a specific somatic field is not listed, do not invent it.\n`;
 }
 
 function buildAudioBrief(personName: string, facts: Record<string, unknown>): string {
@@ -518,19 +650,34 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
     };
   }
 
+  if (args.generateOnly && !args.notebookId) {
+    throw new Error('--generate-only requires --notebook-id');
+  }
+
   const notebookTitle = `Witness Premium Pack - ${personName}`;
   const notebookPayload = args.notebookId ? undefined : notebooklmJson(['create', notebookTitle]);
   const notebookId = args.notebookId || pickId(notebookPayload);
   if (!notebookId) throw new Error(`NotebookLM create did not return an id: ${JSON.stringify(notebookPayload).slice(0, 300)}`);
 
   const sourceIds: Record<string, string> = {};
-  for (const file of readdirSync(sourcePackDir).filter(name => name.endsWith('.md')).sort()) {
-    const source = notebooklmJson(['source', 'add', join(sourcePackDir, file), '--notebook', notebookId, '--title', file.replace(/\.md$/, '')]);
-    const sourceId = pickId(source);
-    if (sourceId) {
-      sourceIds[file] = sourceId;
-      execFileSync('notebooklm', ['source', 'wait', sourceId, '--notebook', notebookId, '--timeout', '240'], { stdio: 'inherit', timeout: 300_000 });
+  if (!args.generateOnly) {
+    for (const file of readdirSync(sourcePackDir).filter(name => name.endsWith('.md')).sort()) {
+      const source = notebooklmJson(['source', 'add', join(sourcePackDir, file), '--notebook', notebookId, '--title', file.replace(/\.md$/, '')]);
+      const sourceId = pickId(source);
+      if (sourceId) {
+        sourceIds[file] = sourceId;
+        execFileSync('notebooklm', ['source', 'wait', sourceId, '--notebook', notebookId, '--timeout', '240'], { stdio: 'inherit', timeout: 300_000 });
+      }
     }
+  }
+
+  if (args.sourcesOnly) {
+    return {
+      enabled: true,
+      notebookId,
+      sources: sourceIds,
+      artifacts: {},
+    };
   }
 
   const audioDir = join(packDir, 'audio');
@@ -649,7 +796,7 @@ function writeSourcePack(personName: string, personId: string, packDir: string, 
   const sourcePackDir = join(packDir, 'source-pack');
   mkdirSync(sourcePackDir, { recursive: true });
 
-  writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personName, reading, facts));
+  writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personName, reading, facts, engineData));
   writeFileSync(join(sourcePackDir, '01-audio-experience-brief.md'), buildAudioBrief(personName, facts));
   writeFileSync(join(sourcePackDir, '02-personal-study-guide-brief.md'), buildStudyGuideBrief(personName));
   writeFileSync(join(sourcePackDir, '03-personal-video-brief.md'), buildVideoBrief(personName));
@@ -657,7 +804,8 @@ function writeSourcePack(personName: string, personId: string, packDir: string, 
   writeFileSync(join(sourcePackDir, '05-slide-deck-preview-brief.md'), buildSlideDeckBrief(personName, 'preview'));
   writeFileSync(join(sourcePackDir, '06-vimshottari-timeline-brief.md'), buildVimshottariTimelineBrief(personName, extractVimshottariTimeline(engineData), facts));
   writeFileSync(join(sourcePackDir, '07-orientation-anchors.md'), `# Orientation Anchors\n\nThese are anchors for accuracy, not the product. Use them to prevent drift while producing vivid personal assets.\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n`);
-  writeFileSync(join(sourcePackDir, '08-boundaries-and-style.md'), `# Boundaries and Style\n\n## Make It Deliverable\n\nTurn the reading into a polished product: audio, video, slide decks, study guide, quiz, flashcards, and mind map. The audience should feel they received a personal companion, not a structured engine output.\n\n## Consistent Visual Theme\n\nUse warm parchment, soft gold, night indigo, refined typography, subtle orbit lines, calm spacing, and editorial restraint across PDFs and slide decks.\n\n## Boundaries\n\n- Do not invent missing engine data.\n- Do not make medical, financial, or deterministic life predictions.\n- Treat all content as reflective witnessing, not diagnosis or instruction.\n- If a system lacks data, name the absence rather than filling the gap.\n- Preserve the Euclidean-runtime vs non-Euclidean-Noesis distinction: outputs are mirrors for inquiry, not commands.\n\n## Voice\n\nWarm, exact, human, reflective, premium, embodied. Avoid generic mystical language. Avoid raw JSON/schema phrasing.\n`);
+  writeFileSync(join(sourcePackDir, '08-somatic-anchor.md'), buildSomaticAnchor(facts, engineData));
+  writeFileSync(join(sourcePackDir, '09-boundaries-and-style.md'), `# Boundaries and Style\n\n## Make It Deliverable\n\nTurn the reading into a polished product: audio, video, slide decks, study guide, quiz, flashcards, and mind map. The audience should feel they received a personal companion, not a structured engine output.\n\n## Consistent Visual Theme\n\nUse warm parchment, soft gold, night indigo, refined typography, subtle orbit lines, calm spacing, and editorial restraint across PDFs and slide decks.\n\n## Boundaries\n\n- Do not invent missing engine data.\n- Do not make medical, financial, or deterministic life predictions.\n- Treat all content as reflective witnessing, not diagnosis or instruction.\n- If a system lacks data, name the absence rather than filling the gap.\n- Preserve the Euclidean-runtime vs non-Euclidean-Noesis distinction: outputs are mirrors for inquiry, not commands.\n\n## Voice\n\nWarm, exact, human, reflective, premium, embodied. Avoid generic mystical language. Avoid raw JSON/schema phrasing.\n`);
 
   return sourcePackDir;
 }
@@ -677,6 +825,12 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   const facts = extractFacts(engineData);
   const reading = readFileSync(readingPath, 'utf-8');
   const sourcePackDir = writeSourcePack(personName, personId, packDir, reading, facts, engineData);
+  const sourceText = readdirSync(sourcePackDir)
+    .filter(file => file.endsWith('.md'))
+    .sort()
+    .map(file => readFileSync(join(sourcePackDir, file), 'utf-8'))
+    .join('\n\n');
+  const gateFindings = gateSourcePack(personId, reading, sourceText, facts, engineData);
   const provenancePath = join(localDir, 'provenance.md');
   writeFileSync(provenancePath, `# Local Provenance\n\nThis file is local-only. It is not uploaded to NotebookLM.\n\n## Engine Inventory\n\n${summarizeEngines(engineData)}\n`);
   const reflectionMd = reflectionQuestions(personName, facts);
@@ -704,6 +858,10 @@ function processPerson(personId: string, args: CliArgs): Manifest {
       provenance: provenancePath,
     },
     quality: qualityChecks(reading, facts),
+    gate: {
+      status: gateFindings.some(finding => finding.severity === 'blocker') ? 'blocked' : 'pass',
+      findings: gateFindings,
+    },
     notebooklm: {
       enabled: false,
       sources: {},
@@ -712,6 +870,10 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   };
 
   if (args.notebooklm) {
+    if (manifest.gate.status === 'blocked') {
+      writeFileSync(join(packDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+      throw new Error(`NotebookLM blocked by deterministic source gate: ${manifest.gate.findings.map(f => f.code).join(', ')}`);
+    }
     manifest.notebooklm = runNotebookLM(personName, packDir, sourcePackDir, manifest, args);
   }
 
