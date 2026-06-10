@@ -26,6 +26,8 @@ export interface ModePolicy {
   deckFrame: string;
   audioFrame: string;
   sourceRules: string[];
+  requiredContextFields: string[];
+  intakeQuestions: string[];
 }
 
 export function levelToRegisterBand(level: ConsciousnessLevel): RegisterBand {
@@ -51,6 +53,11 @@ const MODE_BASE: Record<RelationshipMode, Omit<ModePolicy, 'register' | 'noteboo
     requiredAnchors: ['subject deterministic facts', 'natal panchanga scope', 'somatic availability scope'],
     forbiddenFrames: ['compatibility scoring', 'relationship prediction', 'medical diagnosis', 'deterministic fate claims'],
     sourceRules: ['Treat engine facts as anchors.', 'Use generated prose as narrative texture only when it agrees with anchors.'],
+    requiredContextFields: ['recipient_intent'],
+    intakeQuestions: [
+      'What does the recipient want this reading to help them reflect on?',
+      'Is this for private integration, sharing with someone else, or archival self-study?',
+    ],
   },
   married: {
     mode: 'married',
@@ -59,6 +66,12 @@ const MODE_BASE: Record<RelationshipMode, Omit<ModePolicy, 'register' | 'noteboo
     requiredAnchors: ['partner A deterministic facts', 'partner B deterministic facts', 'relationship status: married', 'household context if supplied'],
     forbiddenFrames: ['whether this will work as a yes/no verdict', 'dating advice framing', 'treating vows as hypothetical'],
     sourceRules: ['Honor existing commitment.', 'Focus on maintenance, repair, dharma, shared rhythm, and anti-dependency.'],
+    requiredContextFields: ['relationship_status', 'shared_household_status', 'primary_question'],
+    intakeQuestions: [
+      'Are the two people married, legally partnered, ritually committed, or otherwise explicitly in a committed household structure?',
+      'Do they share a household, finances, children, family duties, or long-term care obligations?',
+      'What is the primary question for the marriage/household reading: repair, timing, communication, family, money, dharma, or something else?',
+    ],
   },
   'partner-relationship': {
     mode: 'partner-relationship',
@@ -67,6 +80,12 @@ const MODE_BASE: Record<RelationshipMode, Omit<ModePolicy, 'register' | 'noteboo
     requiredAnchors: ['partner A deterministic facts', 'partner B deterministic facts', 'relationship status', 'commitment context if supplied'],
     forbiddenFrames: ['assuming marriage', 'declaring inevitable breakup/marriage', 'turning attraction into destiny'],
     sourceRules: ['Separate current relational field from marital vow field.', 'Name tests and timing without prediction.'],
+    requiredContextFields: ['relationship_status', 'commitment_status', 'primary_question'],
+    intakeQuestions: [
+      'What is the actual relationship status: dating, long-term relationship, engaged, on/off, separated, unclear, or other?',
+      'Are marriage, commitment, shared home, children, or business entanglement currently being considered, or should those not be assumed?',
+      'What is the primary question for the relationship reading: compatibility, timing, conflict, commitment, communication, repair, or clarity?',
+    ],
   },
   'general-synastry': {
     mode: 'general-synastry',
@@ -75,6 +94,12 @@ const MODE_BASE: Record<RelationshipMode, Omit<ModePolicy, 'register' | 'noteboo
     requiredAnchors: ['person A deterministic facts', 'person B deterministic facts', 'connection type if supplied'],
     forbiddenFrames: ['romantic assumptions', 'sexual compatibility framing', 'marriage framing', 'household predictions'],
     sourceRules: ['Use neutral language: connection, field, collaboration, resonance.', 'Do not imply romance unless explicitly declared.'],
+    requiredContextFields: ['connection_type', 'primary_question'],
+    intakeQuestions: [
+      'What is the connection type: friends, relatives, collaborators, teacher/student, client/practitioner, two public figures, unknown, or other?',
+      'Should the reading avoid romance/marriage language entirely?',
+      'What should the comparison illuminate: communication, creative resonance, conflict, learning, timing, or role clarity?',
+    ],
   },
   family: {
     mode: 'family',
@@ -83,6 +108,12 @@ const MODE_BASE: Record<RelationshipMode, Omit<ModePolicy, 'register' | 'noteboo
     requiredAnchors: ['each member deterministic facts', 'role map', 'kinship edges'],
     forbiddenFrames: ['romantic/sexual framing', 'compatibility score', 'blame assignment', 'parental diagnosis'],
     sourceRules: ['Respect roles and generations.', 'Track lineage patterns without fatalism or blame.'],
+    requiredContextFields: ['family_roles', 'primary_question'],
+    intakeQuestions: [
+      'What are the exact family roles for each person: mother, father, child, sibling, spouse, grandparent, in-law, etc.?',
+      'What is the family question: lineage, repair, caregiving, inheritance, communication, estrangement, support, or pattern understanding?',
+      'Are any relationships sensitive or estranged such that the tone should avoid reconciliation assumptions?',
+    ],
   },
   business: {
     mode: 'business',
@@ -91,6 +122,12 @@ const MODE_BASE: Record<RelationshipMode, Omit<ModePolicy, 'register' | 'noteboo
     requiredAnchors: ['each member deterministic facts', 'business roles if supplied', 'decision/ownership context if supplied'],
     forbiddenFrames: ['romantic framing', 'family karma framing unless explicitly relevant', 'investment advice', 'guaranteed success/failure'],
     sourceRules: ['Translate patterns into working agreements.', 'Keep claims operational and observable.'],
+    requiredContextFields: ['business_roles', 'decision_context', 'primary_question'],
+    intakeQuestions: [
+      'What are the exact business roles: founder, cofounder, investor, operator, advisor, client, vendor, employee, etc.?',
+      'What decision context should the reading serve: hiring, cofounder fit, conflict, operating rhythm, strategic planning, or role design?',
+      'Are there legal, equity, money, reporting, or authority boundaries that must be named or avoided?',
+    ],
   },
 };
 
@@ -118,5 +155,31 @@ export function getModePolicy(mode: string | undefined, level: ConsciousnessLeve
 }
 
 export function formatModePolicy(policy: ModePolicy): string {
-  return `# Mode and Register Policy\n\nMode: ${policy.title}\nRegister: ${policy.register.toUpperCase()}\n\n## Relationship Frame\n\n${policy.relationshipFrame}\n\n## Notebook Voice\n\n${policy.notebookVoice}\n\n## Deck Frame\n\n${policy.deckFrame}\n\n## Audio Frame\n\n${policy.audioFrame}\n\n## Required Anchors\n\n${policy.requiredAnchors.map(item => `- ${item}`).join('\n')}\n\n## Forbidden Frames\n\n${policy.forbiddenFrames.map(item => `- ${item}`).join('\n')}\n\n## Source Rules\n\n${policy.sourceRules.map(item => `- ${item}`).join('\n')}\n`;
+  return `# Mode and Register Policy\n\nMode: ${policy.title}\nRegister: ${policy.register.toUpperCase()}\n\n## Relationship Frame\n\n${policy.relationshipFrame}\n\n## Notebook Voice\n\n${policy.notebookVoice}\n\n## Deck Frame\n\n${policy.deckFrame}\n\n## Audio Frame\n\n${policy.audioFrame}\n\n## Required Intake Fields\n\n${policy.requiredContextFields.map(item => `- ${item}`).join('\n')}\n\n## Intake Questions\n\n${policy.intakeQuestions.map(item => `- ${item}`).join('\n')}\n\n## Required Anchors\n\n${policy.requiredAnchors.map(item => `- ${item}`).join('\n')}\n\n## Forbidden Frames\n\n${policy.forbiddenFrames.map(item => `- ${item}`).join('\n')}\n\n## Source Rules\n\n${policy.sourceRules.map(item => `- ${item}`).join('\n')}\n`;
+}
+
+export interface IntakeValidationResult {
+  ok: boolean;
+  missing: string[];
+  questions: string[];
+}
+
+export function validateModeContext(policy: ModePolicy, context: Record<string, unknown> | undefined): IntakeValidationResult {
+  const ctx = context || {};
+  const missing = policy.requiredContextFields.filter(field => {
+    const value = ctx[field];
+    if (Array.isArray(value)) return value.length === 0;
+    return value === undefined || value === null || value === '';
+  });
+  return {
+    ok: missing.length === 0,
+    missing,
+    questions: policy.intakeQuestions,
+  };
+}
+
+export function formatModeContext(context: Record<string, unknown> | undefined): string {
+  const entries = Object.entries(context || {});
+  if (entries.length === 0) return '# Answered Mode Context\n\nNo intake context was supplied.\n';
+  return `# Answered Mode Context\n\nThese answers are user/operator supplied and define what the asset pack may assume. If a topic is not answered here, do not assume it.\n\n${entries.map(([key, value]) => `- ${key}: ${Array.isArray(value) ? value.join(', ') : JSON.stringify(value)}`).join('\n')}\n`;
 }

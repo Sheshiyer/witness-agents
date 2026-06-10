@@ -13,6 +13,7 @@ import type {
   LevelSource,
   RegisterBand,
 } from '../../scripts/integratedreading/level-resolver.js';
+import type { RelationshipMode } from '../../scripts/asset-mode-policy.js';
 
 // ────────────────────────────────────────────────────────────────────────
 // Re-exports — single import surface for consumers
@@ -55,6 +56,10 @@ export interface ReadingRequest {
   user_id: string;
   /** Mode key: 'composite-dyad' | 'partner-synastry' | etc. */
   mode: string;
+  /** Normalized relationship/use-case mode used for no-assumption intake gating. */
+  relationship_mode?: RelationshipMode;
+  /** User/operator answers to the mode intake questions. Required by mode policy before generation. */
+  mode_context?: Record<string, unknown>;
   /** Subjects in ordinal order — matches mode's role slots. */
   subjects: SubjectRef[];
   /**
@@ -87,6 +92,10 @@ export interface ReadingResponse {
   register_band: RegisterBand;
   /** Mode key the reading was generated for. */
   mode: string;
+  /** Relationship/use-case mode policy applied during generation. */
+  relationship_mode?: RelationshipMode;
+  /** Mode context answers used to prevent assumptions. */
+  mode_context?: Record<string, unknown>;
   /** Total assembled word count. */
   total_words: number;
   /** Per-pass metric summary. */

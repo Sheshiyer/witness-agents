@@ -38,7 +38,7 @@ import {
 } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
-import { formatModePolicy, getModePolicy, type ConsciousnessLevel, type ModePolicy } from './asset-mode-policy.js';
+import { formatModeContext, formatModePolicy, getModePolicy, validateModeContext, type ConsciousnessLevel, type ModePolicy } from './asset-mode-policy.js';
 
 const DEFAULT_INPUT_DIR = '.batch-inputs';
 const DEFAULT_READING_DIR = '.batch-outputs';
@@ -64,6 +64,7 @@ interface CliArgs {
   force: boolean;
   mode: string;
   level: ConsciousnessLevel;
+  contextPath?: string;
 }
 
 interface QualityCheck {
@@ -146,7 +147,21 @@ function parseArgs(): CliArgs {
     force: opts.force === true,
     mode: String(opts.mode || ''),
     level: parseLevel(opts.level),
+    contextPath: typeof opts.context === 'string'
+      ? opts.context
+      : (typeof opts['mode-context'] === 'string' ? opts['mode-context'] : undefined),
   };
+}
+
+function loadModeContext(path: string | undefined): Record<string, unknown> | undefined {
+  if (!path) return undefined;
+  const resolved = resolve(path);
+  if (!existsSync(resolved)) throw new Error(`Mode context file not found: ${resolved}`);
+  const parsed = JSON.parse(readFileSync(resolved, 'utf-8'));
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`Mode context must be a JSON object: ${resolved}`);
+  }
+  return parsed as Record<string, unknown>;
 }
 
 function parseLevel(raw: unknown): ConsciousnessLevel {
@@ -967,7 +982,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
   };
 }
 
-function writeSourcePack(personName: string, personId: string, packDir: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>, policy: ModePolicy) {
+function writeSourcePack(personName: string, personId: string, packDir: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>, policy: ModePolicy, modeContext: Record<string, unknown> | undefined) {
   const sourcePackDir = join(packDir, 'source-pack');
   mkdirSync(sourcePackDir, { recursive: true });
 
@@ -975,6 +990,7 @@ function writeSourcePack(personName: string, personId: string, packDir: string, 
   const partnerAnchors = buildPartnerAnchorSource(engineData);
   if (partnerAnchors) writeFileSync(join(sourcePackDir, '00a-partner-deterministic-anchors.md'), partnerAnchors);
   writeFileSync(join(sourcePackDir, '00b-mode-register-policy.md'), formatModePolicy(policy));
+  writeFileSync(join(sourcePackDir, '00c-answered-mode-context.md'), formatModeContext(modeContext));
   writeFileSync(join(sourcePackDir, '01-audio-experience-brief.md'), buildAudioBrief(personName, facts));
   writeFileSync(join(sourcePackDir, '02-personal-study-guide-brief.md'), buildStudyGuideBrief(personName));
   writeFileSync(join(sourcePackDir, '03-personal-video-brief.md'), buildVideoBrief(personName));
@@ -992,6 +1008,12 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   const personName = slugToName(personId);
   const mode = args.mode || (personId.match(/synastry|composite|partner/i) ? 'general-synastry' : 'solo');
   const policy = getModePolicy(mode, args.level);
+  const modeContext = loadModeContext(args.contextPath);
+  const validation = validateModeContext(policy, modeContext);
+  if (!validation.ok) {
+    const questions = validation.questions.map(q => `  - ${q}`).join('\n');
+    throw new Error(`Missing required mode context fields: ${validation.missing.join(', ')}\nAsk these before generation:\n${questions}\nPass answers with --context <context.json>`);
+  }
   const inputPath = resolve(args.inputDir, `${personId}.json`);
   const readingPath = resolve(args.readingDir, `${personId}.md`);
   if (!existsSync(inputPath)) throw new Error(`Missing Selemene input: ${inputPath}`);
@@ -1009,7 +1031,7 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   if (currentPanchanga) engineData['current-panchanga'] = currentPanchanga;
   const facts = extractFacts(engineData);
   const reading = readFileSync(readingPath, 'utf-8');
-  const sourcePackDir = writeSourcePack(personName, personId, packDir, reading, facts, engineData, policy);
+  const sourcePackDir = writeSourcePack(personName, personId, packDir, reading, facts, engineData, policy, modeContext);
   const sourceText = readdirSync(sourcePackDir)
     .filter(file => file.endsWith('.md'))
     .sort()
@@ -1084,6 +1106,7 @@ function main() {
   console.log(`NotebookLM: ${args.notebooklm ? 'enabled' : 'disabled'}`);
 
   const manifests: Manifest[] = [];
+  const failures: Array<{ person: string; error: string }> = [];
   for (const person of people) {
     console.log(`\n▸ ${person}`);
     try {
@@ -1096,6 +1119,7 @@ function main() {
       if (manifest.notebooklm.enabled) console.log(`  ✓ Notebook ${manifest.notebooklm.notebookId}`);
     } catch (err: any) {
       console.error(`  ✗ ${err.message}`);
+      failures.push({ person, error: err.message });
     }
   }
 
@@ -1104,6 +1128,10 @@ function main() {
     count: manifests.length,
     packs: manifests.map(m => ({ personId: m.personId, personName: m.personName, manifest: join(resolve(args.outputDir), m.personId, 'manifest.json') })),
   }, null, 2));
+  if (failures.length > 0) {
+    console.error(`\nFAILED: ${failures.length} pack(s) failed.`);
+    process.exit(1);
+  }
   console.log('\n═══ COMPLETE ═══');
 }
 

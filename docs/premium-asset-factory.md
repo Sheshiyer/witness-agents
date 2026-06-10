@@ -52,7 +52,8 @@ Select relationship mode and register level:
 npx tsx scripts/premium-asset-factory.ts \
   --person witnessalchemist-harshita-synastry \
   --mode partner-relationship \
-  --level 4
+  --level 4 \
+  --context partner-context.json
 ```
 
 Supported modes:
@@ -65,6 +66,29 @@ Supported modes:
 - `business`
 
 Levels `1-3` use the accessible/traditional register. Levels `4-5` use the more architectural register. The mode and register are written into `source-pack/00b-mode-register-policy.md` and shape NotebookLM audio, video, report, and deck prompts.
+
+Every mode has required intake fields. If the required context is missing, generation stops and prints the questions to ask. Example `partner-context.json`:
+
+```json
+{
+  "relationship_status": "long-term romantic relationship, not assumed married",
+  "commitment_status": "current partnership; marriage should not be assumed unless explicitly discussed",
+  "primary_question": "understand relational rhythm, communication, timing, and anti-dependency without prediction"
+}
+```
+
+The same gate exists upstream in the integrated reading runner:
+
+```bash
+node --import tsx scripts/integratedreading-mode.ts \
+  --mode partner-synastry \
+  --subjects-dir ./subjects \
+  --output-dir ./reading-output \
+  --level 4 \
+  --mode-context partner-context.json
+```
+
+This prevents the reading from starting until the operator has answered the mode-specific questions. Downstream asset packs inherit the answered context as `source-pack/00c-answered-mode-context.md`.
 
 ## NotebookLM Outputs
 
