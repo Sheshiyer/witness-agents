@@ -16,9 +16,10 @@ import type { Tier } from '../types/interpretation.js';
  */
 export function createWitnessInferenceExecutor(opts: {
   tier?: Tier;
-  provider?: 'openrouter' | 'nvidia';
+  provider?: 'openrouter' | 'nvidia' | 'openai';
   openrouter_api_key?: string;
   nvidia_api_key?: string;
+  openai_api_key?: string;
   timeout_ms?: number;
 } = {}): TaskExecutor {
   const tier: Tier = opts.tier ?? (process.env.WITNESS_TIER as Tier) ?? 'subscriber';
@@ -27,6 +28,7 @@ export function createWitnessInferenceExecutor(opts: {
     provider: opts.provider,
     openrouter_api_key: opts.openrouter_api_key,
     nvidia_api_key: opts.nvidia_api_key,
+    openai_api_key: opts.openai_api_key,
   });
 
   if (!choice) {
@@ -37,6 +39,7 @@ export function createWitnessInferenceExecutor(opts: {
     provider: choice,
     openrouter_api_key: opts.openrouter_api_key,
     nvidia_api_key: opts.nvidia_api_key,
+    openai_api_key: opts.openai_api_key,
     timeout_ms: opts.timeout_ms,
   });
 
@@ -88,9 +91,10 @@ export function createWitnessInferenceExecutor(opts: {
  */
 export function createCheapRepairExecutor(opts: {
   tier?: Tier;
-  provider?: 'openrouter' | 'nvidia';
+  provider?: 'openrouter' | 'nvidia' | 'openai';
   openrouter_api_key?: string;
   nvidia_api_key?: string;
+  openai_api_key?: string;
   timeout_ms?: number;
 } = {}) {
   const tier: Tier = opts.tier ?? (process.env.WITNESS_TIER as Tier) ?? 'subscriber';
@@ -99,6 +103,7 @@ export function createCheapRepairExecutor(opts: {
     provider: opts.provider,
     openrouter_api_key: opts.openrouter_api_key,
     nvidia_api_key: opts.nvidia_api_key,
+    openai_api_key: opts.openai_api_key,
   });
 
   if (!choice) {
@@ -109,6 +114,7 @@ export function createCheapRepairExecutor(opts: {
     provider: choice,
     openrouter_api_key: opts.openrouter_api_key,
     nvidia_api_key: opts.nvidia_api_key,
+    openai_api_key: opts.openai_api_key,
     timeout_ms: opts.timeout_ms,
   });
 

@@ -18,6 +18,17 @@ export * from './adapters/observability.js';
 // Domain graphs (ready-to-use task graphs for common witness flows)
 export * from './graphs/index.js';
 
+// Section-by-section interpretation service (production)
+export {
+  createSectionInterpretationService,
+  SectionInterpretationService,
+} from './section-interpretation-service.js';
+export type {
+  SectionInterpretationConfig,
+  SubjectData,
+  InterpretationResult,
+} from './section-interpretation-service.js';
+
 // Convenience: the most common production graphs
 export {
   createDyadWitnessGraph,

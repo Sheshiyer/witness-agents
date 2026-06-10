@@ -3,6 +3,8 @@ export { OpenRouterProvider } from './openrouter.js';
 export type { OpenRouterConfig } from './openrouter.js';
 export { NvidiaProvider } from './nvidia.js';
 export type { NvidiaConfig } from './nvidia.js';
+export { OpenAIProvider } from './openai-provider.js';
+export type { OpenAIConfig } from './openai-provider.js';
 export { NvidiaEmbeddingProvider } from './nvidia-embedding.js';
 export type {
   EmbeddingConfig,
