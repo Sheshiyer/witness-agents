@@ -8,7 +8,8 @@
  * Per ai-agents-meta-core: optional retrieval augmentation, not authority.
  */
 
-import { execSync } from 'child_process';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import type {
   GroundingProvider,
   GroundedPassage,
@@ -123,7 +124,7 @@ export class VectorizeGroundingProvider implements GroundingProvider {
     const vector = embedResult[0].embedding;
 
     // Query Vectorize via wrangler CLI
-    const matches = this.queryVectorize(vector);
+    const matches = await this.queryVectorize(vector);
 
     // Filter by minScore threshold and transform to GroundedPassage[]
     return matches
@@ -183,32 +184,34 @@ export class VectorizeGroundingProvider implements GroundingProvider {
    * @param vector - Embedding vector (e.g., 1024 dimensions for bge-m3)
    * @returns Array of matches with scores and metadata
    */
-  private queryVectorize(vector: number[]): VectorizeMatch[] {
-    // Format vector as space-separated values for wrangler CLI
-    const vectorArg = vector.join(' ');
-
-    // Build wrangler command
-    // Note: wrangler vectorize query does NOT support --json flag
-    // Output contains JSON embedded after header lines
-    let cmd = `wrangler vectorize query "${this.config.indexName}" --vector "${vectorArg}" --top-k ${this.config.topK} --return-metadata all`;
+  private async queryVectorize(vector: number[]): Promise<VectorizeMatch[]> {
+    // Build argument array for execFile
+    // Pass each vector dimension as a separate argument
+    // yargs will collect them into the --vector array
+    const args: string[] = [
+      'vectorize', 'query',
+      this.config.indexName,
+      '--vector',
+      ...vector.map(v => String(v)),
+      '--top-k', String(this.config.topK),
+      '--return-metadata', 'all',
+    ];
 
     // Add namespace if configured
     if (this.config.namespace) {
-      cmd += ` --namespace "${this.config.namespace}"`;
+      args.push('--namespace', this.config.namespace);
     }
 
     try {
-      // Execute wrangler CLI
-      const output = execSync(cmd, {
+      // Execute wrangler CLI using execFile with argument array
+      const { stdout } = await promisify(execFile)('wrangler', args, {
         encoding: 'utf-8',
         timeout: 30_000, // 30 second timeout
-        stdio: ['pipe', 'pipe', 'pipe'], // capture stdout/stderr
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large responses
       });
 
       // Parse JSON from wrangler output (embedded after header lines)
-      // Format: "⛅️ wrangler ...\n───...\n📋 Searching...\n{ JSON }"
-      const result = this.parseWranglerOutput(output);
+      const result = this.parseWranglerOutput(stdout);
       return result?.matches || [];
     } catch (err: unknown) {
       // Log error but don't throw - grounding is optional
