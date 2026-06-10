@@ -188,8 +188,9 @@ export class VectorizeGroundingProvider implements GroundingProvider {
     const vectorArg = vector.join(' ');
 
     // Build wrangler command
-    // wrangler vectorize query <index> --vector <...> --top-k N --return-metadata all --json
-    let cmd = `wrangler vectorize query "${this.config.indexName}" --vector ${vectorArg} --top-k ${this.config.topK} --return-metadata all --json`;
+    // Note: wrangler vectorize query does NOT support --json flag
+    // Output contains JSON embedded after header lines
+    let cmd = `wrangler vectorize query "${this.config.indexName}" --vector ${vectorArg} --top-k ${this.config.topK} --return-metadata all`;
 
     // Add namespace if configured
     if (this.config.namespace) {
@@ -197,7 +198,7 @@ export class VectorizeGroundingProvider implements GroundingProvider {
     }
 
     try {
-      // Execute wrangler CLI and parse JSON output
+      // Execute wrangler CLI
       const output = execSync(cmd, {
         encoding: 'utf-8',
         timeout: 30_000, // 30 second timeout
@@ -205,13 +206,38 @@ export class VectorizeGroundingProvider implements GroundingProvider {
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large responses
       });
 
-      const result = JSON.parse(output) as VectorizeQueryResult;
-      return result.matches || [];
+      // Parse JSON from wrangler output (embedded after header lines)
+      // Format: "⛅️ wrangler ...\n───...\n📋 Searching...\n{ JSON }"
+      const result = this.parseWranglerOutput(output);
+      return result?.matches || [];
     } catch (err: unknown) {
       // Log error but don't throw - grounding is optional
       const message = err instanceof Error ? err.message : String(err);
       console.error('[VectorizeGroundingProvider] Vectorize query failed:', message);
       return [];
+    }
+  }
+
+  /**
+   * Parse JSON from wrangler CLI output.
+   * Wrangler outputs header lines followed by JSON result.
+   */
+  private parseWranglerOutput(output: string): VectorizeQueryResult | null {
+    // Find the first '{' which starts the JSON
+    const jsonStart = output.indexOf('{');
+    if (jsonStart === -1) {
+      console.warn('[VectorizeGroundingProvider] No JSON found in wrangler output');
+      return null;
+    }
+
+    // Extract JSON portion (from first '{' to end)
+    const jsonStr = output.slice(jsonStart);
+
+    try {
+      return JSON.parse(jsonStr) as VectorizeQueryResult;
+    } catch (err) {
+      console.warn('[VectorizeGroundingProvider] Failed to parse JSON from wrangler output:', err);
+      return null;
     }
   }
 
