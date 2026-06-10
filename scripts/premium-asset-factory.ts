@@ -38,6 +38,7 @@ import {
 } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { formatModePolicy, getModePolicy, type ConsciousnessLevel, type ModePolicy } from './asset-mode-policy.js';
 
 const DEFAULT_INPUT_DIR = '.batch-inputs';
 const DEFAULT_READING_DIR = '.batch-outputs';
@@ -61,6 +62,8 @@ interface CliArgs {
   notebookId?: string;
   noPdf: boolean;
   force: boolean;
+  mode: string;
+  level: ConsciousnessLevel;
 }
 
 interface QualityCheck {
@@ -141,7 +144,15 @@ function parseArgs(): CliArgs {
       : (typeof opts['notebook-id'] === 'string' ? opts['notebook-id'] : undefined),
     noPdf: opts.noPdf === true,
     force: opts.force === true,
+    mode: String(opts.mode || ''),
+    level: parseLevel(opts.level),
   };
+}
+
+function parseLevel(raw: unknown): ConsciousnessLevel {
+  const value = raw === undefined ? 3 : Number(raw);
+  if (value === 1 || value === 2 || value === 3 || value === 4 || value === 5) return value;
+  throw new Error(`--level must be 1-5, got ${raw}`);
 }
 
 function slugToName(slug: string): string {
@@ -478,8 +489,8 @@ function sanitizePanchangaScope(text: string, hasCurrentPanchanga: boolean): str
     .replace(/Vedic weather/gi, 'current-day Panchanga');
 }
 
-function buildNarrativeDossier(personName: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>): string {
-  if (isSynastryEngineData(engineData)) return buildSynastryNarrativeDossier(personName, reading, engineData);
+function buildNarrativeDossier(personName: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>, policy: ModePolicy): string {
+  if (isSynastryEngineData(engineData)) return buildSynastryNarrativeDossier(personName, reading, engineData, policy);
 
   const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
   const hasCurrentPanchanga = !!facts.current_panchanga_tithi || !!facts.current_panchanga_nakshatra;
@@ -490,10 +501,10 @@ function buildNarrativeDossier(personName: string, reading: string, facts: Recor
   const synthesis = extractSection(safeReading, 'section-synthesis');
   const factLines = Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n');
 
-  return `# Personal Companion Dossier: ${personName}\n\nThis dossier is written for ${personName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Panchanga Scope\n\nNatal Panchanga describes the birth moment. Current Panchanga, when present, describes the current-day five-limb Panchanga. Do not treat natal Panchanga as current-day timing.\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Decision And Identity Thread\n\n${western || 'No decision and identity narrative section is available.'}\n\n## Timing And Life-Rhythm Thread\n\n${vedic || 'No timing and life-rhythm narrative section is available.'}\n\n## Body And Integration Thread\n\n${somatic || 'No body and integration narrative section is available.'}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personName} can listen to, revisit, study, and practice with.\n`;
+  return `# Personal Companion Dossier: ${personName}\n\nThis dossier is written for ${personName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n${formatModePolicy(policy)}\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Panchanga Scope\n\nNatal Panchanga describes the birth moment. Current Panchanga, when present, describes the current-day five-limb Panchanga. Do not treat natal Panchanga as current-day timing.\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Decision And Identity Thread\n\n${western || 'No decision and identity narrative section is available.'}\n\n## Timing And Life-Rhythm Thread\n\n${vedic || 'No timing and life-rhythm narrative section is available.'}\n\n## Body And Integration Thread\n\n${somatic || 'No body and integration narrative section is available.'}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personName} can listen to, revisit, study, and practice with.\n`;
 }
 
-function buildSynastryNarrativeDossier(personName: string, reading: string, engineData: Record<string, any>): string {
+function buildSynastryNarrativeDossier(personName: string, reading: string, engineData: Record<string, any>, policy: ModePolicy): string {
   const partners = partnerEngineData(engineData);
   const partnerSections = partners.map(partner => {
     const lines = Object.entries(partner.facts)
@@ -502,7 +513,7 @@ function buildSynastryNarrativeDossier(personName: string, reading: string, engi
     return `## ${partner.name} Deterministic Anchors\n\n${lines || '- No deterministic anchors extracted.'}`;
   }).join('\n\n');
 
-  return `# Synastry Companion Dossier: ${personName}\n\nThis dossier is for a relationship/synastry reading. It must be grounded in the deterministic anchors for each partner below. The generated synastry prose may be used only as narrative texture, not as source-of-truth chart data.\n\n${partnerSections}\n\n## Synastry Narrative Texture\n\n${synastryTextureOnly(reading)}\n\n## Accuracy Rule\n\nIf the narrative texture contradicts the deterministic anchors above, use the deterministic anchors. Do not transfer one partner's nakshatra, Moon longitude, dasha, Human Design authority, or somatic data to the other partner.\n`;
+  return `# Synastry Companion Dossier: ${personName}\n\nThis dossier is for a relationship/synastry reading. It must be grounded in the deterministic anchors for each partner below. The generated synastry prose may be used only as narrative texture, not as source-of-truth chart data.\n\n${formatModePolicy(policy)}\n\n${partnerSections}\n\n## Synastry Narrative Texture\n\n${synastryTextureOnly(reading)}\n\n## Accuracy Rule\n\nIf the narrative texture contradicts the deterministic anchors above, use the deterministic anchors. Do not transfer one partner's nakshatra, Moon longitude, dasha, Human Design authority, or somatic data to the other partner.\n`;
 }
 
 function synastryTextureOnly(reading: string): string {
@@ -956,13 +967,14 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
   };
 }
 
-function writeSourcePack(personName: string, personId: string, packDir: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>) {
+function writeSourcePack(personName: string, personId: string, packDir: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>, policy: ModePolicy) {
   const sourcePackDir = join(packDir, 'source-pack');
   mkdirSync(sourcePackDir, { recursive: true });
 
-  writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personName, reading, facts, engineData));
+  writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personName, reading, facts, engineData, policy));
   const partnerAnchors = buildPartnerAnchorSource(engineData);
   if (partnerAnchors) writeFileSync(join(sourcePackDir, '00a-partner-deterministic-anchors.md'), partnerAnchors);
+  writeFileSync(join(sourcePackDir, '00b-mode-register-policy.md'), formatModePolicy(policy));
   writeFileSync(join(sourcePackDir, '01-audio-experience-brief.md'), buildAudioBrief(personName, facts));
   writeFileSync(join(sourcePackDir, '02-personal-study-guide-brief.md'), buildStudyGuideBrief(personName));
   writeFileSync(join(sourcePackDir, '03-personal-video-brief.md'), buildVideoBrief(personName));
@@ -978,6 +990,8 @@ function writeSourcePack(personName: string, personId: string, packDir: string, 
 
 function processPerson(personId: string, args: CliArgs): Manifest {
   const personName = slugToName(personId);
+  const mode = args.mode || (personId.match(/synastry|composite|partner/i) ? 'general-synastry' : 'solo');
+  const policy = getModePolicy(mode, args.level);
   const inputPath = resolve(args.inputDir, `${personId}.json`);
   const readingPath = resolve(args.readingDir, `${personId}.md`);
   if (!existsSync(inputPath)) throw new Error(`Missing Selemene input: ${inputPath}`);
@@ -995,7 +1009,7 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   if (currentPanchanga) engineData['current-panchanga'] = currentPanchanga;
   const facts = extractFacts(engineData);
   const reading = readFileSync(readingPath, 'utf-8');
-  const sourcePackDir = writeSourcePack(personName, personId, packDir, reading, facts, engineData);
+  const sourcePackDir = writeSourcePack(personName, personId, packDir, reading, facts, engineData, policy);
   const sourceText = readdirSync(sourcePackDir)
     .filter(file => file.endsWith('.md'))
     .sort()

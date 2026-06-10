@@ -17,8 +17,9 @@ npx tsx scripts/premium-asset-factory.ts --person mohan-kumar-m-g
 
 Outputs are written to `.premium-assets/<person>/`:
 
-- `source-pack/00-profile-brief.md`
 - `source-pack/00-personal-companion-dossier.md`
+- `source-pack/00a-partner-deterministic-anchors.md` (synastry/composite only)
+- `source-pack/00b-mode-register-policy.md`
 - `source-pack/01-audio-experience-brief.md`
 - `source-pack/02-personal-study-guide-brief.md`
 - `source-pack/03-personal-video-brief.md`
@@ -44,6 +45,26 @@ Use a custom output directory:
 ```bash
 npx tsx scripts/premium-asset-factory.ts --all --output .premium-assets-test
 ```
+
+Select relationship mode and register level:
+
+```bash
+npx tsx scripts/premium-asset-factory.ts \
+  --person witnessalchemist-harshita-synastry \
+  --mode partner-relationship \
+  --level 4
+```
+
+Supported modes:
+
+- `solo`
+- `married`
+- `partner-relationship`
+- `general-synastry`
+- `family`
+- `business`
+
+Levels `1-3` use the accessible/traditional register. Levels `4-5` use the more architectural register. The mode and register are written into `source-pack/00b-mode-register-policy.md` and shape NotebookLM audio, video, report, and deck prompts.
 
 ## NotebookLM Outputs
 
