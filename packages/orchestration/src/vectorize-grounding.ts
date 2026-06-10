@@ -190,7 +190,7 @@ export class VectorizeGroundingProvider implements GroundingProvider {
     // Build wrangler command
     // Note: wrangler vectorize query does NOT support --json flag
     // Output contains JSON embedded after header lines
-    let cmd = `wrangler vectorize query "${this.config.indexName}" --vector ${vectorArg} --top-k ${this.config.topK} --return-metadata all`;
+    let cmd = `wrangler vectorize query "${this.config.indexName}" --vector "${vectorArg}" --top-k ${this.config.topK} --return-metadata all`;
 
     // Add namespace if configured
     if (this.config.namespace) {
