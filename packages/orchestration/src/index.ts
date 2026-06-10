@@ -48,3 +48,11 @@ export {
   type EmbeddingProvider,
   type EmbeddingResult,
 } from './vectorize-grounding.js';
+
+// Engine data extractor (atomic vectorization of subject engine outputs)
+export {
+  extractAtomicEngineData,
+  getEnginesBySystem,
+  type AtomicEngineData,
+  type EngineOutputs,
+} from './engine-data-extractor.js';
