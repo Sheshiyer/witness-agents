@@ -82,7 +82,27 @@ async function main() {
     process.exit(1);
   }
   
-  const engineOutputs: EngineOutputs = JSON.parse(readFileSync(dataPath, 'utf-8'));
+  const rawData = JSON.parse(readFileSync(dataPath, 'utf-8'));
+  
+  // Handle both Selemene array format and object format
+  let engineOutputs: EngineOutputs;
+  if (Array.isArray(rawData)) {
+    // Selemene outputs an array of { engine_id, result, witness_prompt, ... }
+    console.log(`   Detected Selemene array format (${rawData.length} engines)`);
+    engineOutputs = {};
+    for (const item of rawData) {
+      if (item.engine_id && item.result) {
+        engineOutputs[item.engine_id] = {
+          result: item.result,
+          witness_prompt: item.witness_prompt,
+        };
+      }
+    }
+  } else {
+    // Already in object format
+    engineOutputs = rawData as EngineOutputs;
+  }
+  
   const engineCount = Object.keys(engineOutputs).length;
   console.log(`   Found ${engineCount} engine outputs`);
   

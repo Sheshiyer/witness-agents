@@ -372,8 +372,17 @@ function extractVimshottari(subjectId: string, result: Record<string, unknown>):
   const engine = 'vimshottari';
   const system = 'vedic';
   
-  // Current Mahadasha
-  const currentMaha = result.current_mahadasha as string;
+  // Handle Selemene's nested current_period structure
+  const currentPeriod = result.current_period as Record<string, unknown> | undefined;
+  const periodEnrich = result.period_enrichment as Record<string, unknown> | undefined;
+  
+  // Current Mahadasha - handle both old format and Selemene format
+  let currentMaha = result.current_mahadasha as string;
+  if (!currentMaha && currentPeriod?.mahadasha) {
+    const maha = currentPeriod.mahadasha as Record<string, unknown>;
+    currentMaha = maha.planet as string;
+  }
+  
   if (currentMaha) {
     items.push({
       id: makeId(subjectId, engine, 'mahadasha'),
@@ -389,7 +398,12 @@ function extractVimshottari(subjectId: string, result: Record<string, unknown>):
   }
   
   // Current Antardasha (sub-period)
-  const currentAntar = result.current_antardasha as string;
+  let currentAntar = result.current_antardasha as string;
+  if (!currentAntar && currentPeriod?.antardasha) {
+    const antar = currentPeriod.antardasha as Record<string, unknown>;
+    currentAntar = antar.planet as string;
+  }
+  
   if (currentAntar) {
     items.push({
       id: makeId(subjectId, engine, 'antardasha'),
@@ -404,23 +418,82 @@ function extractVimshottari(subjectId: string, result: Record<string, unknown>):
     });
   }
   
+  // Current Pratyantardasha (sub-sub-period) - Selemene format
+  if (currentPeriod?.pratyantardasha) {
+    const pratyantar = currentPeriod.pratyantardasha as Record<string, unknown>;
+    const pratyPlanet = pratyantar.planet as string;
+    const pratyDays = pratyantar.days as number;
+    if (pratyPlanet) {
+      items.push({
+        id: makeId(subjectId, engine, 'pratyantar'),
+        text: `Current Vimshottari Pratyantardasha: ${pratyPlanet} within ${currentAntar || 'unknown'} Antardasha. This is the finest timing layer, with approximately ${Math.round(pratyDays || 0)} days remaining.`,
+        metadata: {
+          system, engine,
+          field: 'pratyantardasha',
+          subjectId,
+          value: pratyPlanet,
+          category: 'dasha',
+        },
+      });
+    }
+  }
+  
+  // Combined period description from Selemene enrichment
+  if (periodEnrich?.combined_description) {
+    items.push({
+      id: makeId(subjectId, engine, 'desc'),
+      text: `Vimshottari Period Context: ${periodEnrich.combined_description}`,
+      metadata: {
+        system, engine,
+        field: 'period_description',
+        subjectId,
+        value: String(periodEnrich.combined_description).slice(0, 200),
+        category: 'context',
+      },
+    });
+  }
+  
   // Days remaining in current period
-  const daysRemaining = result.days_remaining as number;
+  let daysRemaining = result.days_remaining as number;
+  if (daysRemaining === undefined && currentPeriod?.pratyantardasha) {
+    const pratyantar = currentPeriod.pratyantardasha as Record<string, unknown>;
+    daysRemaining = pratyantar.days as number;
+  }
+  
   if (daysRemaining !== undefined) {
     items.push({
       id: makeId(subjectId, engine, 'days_rem'),
-      text: `Days remaining in current Antardasha: ${daysRemaining}. The subject has approximately ${Math.floor(daysRemaining / 30)} months left in this sub-period.`,
+      text: `Days remaining in current Pratyantardasha: ${Math.round(daysRemaining)}. The subject has approximately ${Math.floor(daysRemaining / 30)} months left in this sub-sub-period.`,
       metadata: {
         system, engine,
         field: 'days_remaining',
         subjectId,
-        value: String(daysRemaining),
+        value: String(Math.round(daysRemaining)),
         category: 'timing',
       },
     });
   }
   
-  // Dasha sequence (upcoming periods)
+  // Upcoming transitions from Selemene
+  const transitions = result.upcoming_transitions as Array<Record<string, unknown>>;
+  if (transitions && transitions.length > 0) {
+    const upcoming = transitions.slice(0, 3).map(t => 
+      `${t.type}: ${t.from_planet} → ${t.to_planet} (${t.days_until} days)`
+    ).join('; ');
+    items.push({
+      id: makeId(subjectId, engine, 'transitions'),
+      text: `Upcoming Vimshottari Transitions: ${upcoming}. These mark the next significant shifts in planetary influence.`,
+      metadata: {
+        system, engine,
+        field: 'upcoming_transitions',
+        subjectId,
+        value: JSON.stringify(transitions.slice(0, 3)),
+        category: 'sequence',
+      },
+    });
+  }
+  
+  // Dasha sequence (legacy format)
   const dashaSeq = result.dasha_sequence as Array<Record<string, unknown>>;
   if (dashaSeq && dashaSeq.length > 0) {
     const upcoming = dashaSeq.slice(0, 3).map(d => d.planet).join(' → ');
@@ -506,11 +579,12 @@ function extractPanchanga(subjectId: string, result: Record<string, unknown>): A
   const engine = 'panchanga';
   const system = 'vedic';
   
-  const vara = result.vara as string;
-  const tithi = result.tithi as string;
-  const nakshatra = result.nakshatra as string;
-  const yoga = result.yoga as string;
-  const karana = result.karana as string;
+  // Handle both legacy format (vara) and Selemene format (vara_name)
+  const vara = (result.vara || result.vara_name) as string;
+  const tithi = (result.tithi || result.tithi_name) as string;
+  const nakshatra = (result.nakshatra || result.nakshatra_name) as string;
+  const yoga = (result.yoga || result.yoga_name) as string;
+  const karana = (result.karana || result.karana_name) as string;
   
   if (vara) {
     items.push({

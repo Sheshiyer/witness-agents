@@ -292,19 +292,27 @@ function buildSynthesisUserPrompt(
  * Check if FactLock contains data for any of the specified systems.
  */
 function hasAnySystem(lock: FactLock, systems: string[]): boolean {
-  const facts = lock.facts as Record<string, unknown>;
-  if (!facts) return false;
-  
-  // Check direct keys
-  for (const sys of systems) {
-    if (facts[sys] !== undefined) return true;
+  // Check engineData (primary location for engine outputs)
+  const engineData = lock.engineData as Record<string, unknown>;
+  if (engineData) {
+    for (const sys of systems) {
+      if (engineData[sys] !== undefined) return true;
+    }
   }
   
-  // Check nested engines object
-  const engines = facts.engines as Record<string, unknown>;
-  if (engines) {
+  // Check facts for direct keys
+  const facts = lock.facts as Record<string, unknown>;
+  if (facts) {
     for (const sys of systems) {
-      if (engines[sys] !== undefined) return true;
+      if (facts[sys] !== undefined) return true;
+    }
+    
+    // Check nested engines object
+    const engines = facts.engines as Record<string, unknown>;
+    if (engines) {
+      for (const sys of systems) {
+        if (engines[sys] !== undefined) return true;
+      }
     }
   }
   
