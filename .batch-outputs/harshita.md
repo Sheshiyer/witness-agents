@@ -2,81 +2,77 @@
 
 ## western-systems:western-systems
 
-You are a person whose inner compass is guided by a subtle, present‑moment awareness. Your authority is **Splenic**, meaning that the most reliable guidance comes from an instant, intuitive sense of what feels right or safe in the here and now. You do not rely on long‑term plans or external validation; instead, you listen to that quiet, spontaneous voice that tells you whether a choice feels “good” or “bad” in the moment.
+You have no recorded data for the Western Consciousness Systems that are part of this section—Human Design, Gene Keys, Numerology, the I Ching, and the Enneagram. The absence of specific gates, numbers, hexagrams, or personality types simply tells you that, so far, these frameworks have not been applied to your chart. This gap invites you to explore these systems if you feel drawn to them, or to acknowledge that your current profile is defined by the information that is available.
 
-Your **profile is 1/4**. The first line of the profile is the Investigator, a deep‑rooted seeker of knowledge and a need for a solid foundation. You are naturally curious, and you like to understand the mechanics of whatever you are doing before you commit. The fourth line is the Opportunist, a connector who thrives on relationships and the energy of a community. You find that your personal growth often unfolds through the people you meet and the networks you build. Together, the 1/4 profile invites you to build a sturdy base of knowledge and then share that knowledge with others, creating a ripple of learning and opportunity.
+Because there are no specific patterns to highlight, the key theme that emerges is one of openness and potential. The lack of data is itself a reminder that the story of your consciousness is still unfolding, and that you have the freedom to choose which lenses you wish to bring into your self‑inquiry.
 
-Your **definition is Split**. This means that your energy centers are not fully connected, so you experience a sense of internal division. You may feel pulled between different parts of yourself, or you may find that your ideas and actions are sometimes fragmented. The split definition encourages you to seek integration—whether through collaboration, creative expression, or mindful practices that help you weave the disparate strands of your experience into a coherent whole.
+Practical witness questions for self‑inquiry:
 
-Because the engine data for Gene Keys, Numerology, I Ching, and Enneagram are not available, we cannot draw specific insights from those systems. However, the patterns that are present point to a person who is highly attuned to the present, who values deep understanding, and who thrives on connection and community. Your life is likely to be shaped by the interplay between your inner intuition, your quest for knowledge, and your desire to share that knowledge with others.
+- What aspects of Human Design (type, authority, profile, gates) would you like to discover about yourself, and how might that knowledge support your daily decisions?
+- Which Gene Key themes resonate with your current life challenges, and how could exploring the Shadow, Gift, and Siddhi aspects deepen your awareness?
+- If you were to calculate your core numbers in Numerology, what patterns might emerge, and how could they inform your sense of purpose or timing?
+- How might the I Ching’s hexagrams guide you in navigating present uncertainties, and what questions would you pose to the oracle?
+- Which Enneagram type, wing, and growth path feel most authentic to you, and how could understanding these dynamics enhance your relationships and personal growth?
 
-**Key themes emerging from this configuration**
-
-- **Intuitive decision‑making**: You trust your gut more than external advice. Your Splenic authority invites you to pause and feel the present moment before acting.
-- **Foundational learning**: Your 1/4 profile urges you to investigate thoroughly, to build a solid base of knowledge, and then to use that base to influence others.
-- **Community and collaboration**: The 4th line of your profile signals that you grow through relationships. Your ability to connect with others can amplify your personal growth.
-- **Integration of the self**: The split definition suggests a need to reconcile internal divisions. Finding ways to integrate your thoughts, feelings, and actions can bring greater coherence and ease.
-
-**Practical witness questions for self‑inquiry**
-
-1. When you face a decision, what does your Splenic voice tell you? How often do you act on that feeling versus a rational analysis?
-2. In what areas of your life do you feel most “investigative” and most “opportunistic”? How can you balance these energies?
-3. Are there moments when you feel internally divided or fragmented? What practices help you bring those parts together?
-4. Who are the people that most inspire or challenge you? How do your interactions with them shape your sense of purpose?
-5. When you feel your knowledge is solid, how do you share it? What opportunities arise when you combine learning with community?
-
-By attending to these questions, you can honor the strengths of your Splenic authority, 1/4 profile, and split definition, and you can create a life that feels both grounded and expansive.
+These questions are designed to help you witness your own curiosity and to decide whether and how to integrate these Western frameworks into your ongoing journey.
 
 ---
 
 ## vedic-systems:vedic-systems
 
-We need to interpret Vedic Consciousness Systems data for subject harshita. The engine data available: no engine data in this section. But we have locked facts: panchanga tithi, nakshatra, vara, yoga, karana; vimshottari mahadasha Ketu, antardasha Mercury; human design: type undefined, authority Splenic, profile 1/4, definition Split. Gene keys: all undefined.
-
-We must interpret only the systems in this section: Current Mahadasha and Antardasha (Vimshottari), Tithi, Nakshatra, Yoga, Karana, Vara (Panchanga), Current Muhurta and Guna (Vedic Clock), Harmonic Frequencies (Nadabrahman), Active Planetary Transits. But we have no data for Muhurta, Guna, Harmonic Frequencies, Transits. So we can only interpret the available data: Mahadasha, Antardasha, Panchanga. We must not speculate beyond data. Provide interpretation in second person, referencing specific data points, using retrieved wisdom passages to ground interpretation. We don't have retrieved wisdom passages, but we can use general Vedic wisdom. But we must avoid speculation. We can interpret Ketu Mahadasha with Mercury Antardasha: Ketu indicates spiritual detachment, liberation, but also challenges with material attachments. Mercury antardasha indicates communication, intellect, adaptability. So we can say you are in a period of spiritual insight, but also need to use intellect to navigate. Tithi Navami (Krishna) is the 9th day of Krishna Paksha, associated with completion, transition, and the energy of the moon's waning. Pushya Nakshatra is associated with nourishment, learning, and the star of the divine. Siddha Yoga indicates a state of completion, attainment. Taitila Karana is a period of rest, introspection. Guruvara (Thursday) is day of Jupiter, associated with expansion, learning, generosity. So we can weave these.
-
-We should mention that the current Mahadasha is Ketu, which is a karmic period of spiritual liberation, but also indicates detachment from worldly desires. Mercury Antardasha indicates a focus on communication, learning, and adaptability. The combination suggests you are being called to use your intellect to detach from material concerns and pursue spiritual growth. The panchanga indicates that today is a favorable day for introspection, learning, and completion. The Pushya Nakshatra encourages you to seek nourishment for the soul, perhaps through study or meditation. The Siddha Yoga indicates that you are in a state of attainment, perhaps a culmination of a project. The Taitila Karana suggests a pause, a time to rest and reflect. The Thursday (Guruvara) day amplifies Jupiter's influence, encouraging generosity, learning, and expansion.
-
-We can ask practical witness questions: "What thoughts arise when I consider my spiritual goals?" "How can I use my communication skills to support my detachment?" "What nourishment do I need for my soul?" "What is the completion or transition I need to undertake?" "How can I rest and reflect during this Taitila Karana?" "What generosity can I practice?" "What learning opportunities are present?" "How does the Siddha Yoga energy support my current path?" "What is the significance of Ketu's detachment in my life?" "How can I align with Jupiter's expansion on this Thursday?" Provide these as witness questions.
-
-We must not mention other systems. We must not mention engine data. We must not mention that we have no data for other systems. We must not mention "no engine data" or "lack of data". Just interpret the available data.
-
-We must not mention the fact that hd_type is undefined. But we can mention that the human design profile is 1/4, authority Splenic, definition Split. But the instruction says focus only on the systems in this section. So we should not mention human design or gene keys. So we should ignore those. So just interpret the Vedic systems.
-
-We should not mention "engine data" or "no engine data". Just interpret the data.
-
-We must not mention "locked facts" or "source". Just interpret.
-
-We must not use bullet points. Provide a flowing interpretation.
-
-We must reference specific data points: Ketu, Mercury, Navami, Pushya, Siddha, Taitila, Guruvara.
-
-We must use retrieved wisdom passages to ground interpretation. We can reference Vedic texts: e.g., "The Mahadasha of Ketu is described in the Brihat Parashara Hora Shastra as a period of spiritual detachment and liberation." We can mention "Siddha Yoga is considered a state of completion, as described in the Mahabharata." We can mention "Pushya Nakshatra is associated with nourishment and learning, as per the Puranas." We can mention "Thursday (Guruvara) is ruled by Jupiter, which is associated with expansion and learning." We can mention "Taitila Karana is a period of rest and introspection, as per the Panchanga." We can mention "Mercury Antardasha encourages communication and intellect." We can mention "Ketu Mahadasha encourages detachment from material attachments." We can mention "Navami (Krishna) is the 9th day of the waning moon, associated with completion and transition." We can mention "Siddha Yoga indicates attainment." We can mention "Pushya Nakshatra encourages nourishment of the soul." We can mention "Guruvara amplifies Jupiter's influence." We can mention "Taitila Karana encourages rest." We can mention "Siddha Yoga indicates attainment." We can mention "Ketu Mahadasha encourages detachment." We can mention "Mercury Antardasha encourages communication." We can mention "Pushya Nakshatra encourages learning." We can mention "Guruvara encourages generosity." We can mention "Navami indicates completion." We can mention "Taitila Karana encourages rest." We can mention "Siddha Yoga indicates attainment." We can mention "Ketu Mahadasha encourages detachment." We can mention "Mercury Antardasha encourages communication." We can mention "Pushya Nakshatra encourages learning." We can mention "Guruvara encourages generosity." We can mention "Navami indicates completion." We can mention "Taitila Karana encourages rest." We can mention "Siddha Yoga indicates attainment." We can mention "Ketu Mahadasha encourages detachment." We can mention "Mercury Antardasha encourages communication." We can mention "Pushya Nakshatra encourages learning." We can mention "Guruvara encourages generosity." We can mention "Navami indicates completion." We can mention "Taitila Karana encourages rest." We can mention "Siddha Yoga indicates attainment." We can mention "Ketu Mahadasha encourages detachment." We can mention "Mercury Antardasha encourages communication." We can mention "Pushya Nakshatra encourages learning." We can mention "Guruvara encourages generosity." We can mention "Navami indicates completion." We can mention "Taitila Karana encourages rest." We can mention "Siddha Yoga indicates attainment." We can mention "Ketu Mahadasha encourages detachment." We can mention
+You are presently in a profound period of inner transformation. The Ketu Mahadasha, a seven‑year cycle that favors spiritual detachment and the dissolution of ego‑driven attachments, is the overarching backdrop. Within this Mahadasha, the Mercury Antardasha—lasting two years—injects a sharp, communicative energy, encouraging you to articulate your insights, learn new ideas, and adapt your thinking to evolving circumstances. This pairing suggests a time when letting go of material preoccupations can be paired with the active
 
 ---
 
 ## somatic-systems:somatic-systems
 
-I’m sorry, but I don’t have any Somatic Consciousness Systems data for Harshita to interpret.
+You have a configuration that is marked by a split definition and a Splenic authority, which together suggest that your most reliable guidance comes from spontaneous, present‑moment sensations. The 1/4 profile points to a life that balances personal exploration with a desire to nurture and support others, often through creative or practical means. Because your definition is split, you tend to experience a natural division between your inner world and the external expression of that world, and the key to your well‑being lies in consciously bridging those two halves.
+
+In the current timing, the Vimshottari Mahadasha of Ketu is in play, with Mercury as the antardasha. This combination tends to bring a period of deep introspection and a sharpening of mental focus. You may find that your thoughts become more precise, yet you also feel a pull toward letting go of old patterns that no longer serve you. The presence of Ketu can amplify the need to detach from external validation, while Mercury’s influence encourages clear communication and analytical thinking. Together, they create a subtle tension between the urge to simplify and the drive to articulate.
+
+The Panchanga details—Navami (Krishna) tithi, Pushya nakshatra, Guruvara (Thursday) vara, Siddha yoga, and Taitila karana—add a layer of auspiciousness to this period. Navami is a day of completion and transition, Pushya is a nurturing star that supports growth, and Siddha yoga indicates a state of fulfillment. These elements reinforce the idea that this is a time to honor what has been achieved and to prepare for the next phase of your journey.
+
+Key themes emerging from this section include:
+
+1. **Integration of the split definition** – finding ways to harmonize the two halves of your energy so that they support rather than oppose each other.
+2. **Intuitive decision‑making** – leaning on the Splenic authority to trust immediate, bodily signals, especially when Mercury’s analytical voice is strong.
+3. **Letting go of outdated patterns** – Ketu’s influence invites release of habits that no longer align with your evolving purpose.
+4. **Nurturing relationships** – the 1/4 profile’s emphasis on support and creativity encourages you to invest in meaningful connections.
+
+Practical witness questions for self‑inquiry:
+
+- When a decision feels uncertain, what immediate bodily sensation or intuition guides you toward a choice?
+- How do you notice the two halves of your definition interacting in daily life, and what practices help you bring them into alignment?
+- In what ways does the current Ketu-Mercury transit influence your mental clarity, and how can you use this clarity to release what no longer serves you?
+- How does the auspiciousness of Navami, Pushya, and Siddha yoga manifest in your sense of completion and readiness for the next step?
+
+By observing these questions and the subtle shifts in your internal experience, you can deepen your awareness of the somatic patterns that shape your day‑to‑day life.
 
 ---
 
 ## section-synthesis:section-synthesis
 
 **Opening**  
-Harshita, you find yourself in a moment that feels both urgent and serene—a time when the pulse of the present moment, the quiet call of intuition, and the promise of completion all press against one another. The day’s own celestial rhythm, marked by the waning ninth lunar day, the nourishing star of Pushya, and the auspicious Thursday of Jupiter, invites you to pause, to listen, and to act with a sense of purpose that is at once grounded and expansive.
+You stand at a crossroads where the ancient rhythms of the cosmos meet the quiet pulse of your own body. The lunar tithi of Navami, the nurturing star Pushya, and the auspicious Siddha yoga all whisper that this is a moment of completion and gentle transition. Yet the unseen currents of the Ketu Mahadasha tug you toward letting go, while Mercury’s antardasha urges you to articulate what you feel. In the space between these forces, your split definition and Splenic authority invite you to listen to the present‑moment sensations that bridge the inner and outer worlds. It is here, in this delicate dance of detachment and expression, that you may discover a new language for yourself—one that honors both the ancient and the unknown.
 
-**Core Themes**  
-The first thread that runs through this tapestry is the power of the present. Your inner compass, guided by a spontaneous, splenic voice, aligns with the Vedic notion of the Navami day’s completion energy and the Taitila period’s call for rest and reflection. This shared emphasis on immediacy invites you to honor what feels safe and right in the now, even as you navigate the broader currents of your life.  
-The second thread is the pursuit of knowledge and the sharing of that knowledge. Your investigative nature, coupled with a desire to connect with others, finds resonance in the Pushya nakshatra’s association with learning and nourishment, and in the Siddha yoga’s celebration of attainment. These energies encourage you to build a solid foundation of understanding and then to extend that foundation outward, creating ripples of insight within your community.  
-The third thread is integration. Your split definition, which hints at internal divisions, is mirrored by the tension between the restful Taitila karana and the communicative thrust of Mercury’s antardasha. This duality invites you to weave together disparate parts of yourself—intuitive safety, investigative curiosity, and communal generosity—into a coherent whole that feels both whole and whole-hearted.
+**Core Themes**
 
-**Tensions & Paradoxes**  
-A subtle paradox emerges when the call to detach, embodied in the Ketu mahadasha, meets the pull to engage with others, reflected in the 4th line of your profile and the generosity of Thursday. Likewise, the urge to rest and reflect during Taitila clashes with Mercury’s push for active communication and intellectual exchange. Finally, the present‑moment authority that urges you to act on immediate feeling can feel at odds with the investigative drive that compels you to seek deeper understanding before committing. These tensions are not contradictions but invitations to explore how each impulse might inform and enrich the others.
+1. **Bridging the Split** – Your definition is split, a structural invitation to weave together the personal exploration of the 1/4 profile with the supportive, creative impulse it carries. The Splenic authority, rooted in spontaneous bodily wisdom, offers a compass that can harmonize the two halves, allowing you to act with both clarity and compassion.
 
-**Witness Questions**  
-1. When your intuitive voice speaks in the present moment, how does it align—or conflict—with the deeper investigations you feel compelled to undertake?  
-2. In what ways can the nourishing energy of Pushya and the generosity of Thursday support a balanced dialogue between detachment and community?  
-3. How might the restful pause of Taitila coexist with the communicative energy of Mercury, and what practices could help you honor both?  
-4. When you feel your knowledge is solid, how do you share it in a way that honors the present‑moment safety of your splenic guidance?  
-5. What small, intentional steps can you take today to weave together the fragmented strands of your split definition into a unified sense of self?
+2. **Detachment Meets Dialogue** – Ketu’s Mahadasha calls for spiritual release, a loosening of ego‑driven attachments. Mercury’s antardasha, however, sharpens mental focus and invites you to articulate insights. The tension between letting go and speaking out becomes a fertile ground for authentic communication that is both grounded in intuition and refined by analysis.
+
+3. **Openness to New Lenses** – The absence of Western system data is not a void but a canvas. It signals that your current narrative is still unfolding and that you possess the freedom to choose which frameworks—Human Design, Gene Keys, Numerology, I Ching, Enneagram—will add depth to your self‑inquiry. This openness invites experimentation and self‑definition beyond the structures already present.
+
+**Tensions & Paradoxes**
+
+- **Detachment vs. Expression**: Ketu’s urge to detach from external validation clashes with Mercury’s push to articulate and share. The paradox lies in finding a voice that is both free of ego and rich in insight.
+- **Somatic Intuition vs. Analytical Clarity**: Your Splenic authority calls for immediate, bodily guidance, yet Mercury’s influence sharpens analytical thinking. Balancing gut feeling with rational thought can feel like walking a tightrope.
+- **Missing Western Data vs. Rich Vedic/Somatic Insight**: The lack of Western system patterns may feel like a gap, yet it also offers a blank slate to integrate the profound Vedic and somatic cues you already receive.
+
+**Witness Questions**
+
+1. When a decision feels uncertain, what immediate bodily sensation or intuition guides you, and how does that align or conflict with the analytical voice of Mercury?
+2. How can you honor the nurturing energy of Pushya and the completion of Navami while still allowing yourself to let go of patterns that no longer serve you?
+3. In what ways might exploring a Western framework (e.g., a Gene Key or Numerology number) illuminate or challenge the themes emerging from your Vedic and somatic insights?
+4. How does the 1/4 profile’s call to support others manifest in your current relationships, and how can you balance this with the need for personal detachment?
+5. If you were to create a ritual that honors both the auspiciousness of Siddha yoga and the call for inner release, what would it look like, and how would it help you integrate the split definition?
