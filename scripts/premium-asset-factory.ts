@@ -12,6 +12,7 @@
  *
  * Optional NotebookLM outputs (--notebooklm):
  *   - audio/deep-dive.mp3
+ *   - video/video-brief.mp4
  *   - reports/study-guide.md
  *   - reports/briefing.md
  *   - flashcards/
@@ -48,6 +49,8 @@ interface CliArgs {
   readingDir: string;
   outputDir: string;
   notebooklm: boolean;
+  downloadOnly: boolean;
+  notebookId?: string;
   noPdf: boolean;
   force: boolean;
 }
@@ -78,6 +81,7 @@ interface Manifest {
     readingHtml: string;
     readingPdf?: string;
     reflectionQuestions: string;
+    provenance: string;
   };
   quality: QualityCheck[];
   notebooklm: {
@@ -111,6 +115,10 @@ function parseArgs(): CliArgs {
     readingDir: String(opts.readingDir || DEFAULT_READING_DIR),
     outputDir: String(opts.outputDir || opts.output || DEFAULT_OUTPUT_DIR),
     notebooklm: opts.notebooklm === true,
+    downloadOnly: opts.downloadOnly === true || opts['download-only'] === true,
+    notebookId: typeof opts.notebookId === 'string'
+      ? opts.notebookId
+      : (typeof opts['notebook-id'] === 'string' ? opts['notebook-id'] : undefined),
     noPdf: opts.noPdf === true,
     force: opts.force === true,
   };
@@ -123,6 +131,12 @@ function slugToName(slug: string): string {
     .filter(Boolean)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function humanizeKey(key: string): string {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
 }
 
 function loadEngineData(path: string): Record<string, any> {
@@ -197,6 +211,44 @@ function summarizeEngines(engineData: Record<string, any>): string {
     return `## ${engineId}\n\nAvailable fields: ${keys}.${prompt}`;
   });
   return rows.join('\n\n');
+}
+
+function extractSection(reading: string, sectionId: string): string {
+  const marker = `## ${sectionId}:${sectionId}`;
+  const start = reading.indexOf(marker);
+  if (start === -1) return '';
+  const next = reading.indexOf('\n---', start);
+  return reading.slice(start + marker.length, next === -1 ? undefined : next).trim();
+}
+
+function cleanReadingForNotebook(reading: string): string {
+  return reading
+    .replace(/^# Interpretation:[^\n]*\n\n?/i, '')
+    .replace(/^## ([a-z-]+):\1$/gm, '## $1')
+    .replace(/\b(We need to|The user wants|I need to|Let's craft)\b[^\n]*(\n|$)/gi, '')
+    .trim();
+}
+
+function buildNarrativeDossier(personName: string, reading: string, facts: Record<string, unknown>): string {
+  const western = extractSection(reading, 'western-systems');
+  const vedic = extractSection(reading, 'vedic-systems');
+  const somatic = extractSection(reading, 'somatic-systems');
+  const synthesis = extractSection(reading, 'section-synthesis');
+  const factLines = Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n');
+
+  return `# Personal Companion Dossier: ${personName}\n\nThis dossier is written for ${personName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(reading)}\n\n## Decision And Identity Thread\n\n${western || 'No decision and identity narrative section is available.'}\n\n## Timing And Life-Rhythm Thread\n\n${vedic || 'No timing and life-rhythm narrative section is available.'}\n\n## Body And Integration Thread\n\n${somatic || 'No body and integration narrative section is available.'}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personName} can listen to, revisit, study, and practice with.\n`;
+}
+
+function buildAudioBrief(personName: string, facts: Record<string, unknown>): string {
+  return `# Audio Experience Brief: ${personName}\n\nCreate a long-form audio companion, not a mechanical report. The experience should feel like two thoughtful hosts guiding ${personName} through their own premium personal reading.\n\n## Tone\n\nWarm, grounded, reflective, and specific. Avoid theatrical mysticism. Avoid diagnosis. Make the audio feel lived-in: explain what the patterns may feel like in decisions, relationships, body signals, timing, and practice.\n\n## Structure\n\n1. Opening orientation: how to listen to this reading.\n2. Core pattern: the most important repeating theme.\n3. Timing and decision rhythm.\n4. Relationship and collaboration field.\n5. Body-level integration.\n6. Practical reflection prompts.\n7. Closing integration: one small practice for the next week.\n\n## Must Anchor\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n\n## Avoid\n\nDo not list every system. Do not sound like a database. Do not invent missing systems. Do not make deterministic predictions.\n`;
+}
+
+function buildStudyGuideBrief(personName: string): string {
+  return `# Personal Study Guide Brief: ${personName}\n\nCreate a study guide that turns the reading into a practical companion. It should help ${personName} revisit the material over 7-14 days.\n\n## Required Sections\n\n1. The central pattern in plain language.\n2. Key terms explained simply, only where useful.\n3. A personal themes map.\n4. Integration practices.\n5. Reflection questions.\n6. A short weekly review template.\n7. What not to over-interpret.\n\nThe guide should be clear enough for someone new to these systems, but deep enough to feel personal.\n`;
+}
+
+function buildVideoBrief(personName: string): string {
+  return `# Personal Video Brief: ${personName}\n\nCreate a short premium video overview that introduces the reading as a reflective personal artifact.\n\n## Visual Direction\n\nElegant, editorial, calm. Think parchment, soft gold, night-sky blue, subtle orbit lines, clean typography, and gentle motion. Avoid generic astrology clip art.\n\n## Narrative Shape\n\n1. Open with the central emotional or timing pattern.\n2. Show three anchor themes.\n3. Translate the pattern into everyday life.\n4. End with one reflective question.\n\nThe video should feel like an invitation to return to the PDF and audio, not like a sales reel.\n`;
 }
 
 function markdownToHtml(md: string): string {
@@ -330,24 +382,101 @@ function qualityChecks(reading: string, facts: Record<string, unknown>): Quality
   return checks;
 }
 
-function notebooklmJson(args: string[]): any {
+function notebooklmJson(args: string[], timeoutMs = 120_000): any {
   const stdout = execFileSync('notebooklm', [...args, '--json'], {
     encoding: 'utf-8',
-    timeout: 120_000,
+    timeout: timeoutMs,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   return JSON.parse(stdout);
 }
 
 function pickId(payload: any): string | undefined {
-  return payload?.id || payload?.notebook_id || payload?.notebookId || payload?.source_id || payload?.sourceId || payload?.artifact_id || payload?.artifactId;
+  return payload?.id
+    || payload?.notebook_id
+    || payload?.notebookId
+    || payload?.source_id
+    || payload?.sourceId
+    || payload?.artifact_id
+    || payload?.artifactId
+    || payload?.notebook?.id
+    || payload?.source?.id
+    || payload?.artifact?.id;
 }
 
-function runNotebookLM(personName: string, packDir: string, sourcePackDir: string, manifest: Manifest): Manifest['notebooklm'] {
+function listArtifacts(notebookId: string): Array<{ id: string; type: string; status: string; title: string; createdAt: string }> {
+  try {
+    const payload = notebooklmJson(['artifact', 'list', '--notebook', notebookId], 120_000);
+    const rows = payload?.artifacts || payload?.items || [];
+    return rows.map((row: any) => ({
+      id: row.id || row.artifact_id,
+      type: String(row.type_id || row.type || row.kind || row.artifact_type || '').toLowerCase().replace(/-/g, '_'),
+      status: String(row.status || ''),
+      title: String(row.title || row.name || ''),
+      createdAt: String(row.created_at || ''),
+    })).filter((row: any) => row.id);
+  } catch {
+    return [];
+  }
+}
+
+function artifactByType(notebookId: string, typeNeedle: string, titleNeedle?: string): string | undefined {
+  return listArtifacts(notebookId)
+    .filter(row => row.type.includes(typeNeedle.replace(/-/g, '_')) && row.status === 'completed')
+    .filter(row => !titleNeedle || row.title.toLowerCase().includes(titleNeedle.toLowerCase()))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.id;
+}
+
+function downloadNotebookLMArtifacts(notebookId: string, packDir: string): Record<string, NotebookLMArtifactStatus> {
+  const artifacts: Record<string, NotebookLMArtifactStatus> = {};
+  const audioDir = join(packDir, 'audio');
+  const videoDir = join(packDir, 'video');
+  const reportDir = join(packDir, 'reports');
+  const quizDir = join(packDir, 'quiz');
+  const flashcardsDir = join(packDir, 'flashcards');
+  const mindMapDir = join(packDir, 'mind-map');
+  for (const dir of [audioDir, videoDir, reportDir, quizDir, flashcardsDir, mindMapDir]) mkdirSync(dir, { recursive: true });
+
+  const download = (key: string, type: string, args: (id: string) => string[], outputPath: string, titleNeedle?: string) => {
+    const artifactId = artifactByType(notebookId, type, titleNeedle);
+    if (!artifactId) {
+      artifacts[key] = { status: 'pending', error: `No completed ${type}${titleNeedle ? ` (${titleNeedle})` : ''} artifact found` };
+      return;
+    }
+    try {
+      execFileSync('notebooklm', args(artifactId), { stdio: 'pipe', timeout: 240_000 });
+      artifacts[key] = { status: existsSync(outputPath) ? 'ready' : 'pending', artifactId, outputPath };
+    } catch (err: any) {
+      artifacts[key] = { status: 'failed', artifactId, error: err.message };
+    }
+  };
+
+  download('audio_deep_dive_long', 'audio', id => ['download', 'audio', join(audioDir, 'deep-dive-long.mp3'), '--notebook', notebookId, '--artifact', id, '--force'], join(audioDir, 'deep-dive-long.mp3'));
+  download('video_brief', 'video', id => ['download', 'video', join(videoDir, 'video-brief.mp4'), '--notebook', notebookId, '--artifact', id, '--force'], join(videoDir, 'video-brief.mp4'));
+  download('study_guide', 'report', id => ['download', 'report', join(reportDir, 'study-guide.md'), '--notebook', notebookId, '--artifact', id, '--force'], join(reportDir, 'study-guide.md'), 'study');
+  download('briefing_doc', 'report', id => ['download', 'report', join(reportDir, 'briefing.md'), '--notebook', notebookId, '--artifact', id, '--force'], join(reportDir, 'briefing.md'), 'brief');
+  download('quiz', 'quiz', id => ['download', 'quiz', '--format', 'markdown', join(quizDir, 'quiz.md'), '--notebook', notebookId, '--artifact', id], join(quizDir, 'quiz.md'));
+  download('flashcards', 'flashcards', id => ['download', 'flashcards', '--format', 'markdown', join(flashcardsDir, 'flashcards.md'), '--notebook', notebookId, '--artifact', id], join(flashcardsDir, 'flashcards.md'));
+  download('mind_map', 'mind_map', id => ['download', 'mind-map', '--all', mindMapDir, '--notebook', notebookId, '--force'], mindMapDir);
+
+  return artifacts;
+}
+
+function runNotebookLM(personName: string, packDir: string, sourcePackDir: string, manifest: Manifest, args: CliArgs): Manifest['notebooklm'] {
+  if (args.downloadOnly) {
+    if (!args.notebookId) throw new Error('--download-only requires --notebook-id');
+    return {
+      enabled: true,
+      notebookId: args.notebookId,
+      sources: {},
+      artifacts: downloadNotebookLMArtifacts(args.notebookId, packDir),
+    };
+  }
+
   const notebookTitle = `Witness Premium Pack - ${personName}`;
-  const notebook = notebooklmJson(['create', notebookTitle]);
-  const notebookId = pickId(notebook);
-  if (!notebookId) throw new Error(`NotebookLM create did not return an id: ${JSON.stringify(notebook).slice(0, 300)}`);
+  const notebookPayload = args.notebookId ? undefined : notebooklmJson(['create', notebookTitle]);
+  const notebookId = args.notebookId || pickId(notebookPayload);
+  if (!notebookId) throw new Error(`NotebookLM create did not return an id: ${JSON.stringify(notebookPayload).slice(0, 300)}`);
 
   const sourceIds: Record<string, string> = {};
   for (const file of readdirSync(sourcePackDir).filter(name => name.endsWith('.md')).sort()) {
@@ -359,22 +488,23 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
     }
   }
 
-  const artifacts: Record<string, NotebookLMArtifactStatus> = {};
   const audioDir = join(packDir, 'audio');
+  const videoDir = join(packDir, 'video');
   const reportDir = join(packDir, 'reports');
   const quizDir = join(packDir, 'quiz');
   const flashcardsDir = join(packDir, 'flashcards');
   const mindMapDir = join(packDir, 'mind-map');
-  for (const dir of [audioDir, reportDir, quizDir, flashcardsDir, mindMapDir]) mkdirSync(dir, { recursive: true });
+  for (const dir of [audioDir, videoDir, reportDir, quizDir, flashcardsDir, mindMapDir]) mkdirSync(dir, { recursive: true });
+  const artifacts: Record<string, NotebookLMArtifactStatus> = {};
 
-  const generate = (key: string, args: string[], downloadArgs: string[], outputPath: string, opts?: { wait?: boolean; retry?: boolean }) => {
+  const generate = (key: string, args: string[], downloadArgs: (artifactId?: string) => string[], outputPath: string, opts?: { wait?: boolean; retry?: boolean; timeoutMs?: number; artifactType?: string }) => {
     try {
       const artifactArgs = [...args, '--notebook', notebookId];
       if (opts?.wait !== false) artifactArgs.push('--wait');
       if (opts?.retry !== false) artifactArgs.push('--retry', '5');
-      const artifact = notebooklmJson(artifactArgs);
-      const artifactId = pickId(artifact);
-      execFileSync('notebooklm', downloadArgs, { stdio: 'pipe', timeout: 180_000 });
+      const artifact = notebooklmJson(artifactArgs, opts?.timeoutMs ?? 600_000);
+      const artifactId = pickId(artifact) || (opts?.artifactType ? artifactByType(notebookId, opts.artifactType) : undefined);
+      execFileSync('notebooklm', downloadArgs(artifactId), { stdio: 'pipe', timeout: 240_000 });
       artifacts[key] = { status: existsSync(outputPath) ? 'ready' : 'pending', artifactId, outputPath };
     } catch (err: any) {
       artifacts[key] = { status: 'failed', error: err.message };
@@ -383,43 +513,56 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'audio_deep_dive_long',
-    ['generate', 'audio', '--format', 'deep-dive', '--length', 'long', `Create a warm, premium long-form audio companion for ${personName}. Emphasize grounded reflection, timing, body awareness, and practical integration.`],
-    ['download', 'audio', join(audioDir, 'deep-dive-long.mp3'), '--notebook', notebookId, '--latest', '--force'],
+    ['generate', 'audio', '--format', 'deep-dive', '--length', 'long', `Create the premium long-form audio companion for ${personName}. Use the Audio Production Brief and Premium Narrative Dossier as the primary sources. Make it vivid, human, and deliverable; do not recite engine fields.`],
+    (artifactId) => ['download', 'audio', join(audioDir, 'deep-dive-long.mp3'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(audioDir, 'deep-dive-long.mp3'),
+    { timeoutMs: 900_000, artifactType: 'audio' },
+  );
+
+  generate(
+    'video_brief',
+    ['generate', 'video', '--format', 'brief', '--style', 'heritage', `Create a premium short video brief for ${personName}. Use the Video Brief and Narrative Dossier. The output should feel like a vivid personal companion, not a technical engine summary.`],
+    (artifactId) => ['download', 'video', join(videoDir, 'video-brief.mp4'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
+    join(videoDir, 'video-brief.mp4'),
+    { timeoutMs: 900_000, artifactType: 'video' },
   );
 
   generate(
     'study_guide',
-    ['generate', 'report', '--format', 'study-guide', `Create a premium personal study guide for ${personName}. Include key themes, definitions, reflective prompts, and practices. Do not invent facts beyond the sources.`],
-    ['download', 'report', join(reportDir, 'study-guide.md'), '--notebook', notebookId, '--latest', '--force'],
+    ['generate', 'report', '--format', 'study-guide', `Create a premium personal study guide for ${personName}. Use the Study Guide Brief and Narrative Dossier. Make it usable over 7-14 days; do not produce a raw system-by-system dump.`],
+    (artifactId) => ['download', 'report', join(reportDir, 'study-guide.md'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(reportDir, 'study-guide.md'),
+    { artifactType: 'report' },
   );
 
   generate(
     'briefing_doc',
-    ['generate', 'report', '--format', 'briefing-doc', `Create a concise one-page briefing for ${personName}'s premium witness pack. Ground every claim in source material.`],
-    ['download', 'report', join(reportDir, 'briefing.md'), '--notebook', notebookId, '--latest', '--force'],
+    ['generate', 'report', '--format', 'briefing-doc', `Create a concise premium one-page briefing for ${personName}. Make it clear, vivid, and deliverable. Ground every claim in the source pack.`],
+    (artifactId) => ['download', 'report', join(reportDir, 'briefing.md'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(reportDir, 'briefing.md'),
+    { artifactType: 'report' },
   );
 
   generate(
     'quiz',
-    ['generate', 'quiz', '--difficulty', 'medium', `Create a reflective self-knowledge quiz for ${personName} based only on the source pack.`],
-    ['download', 'quiz', '--all', quizDir, '--notebook', notebookId, '--force'],
-    quizDir,
+    ['generate', 'quiz', '--difficulty', 'medium', '--quantity', 'standard', `Create a reflective self-knowledge quiz for ${personName}. It should help them internalize the reading, not memorize engine labels.`],
+    (artifactId) => ['download', 'quiz', '--format', 'markdown', join(quizDir, 'quiz.md'), '--notebook', notebookId, ...(artifactId ? ['--artifact', artifactId] : [])],
+    join(quizDir, 'quiz.md'),
+    { artifactType: 'quiz' },
   );
 
   generate(
     'flashcards',
-    ['generate', 'flashcards', `Create flashcards for ${personName}'s key systems, facts, themes, and practices.`],
-    ['download', 'flashcards', '--all', flashcardsDir, '--notebook', notebookId, '--force'],
-    flashcardsDir,
+    ['generate', 'flashcards', '--difficulty', 'medium', '--quantity', 'standard', `Create flashcards for ${personName}'s themes, practices, and key terms. Favor usable meaning over raw facts.`],
+    (artifactId) => ['download', 'flashcards', '--format', 'markdown', join(flashcardsDir, 'flashcards.md'), '--notebook', notebookId, ...(artifactId ? ['--artifact', artifactId] : [])],
+    join(flashcardsDir, 'flashcards.md'),
+    { artifactType: 'flashcards' },
   );
 
   generate(
     'mind_map',
     ['generate', 'mind-map'],
-    ['download', 'mind-map', '--all', mindMapDir, '--notebook', notebookId, '--force'],
+    (artifactId) => ['download', 'mind-map', '--all', mindMapDir, '--notebook', notebookId, '--force'],
     mindMapDir,
     { wait: false, retry: false },
   );
@@ -436,12 +579,12 @@ function writeSourcePack(personName: string, personId: string, packDir: string, 
   const sourcePackDir = join(packDir, 'source-pack');
   mkdirSync(sourcePackDir, { recursive: true });
 
-  writeFileSync(join(sourcePackDir, '00-profile-brief.md'), `# Profile Brief: ${personName}\n\nPerson ID: ${personId}\n\nThis source pack supports premium personal assets: a deterministic reading PDF, long-form audio companion, study guide, and reflection questions. Treat the locked facts as source authority.\n`);
-  writeFileSync(join(sourcePackDir, '01-fact-locked-reading.md'), reading);
-  writeFileSync(join(sourcePackDir, '02-locked-facts.md'), `# Locked Facts\n\n${Object.entries(facts).map(([key, value]) => `- ${key}: ${value}`).join('\n')}\n`);
-  writeFileSync(join(sourcePackDir, '03-engine-data-summary.md'), `# Engine Data Summary\n\n${summarizeEngines(engineData)}\n`);
-  writeFileSync(join(sourcePackDir, '04-asset-directions.md'), `# Asset Directions\n\nGenerate premium, grounded, second-person companion assets. The tone should be clear, warm, mature, and non-prescriptive. Prioritize self-inquiry over advice.\n\nRequired outputs: long audio overview, study guide, briefing doc, quiz, flashcards, and mind map.\n`);
-  writeFileSync(join(sourcePackDir, '05-do-not-infer.md'), `# Boundaries\n\n- Do not invent missing engine data.\n- Do not make medical, financial, or deterministic life predictions.\n- Treat all content as reflective witnessing, not diagnosis or instruction.\n- If a system lacks data, name the absence rather than filling the gap.\n- Preserve the Euclidean-runtime vs non-Euclidean-Noesis distinction: outputs are mirrors for inquiry, not commands.\n`);
+  writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personName, reading, facts));
+  writeFileSync(join(sourcePackDir, '01-audio-experience-brief.md'), buildAudioBrief(personName, facts));
+  writeFileSync(join(sourcePackDir, '02-personal-study-guide-brief.md'), buildStudyGuideBrief(personName));
+  writeFileSync(join(sourcePackDir, '03-personal-video-brief.md'), buildVideoBrief(personName));
+  writeFileSync(join(sourcePackDir, '04-orientation-anchors.md'), `# Orientation Anchors\n\nThese are anchors for accuracy, not the product. Use them to prevent drift while producing vivid personal assets.\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n`);
+  writeFileSync(join(sourcePackDir, '05-boundaries-and-style.md'), `# Boundaries and Style\n\n## Make It Deliverable\n\nTurn the reading into a polished product: audio, video, study guide, quiz, flashcards, and mind map. The audience should feel they received a personal companion, not a structured engine output.\n\n## Boundaries\n\n- Do not invent missing engine data.\n- Do not make medical, financial, or deterministic life predictions.\n- Treat all content as reflective witnessing, not diagnosis or instruction.\n- If a system lacks data, name the absence rather than filling the gap.\n- Preserve the Euclidean-runtime vs non-Euclidean-Noesis distinction: outputs are mirrors for inquiry, not commands.\n\n## Voice\n\nWarm, exact, human, reflective, premium, embodied. Avoid generic mystical language. Avoid raw JSON/schema phrasing.\n`);
 
   return sourcePackDir;
 }
@@ -461,6 +604,8 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   const facts = extractFacts(engineData);
   const reading = readFileSync(readingPath, 'utf-8');
   const sourcePackDir = writeSourcePack(personName, personId, packDir, reading, facts, engineData);
+  const provenancePath = join(localDir, 'provenance.md');
+  writeFileSync(provenancePath, `# Local Provenance\n\nThis file is local-only. It is not uploaded to NotebookLM.\n\n## Engine Inventory\n\n${summarizeEngines(engineData)}\n`);
   const reflectionMd = reflectionQuestions(personName, facts);
   const reflectionPath = join(localDir, 'reflection-questions.md');
   writeFileSync(reflectionPath, reflectionMd);
@@ -483,6 +628,7 @@ function processPerson(personId: string, args: CliArgs): Manifest {
       readingHtml: htmlPath,
       readingPdf: pdfStatus === 'ready' ? pdfPath : undefined,
       reflectionQuestions: reflectionPath,
+      provenance: provenancePath,
     },
     quality: qualityChecks(reading, facts),
     notebooklm: {
@@ -493,7 +639,7 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   };
 
   if (args.notebooklm) {
-    manifest.notebooklm = runNotebookLM(personName, packDir, sourcePackDir, manifest);
+    manifest.notebooklm = runNotebookLM(personName, packDir, sourcePackDir, manifest, args);
   }
 
   writeFileSync(join(packDir, 'manifest.json'), JSON.stringify(manifest, null, 2));

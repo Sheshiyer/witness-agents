@@ -18,14 +18,16 @@ npx tsx scripts/premium-asset-factory.ts --person mohan-kumar-m-g
 Outputs are written to `.premium-assets/<person>/`:
 
 - `source-pack/00-profile-brief.md`
-- `source-pack/01-fact-locked-reading.md`
-- `source-pack/02-locked-facts.md`
-- `source-pack/03-engine-data-summary.md`
-- `source-pack/04-asset-directions.md`
-- `source-pack/05-do-not-infer.md`
+- `source-pack/00-personal-companion-dossier.md`
+- `source-pack/01-audio-experience-brief.md`
+- `source-pack/02-personal-study-guide-brief.md`
+- `source-pack/03-personal-video-brief.md`
+- `source-pack/04-orientation-anchors.md`
+- `source-pack/05-boundaries-and-style.md`
 - `local/reading.html`
 - `local/reading.pdf`
 - `local/reflection-questions.md`
+- `local/provenance.md`
 - `manifest.json`
 
 Process all collected subjects:
@@ -51,13 +53,14 @@ npx tsx scripts/premium-asset-factory.ts --person mohan-kumar-m-g --notebooklm
 Expected NotebookLM assets:
 
 - `audio/deep-dive-long.mp3`
+- `video/video-brief.mp4`
 - `reports/study-guide.md`
 - `reports/briefing.md`
 - `quiz/`
 - `flashcards/`
 - `mind-map/`
 
-NotebookLM source upload uses the curated `source-pack/` files, not raw engine dumps.
+NotebookLM source upload uses curated, recipient-facing `source-pack/` files, not raw engine dumps or Witness/Selemene implementation material. Technical provenance is kept local in `local/provenance.md` and `manifest.json`.
 
 ## Quality Checks
 
