@@ -11,7 +11,8 @@
     "dev": "node --import tsx src/serve.ts",
     "test": "node --import tsx --test tests/*.test.ts",
     "probe:nvidia-routing": "node --import tsx scripts/probe-active-nvidia-routing.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "wisdom:ingest": "tsx scripts/ingest-wisdom-corpus.ts"
   },
   "keywords": [
     "witness-agents",
