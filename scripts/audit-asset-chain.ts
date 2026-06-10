@@ -1,0 +1,227 @@
+#!/usr/bin/env npx tsx
+/**
+ * Audit the chain from deterministic engine data -> interpretation -> source pack -> manifest.
+ *
+ * This is read-only: it never calls NotebookLM and never mutates packs.
+ *
+ * Usage:
+ *   npx tsx scripts/audit-asset-chain.ts --inputDir .batch-inputs --readingDir .batch-outputs --assetDir .premium-assets
+ *   npx tsx scripts/audit-asset-chain.ts --inputDir .asset-run-inputs --readingDir .asset-run-readings --assetDir .premium-assets-witness-harshita
+ */
+
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+
+type Severity = 'blocker' | 'warning';
+
+interface Finding {
+  personId: string;
+  layer: 'engine' | 'interpretation' | 'source-pack' | 'manifest' | 'notebooklm';
+  code: string;
+  severity: Severity;
+  detail: string;
+}
+
+interface Args {
+  inputDir: string;
+  readingDir: string;
+  assetDir: string;
+  out?: string;
+  person?: string;
+}
+
+const KNOWN_NAKSHATRAS = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
+
+function parseArgs(): Args {
+  const raw = process.argv.slice(2);
+  const opts: Record<string, string> = {};
+  for (let i = 0; i < raw.length; i++) {
+    if (!raw[i].startsWith('--')) continue;
+    const key = raw[i].slice(2);
+    const val = raw[i + 1];
+    if (val && !val.startsWith('--')) {
+      opts[key] = val;
+      i++;
+    }
+  }
+  return {
+    inputDir: opts.inputDir || '.batch-inputs',
+    readingDir: opts.readingDir || '.batch-outputs',
+    assetDir: opts.assetDir || '.premium-assets',
+    out: opts.out,
+    person: opts.person,
+  };
+}
+
+function loadJson(path: string): any {
+  return JSON.parse(readFileSync(path, 'utf-8'));
+}
+
+function loadEngineData(path: string): Record<string, any> {
+  const raw = loadJson(path);
+  if (!Array.isArray(raw)) return raw;
+  const out: Record<string, any> = {};
+  for (const entry of raw) {
+    const id = entry.engine_id || entry.engine;
+    if (id) out[id] = entry;
+  }
+  return out;
+}
+
+function hasEngine(engineData: Record<string, any>, engineId: string): boolean {
+  return !!engineData[engineId] && !engineData[engineId]._error;
+}
+
+function extractFacts(engineData: Record<string, any>): Record<string, unknown> {
+  const facts: Record<string, unknown> = {};
+  for (const [engineId, output] of Object.entries(engineData)) {
+    const result = output?.result || output;
+    if (engineId === 'panchanga') {
+      facts.natal_panchanga_nakshatra = result.nakshatra_name;
+      facts.natal_panchanga_tithi = result.tithi_name;
+      facts.natal_panchanga_vara = result.vara_name;
+      facts.natal_panchanga_yoga = result.yoga_name;
+      facts.natal_panchanga_karana = result.karana_name;
+    }
+    if (engineId === 'current-panchanga') {
+      facts.current_panchanga_nakshatra = result.nakshatra_name;
+      facts.current_panchanga_tithi = result.tithi_name;
+      facts.current_panchanga_vara = result.vara_name;
+    }
+    if (engineId === 'vimshottari') {
+      facts.vimshottari_mahadasha = result.current_period?.mahadasha?.planet;
+      facts.vimshottari_antardasha = result.current_period?.antardasha?.planet;
+      facts.vimshottari_pratyantardasha = result.current_period?.pratyantardasha?.planet;
+    }
+    if (engineId === 'human-design') {
+      facts.human_design_type = result.type;
+      facts.human_design_authority = result.authority;
+      facts.human_design_profile = result.profile;
+      facts.human_design_definition = result.definition;
+    }
+    if (engineId === 'biofield') {
+      facts.biofield_available = true;
+      facts.biofield_coherence = result.coherence || result.metrics?.coherence;
+      facts.biofield_interpretation = result.interpretation;
+    }
+    if (engineId === 'face-reading') {
+      const constitution = result.analysis?.constitution || result.constitution || {};
+      facts.face_reading_available = true;
+      facts.face_reading_primary_dosha = constitution.primary_dosha;
+      facts.face_reading_secondary_dosha = constitution.secondary_dosha;
+    }
+  }
+  return Object.fromEntries(Object.entries(facts).filter(([, value]) => value !== undefined && value !== null));
+}
+
+function readSourcePack(assetDir: string, personId: string): string {
+  const dir = join(assetDir, personId, 'source-pack');
+  if (!existsSync(dir)) return '';
+  return readdirSync(dir)
+    .filter(file => file.endsWith('.md'))
+    .sort()
+    .map(file => `\n<!-- ${file} -->\n${readFileSync(join(dir, file), 'utf-8')}`)
+    .join('\n\n');
+}
+
+function mentionedNakshatras(text: string): string[] {
+  return KNOWN_NAKSHATRAS.filter(name => new RegExp(`\\b${name.replace(/ /g, '\\s+')}\\b`, 'i').test(text));
+}
+
+function auditPerson(personId: string, args: Args): Finding[] {
+  const findings: Finding[] = [];
+  const inputPath = join(args.inputDir, `${personId}.json`);
+  const readingPath = join(args.readingDir, `${personId}.md`);
+  const manifestPath = join(args.assetDir, personId, 'manifest.json');
+
+  if (!existsSync(inputPath)) {
+    findings.push({ personId, layer: 'engine', code: 'missing_input', severity: 'blocker', detail: inputPath });
+    return findings;
+  }
+  if (!existsSync(readingPath)) {
+    findings.push({ personId, layer: 'interpretation', code: 'missing_reading', severity: 'blocker', detail: readingPath });
+  }
+
+  const engineData = loadEngineData(inputPath);
+  const facts = extractFacts(engineData);
+  const reading = existsSync(readingPath) ? readFileSync(readingPath, 'utf-8') : '';
+  const sourcePack = readSourcePack(args.assetDir, personId);
+  const combined = `${reading}\n\n${sourcePack}`;
+  const isSynastry = /synastry|composite|partner/i.test(personId);
+
+  if (isSynastry && Object.keys(facts).length < 6) {
+    findings.push({
+      personId,
+      layer: 'engine',
+      code: 'synastry_missing_deterministic_facts',
+      severity: 'blocker',
+      detail: `Only ${Object.keys(facts).length} deterministic facts extracted; generated prose should not be primary source.`,
+    });
+  }
+
+  const expectedNakshatra = facts.natal_panchanga_nakshatra ? String(facts.natal_panchanga_nakshatra) : undefined;
+  if (expectedNakshatra) {
+    const unexpected = mentionedNakshatras(combined).filter(name => name.toLowerCase() !== expectedNakshatra.toLowerCase());
+    if (unexpected.length > 0) {
+      findings.push({
+        personId,
+        layer: 'interpretation',
+        code: 'nakshatra_drift',
+        severity: 'blocker',
+        detail: `Expected ${expectedNakshatra}; also found ${[...new Set(unexpected)].join(', ')}.`,
+      });
+    }
+  }
+
+  const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
+  if (hasSomaticData) {
+    if (!/biofield|face-reading|face reading|dosha|somatic|coherence/i.test(sourcePack)) {
+      findings.push({ personId, layer: 'source-pack', code: 'somatic_data_omitted', severity: 'blocker', detail: 'Somatic engines exist but source pack lacks somatic anchors.' });
+    }
+    if (/no recorded data for .*Somatic|no somatic data|absence of (a )?somatic map|absence of somatic data/i.test(sourcePack)) {
+      findings.push({ personId, layer: 'source-pack', code: 'somatic_false_absence', severity: 'blocker', detail: 'Somatic engines exist but source pack claims absence.' });
+    }
+  }
+
+  const hasCurrentPanchanga = !!facts.current_panchanga_tithi || !!facts.current_panchanga_nakshatra;
+  if (!hasCurrentPanchanga && /today'?s?\s+(vedic|cosmic|panchanga)|today'?s?\s+nakshatra|lunar day you are living in/i.test(sourcePack)) {
+    findings.push({ personId, layer: 'source-pack', code: 'natal_panchanga_used_as_current_weather', severity: 'blocker', detail: 'Source pack describes natal Panchanga as current-day timing.' });
+  }
+
+  if (existsSync(manifestPath)) {
+    const manifest = loadJson(manifestPath);
+    if (manifest.gate?.status === 'pass' && findings.some(f => f.severity === 'blocker')) {
+      findings.push({ personId, layer: 'manifest', code: 'manifest_gate_false_pass', severity: 'blocker', detail: 'Manifest gate passes despite audit blockers.' });
+    }
+    if (manifest.notebooklm?.enabled && manifest.gate?.status === 'blocked') {
+      findings.push({ personId, layer: 'notebooklm', code: 'notebooklm_enabled_while_blocked', severity: 'blocker', detail: 'NotebookLM enabled while deterministic gate is blocked.' });
+    }
+  } else if (sourcePack) {
+    findings.push({ personId, layer: 'manifest', code: 'missing_manifest', severity: 'warning', detail: manifestPath });
+  }
+
+  return findings;
+}
+
+function main() {
+  const args = parseArgs();
+  const people = args.person
+    ? [args.person]
+    : readdirSync(args.inputDir).filter(file => file.endsWith('.json')).map(file => file.replace(/\.json$/, '')).sort();
+  const findings = people.flatMap(person => auditPerson(person, args));
+  const summary = {
+    generatedAt: new Date().toISOString(),
+    inputDir: resolve(args.inputDir),
+    readingDir: resolve(args.readingDir),
+    assetDir: resolve(args.assetDir),
+    people: people.length,
+    blockers: findings.filter(f => f.severity === 'blocker').length,
+    warnings: findings.filter(f => f.severity === 'warning').length,
+    findings,
+  };
+  console.log(JSON.stringify(summary, null, 2));
+  if (args.out) writeFileSync(args.out, JSON.stringify(summary, null, 2));
+  process.exit(summary.blockers > 0 ? 2 : 0);
+}
+
+main();

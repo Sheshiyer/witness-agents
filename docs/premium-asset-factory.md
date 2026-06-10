@@ -78,3 +78,26 @@ Each manifest records checks for:
 - obvious model planning-text leakage
 
 These checks are warnings unless an input is missing.
+
+## Chain Consistency Audit
+
+Run the read-only audit before sending packs to NotebookLM:
+
+```bash
+npx tsx scripts/audit-asset-chain.ts \
+  --inputDir .asset-run-inputs \
+  --readingDir .asset-run-readings \
+  --assetDir .premium-assets-witness-harshita \
+  --out .asset-chain-audit.json
+```
+
+The audit checks the chain from deterministic engine data to interpretation text to source pack and manifest. It blocks on:
+
+- synastry/composite handoffs without deterministic partner facts
+- nakshatra drift against locked natal Panchanga
+- somatic engines omitted from source packs
+- source packs claiming somatic data is absent when biofield/face-reading exists
+- natal Panchanga described as current-day timing
+- manifest gate passing despite audit blockers
+
+Exit code `2` means blockers were found.
