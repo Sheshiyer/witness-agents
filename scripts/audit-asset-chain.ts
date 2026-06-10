@@ -59,7 +59,12 @@ function loadJson(path: string): any {
 
 function loadEngineData(path: string): Record<string, any> {
   const raw = loadJson(path);
+  if (raw?.synastry_partners && Array.isArray(raw.synastry_partners)) return raw;
   if (!Array.isArray(raw)) return raw;
+  return loadEngineDataFromArray(raw);
+}
+
+function loadEngineDataFromArray(raw: any[]): Record<string, any> {
   const out: Record<string, any> = {};
   for (const entry of raw) {
     const id = entry.engine_id || entry.engine;
@@ -68,11 +73,34 @@ function loadEngineData(path: string): Record<string, any> {
   return out;
 }
 
+function isSynastryEngineData(engineData: Record<string, any>): boolean {
+  return Array.isArray((engineData as any).synastry_partners);
+}
+
+function partnerEngineData(engineData: Record<string, any>): Array<{ id: string; name: string; engines: Record<string, any>; facts: Record<string, unknown> }> {
+  if (!isSynastryEngineData(engineData)) return [];
+  return (engineData as any).synastry_partners.map((partner: any) => {
+    const engines = Array.isArray(partner.engines) ? loadEngineDataFromArray(partner.engines) : (partner.engines || {});
+    return { id: partner.id || partner.name || 'partner', name: partner.name || partner.id || 'Partner', engines, facts: extractFacts(engines) };
+  });
+}
+
 function hasEngine(engineData: Record<string, any>, engineId: string): boolean {
+  if (isSynastryEngineData(engineData)) return partnerEngineData(engineData).some(partner => hasEngine(partner.engines, engineId));
   return !!engineData[engineId] && !engineData[engineId]._error;
 }
 
 function extractFacts(engineData: Record<string, any>): Record<string, unknown> {
+  if (isSynastryEngineData(engineData)) {
+    const facts: Record<string, unknown> = {};
+    for (const partner of partnerEngineData(engineData)) {
+      const prefix = `partner_${partner.id}`.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      facts[`${prefix}_name`] = partner.name;
+      for (const [key, value] of Object.entries(partner.facts)) facts[`${prefix}_${key}`] = value;
+    }
+    return Object.fromEntries(Object.entries(facts).filter(([, value]) => value !== undefined && value !== null));
+  }
+
   const facts: Record<string, unknown> = {};
   for (const [engineId, output] of Object.entries(engineData)) {
     const result = output?.result || output;
@@ -149,7 +177,7 @@ function auditPerson(personId: string, args: Args): Finding[] {
   const combined = `${reading}\n\n${sourcePack}`;
   const isSynastry = /synastry|composite|partner/i.test(personId);
 
-  if (isSynastry && Object.keys(facts).length < 6) {
+  if (isSynastry && (!isSynastryEngineData(engineData) || Object.keys(facts).length < 12)) {
     findings.push({
       personId,
       layer: 'engine',
@@ -159,7 +187,7 @@ function auditPerson(personId: string, args: Args): Finding[] {
     });
   }
 
-  const expectedNakshatra = facts.natal_panchanga_nakshatra ? String(facts.natal_panchanga_nakshatra) : undefined;
+  const expectedNakshatra = !isSynastry && facts.natal_panchanga_nakshatra ? String(facts.natal_panchanga_nakshatra) : undefined;
   if (expectedNakshatra) {
     const unexpected = mentionedNakshatras(combined).filter(name => name.toLowerCase() !== expectedNakshatra.toLowerCase());
     if (unexpected.length > 0) {
@@ -169,6 +197,23 @@ function auditPerson(personId: string, args: Args): Finding[] {
         code: 'nakshatra_drift',
         severity: 'blocker',
         detail: `Expected ${expectedNakshatra}; also found ${[...new Set(unexpected)].join(', ')}.`,
+      });
+    }
+  }
+
+  if (isSynastry && isSynastryEngineData(engineData)) {
+    const expected = partnerEngineData(engineData)
+      .map(partner => String(partner.facts.natal_panchanga_nakshatra || ''))
+      .filter(Boolean)
+      .map(name => name.toLowerCase());
+    const unexpected = mentionedNakshatras(sourcePack).filter(name => !expected.includes(name.toLowerCase()));
+    if (unexpected.length > 0) {
+      findings.push({
+        personId,
+        layer: 'source-pack',
+        code: 'synastry_partner_nakshatra_drift',
+        severity: 'blocker',
+        detail: `Expected partner nakshatras ${expected.join(', ')}; unexpected source mentions ${[...new Set(unexpected)].join(', ')}.`,
       });
     }
   }

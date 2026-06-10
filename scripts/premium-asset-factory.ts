@@ -44,6 +44,7 @@ const DEFAULT_READING_DIR = '.batch-outputs';
 const DEFAULT_OUTPUT_DIR = '.premium-assets';
 const CHROME_BIN = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const SELEMENE_BASE_URL = process.env.SELEMENE_BASE_URL || 'https://selemene.tryambakam.space';
+const KNOWN_NAKSHATRAS = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
 
 type AssetStatus = 'ready' | 'pending' | 'failed' | 'skipped';
 
@@ -160,8 +161,37 @@ function humanizeKey(key: string): string {
 
 function loadEngineData(path: string): Record<string, any> {
   const raw = JSON.parse(readFileSync(path, 'utf-8'));
+  if (raw?.synastry_partners && Array.isArray(raw.synastry_partners)) return raw;
   if (!Array.isArray(raw)) return raw;
 
+  const out: Record<string, any> = {};
+  for (const entry of raw) {
+    const id = entry.engine_id || entry.engine;
+    if (id) out[id] = entry;
+  }
+  return out;
+}
+
+function isSynastryEngineData(engineData: Record<string, any>): boolean {
+  return Array.isArray((engineData as any).synastry_partners);
+}
+
+function partnerEngineData(engineData: Record<string, any>): Array<{ id: string; name: string; engines: Record<string, any>; facts: Record<string, unknown> }> {
+  if (!isSynastryEngineData(engineData)) return [];
+  return (engineData as any).synastry_partners.map((partner: any) => {
+    const engines = Array.isArray(partner.engines)
+      ? loadEngineDataFromArray(partner.engines)
+      : (partner.engines || {});
+    return {
+      id: partner.id || partner.name || 'partner',
+      name: partner.name || partner.id || 'Partner',
+      engines,
+      facts: extractFacts(engines),
+    };
+  });
+}
+
+function loadEngineDataFromArray(raw: any[]): Record<string, any> {
   const out: Record<string, any> = {};
   for (const entry of raw) {
     const id = entry.engine_id || entry.engine;
@@ -216,6 +246,18 @@ function personIds(inputDir: string): string[] {
 }
 
 function extractFacts(engineData: Record<string, any>): Record<string, unknown> {
+  if (isSynastryEngineData(engineData)) {
+    const facts: Record<string, unknown> = {};
+    for (const partner of partnerEngineData(engineData)) {
+      const prefix = `partner_${partner.id}`.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      facts[`${prefix}_name`] = partner.name;
+      for (const [key, value] of Object.entries(partner.facts)) {
+        facts[`${prefix}_${key}`] = value;
+      }
+    }
+    return Object.fromEntries(Object.entries(facts).filter(([, value]) => value !== undefined && value !== null));
+  }
+
   const facts: Record<string, unknown> = {};
   for (const [engineId, output] of Object.entries(engineData)) {
     const result = (output as any).result || output;
@@ -286,6 +328,7 @@ function extractFacts(engineData: Record<string, any>): Record<string, unknown> 
 }
 
 function hasEngine(engineData: Record<string, any>, engineId: string): boolean {
+  if (isSynastryEngineData(engineData)) return partnerEngineData(engineData).some(partner => hasEngine(partner.engines, engineId));
   return !!engineData[engineId] && !engineData[engineId]._error;
 }
 
@@ -299,7 +342,7 @@ function gateSourcePack(personId: string, reading: string, sourceText: string, f
   const isSynastry = /synastry|composite|partner/i.test(personId);
   const text = `${reading}\n\n${sourceText}`;
 
-  if (isSynastry && Object.keys(facts).length < 6) {
+  if (isSynastry && (!isSynastryEngineData(engineData) || Object.keys(facts).length < 12)) {
     findings.push({
       code: 'synastry_missing_deterministic_facts',
       severity: 'blocker',
@@ -307,16 +350,31 @@ function gateSourcePack(personId: string, reading: string, sourceText: string, f
     });
   }
 
-  const expectedNakshatra = plainFactValue(facts.natal_panchanga_nakshatra);
+  const expectedNakshatra = !isSynastry ? plainFactValue(facts.natal_panchanga_nakshatra) : undefined;
   if (expectedNakshatra) {
-    const knownNakshatras = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha','Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha','Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishta','Shatabhisha','Purva Bhadrapada','Uttara Bhadrapada','Revati'];
-    const mentioned = knownNakshatras.filter(name => new RegExp(`\\b${name.replace(/ /g, '\\s+')}\\b`, 'i').test(text));
+    const mentioned = KNOWN_NAKSHATRAS.filter(name => new RegExp(`\\b${name.replace(/ /g, '\\s+')}\\b`, 'i').test(text));
     const unexpected = mentioned.filter(name => name.toLowerCase() !== expectedNakshatra.toLowerCase());
     if (unexpected.length > 0) {
       findings.push({
         code: 'nakshatra_drift',
         severity: 'blocker',
         detail: `Expected Panchanga Nakshatra ${expectedNakshatra}, but source text also mentions: ${[...new Set(unexpected)].join(', ')}.`,
+      });
+    }
+  }
+
+  if (isSynastry && isSynastryEngineData(engineData)) {
+    const expected = partnerEngineData(engineData)
+      .map(partner => String(partner.facts.natal_panchanga_nakshatra || ''))
+      .filter(Boolean)
+      .map(name => name.toLowerCase());
+    const unexpected = KNOWN_NAKSHATRAS.filter(name => new RegExp(`\\b${name.replace(/ /g, '\\s+')}\\b`, 'i').test(sourceText))
+      .filter(name => !expected.includes(name.toLowerCase()));
+    if (unexpected.length > 0) {
+      findings.push({
+        code: 'synastry_partner_nakshatra_drift',
+        severity: 'blocker',
+        detail: `Expected partner nakshatras ${expected.join(', ')}, but source text also mentions: ${[...new Set(unexpected)].join(', ')}.`,
       });
     }
   }
@@ -421,6 +479,8 @@ function sanitizePanchangaScope(text: string, hasCurrentPanchanga: boolean): str
 }
 
 function buildNarrativeDossier(personName: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>): string {
+  if (isSynastryEngineData(engineData)) return buildSynastryNarrativeDossier(personName, reading, engineData);
+
   const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
   const hasCurrentPanchanga = !!facts.current_panchanga_tithi || !!facts.current_panchanga_nakshatra;
   const safeReading = sanitizePanchangaScope(sanitizeSomaticFalseAbsence(reading, hasSomaticData), hasCurrentPanchanga);
@@ -431,6 +491,31 @@ function buildNarrativeDossier(personName: string, reading: string, facts: Recor
   const factLines = Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n');
 
   return `# Personal Companion Dossier: ${personName}\n\nThis dossier is written for ${personName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Panchanga Scope\n\nNatal Panchanga describes the birth moment. Current Panchanga, when present, describes the current-day five-limb Panchanga. Do not treat natal Panchanga as current-day timing.\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Decision And Identity Thread\n\n${western || 'No decision and identity narrative section is available.'}\n\n## Timing And Life-Rhythm Thread\n\n${vedic || 'No timing and life-rhythm narrative section is available.'}\n\n## Body And Integration Thread\n\n${somatic || 'No body and integration narrative section is available.'}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personName} can listen to, revisit, study, and practice with.\n`;
+}
+
+function buildSynastryNarrativeDossier(personName: string, reading: string, engineData: Record<string, any>): string {
+  const partners = partnerEngineData(engineData);
+  const partnerSections = partners.map(partner => {
+    const lines = Object.entries(partner.facts)
+      .map(([key, value]) => `- ${humanizeKey(key)}: ${value}`)
+      .join('\n');
+    return `## ${partner.name} Deterministic Anchors\n\n${lines || '- No deterministic anchors extracted.'}`;
+  }).join('\n\n');
+
+  return `# Synastry Companion Dossier: ${personName}\n\nThis dossier is for a relationship/synastry reading. It must be grounded in the deterministic anchors for each partner below. The generated synastry prose may be used only as narrative texture, not as source-of-truth chart data.\n\n${partnerSections}\n\n## Synastry Narrative Texture\n\n${synastryTextureOnly(reading)}\n\n## Accuracy Rule\n\nIf the narrative texture contradicts the deterministic anchors above, use the deterministic anchors. Do not transfer one partner's nakshatra, Moon longitude, dasha, Human Design authority, or somatic data to the other partner.\n`;
+}
+
+function synastryTextureOnly(reading: string): string {
+  let texture = cleanReadingForNotebook(reading)
+    .replace(/### Part 1[\s\S]*?(?=### Part 2|$)/i, '### Relationship Orientation\n\nPartner-specific chart facts have been removed from this generated texture. Use the deterministic partner anchors above for all individual chart facts.\n\n')
+    .replace(/#### 1\.[\s\S]*?(?=###|####|$)/gi, '')
+    .replace(/\b(?:159\.831|96\.040)°?/g, '[see deterministic partner anchors]');
+
+  for (const name of KNOWN_NAKSHATRAS) {
+    texture = texture.replace(new RegExp(`\\b${name.replace(/ /g, '\\s+')}\\b`, 'gi'), '[see deterministic partner anchors]');
+  }
+
+  return texture;
 }
 
 function buildSomaticNarrative(facts: Record<string, unknown>, engineData: Record<string, any>, generatedSomatic: string): string {
@@ -466,6 +551,15 @@ function buildSomaticAnchor(facts: Record<string, unknown>, engineData: Record<s
 
 function buildAudioBrief(personName: string, facts: Record<string, unknown>): string {
   return `# Audio Experience Brief: ${personName}\n\nCreate a long-form audio companion, not a mechanical report. The experience should feel like two thoughtful hosts guiding ${personName} through their own premium personal reading.\n\n## Tone\n\nWarm, grounded, reflective, and specific. Avoid theatrical mysticism. Avoid diagnosis. Make the audio feel lived-in: explain what the patterns may feel like in decisions, relationships, body signals, timing, and practice.\n\n## Structure\n\n1. Opening orientation: how to listen to this reading.\n2. Core pattern: the most important repeating theme.\n3. Timing and decision rhythm.\n4. Relationship and collaboration field.\n5. Body-level integration.\n6. Practical reflection prompts.\n7. Closing integration: one small practice for the next week.\n\n## Must Anchor\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n\n## Panchanga Scope\n\nBirth/natal Panchanga is not current-day timing. Only describe current-day five-limb Panchanga when Current Panchanga anchors are present.\n\n## Avoid\n\nDo not list every system. Do not sound like a database. Do not invent missing systems. Do not make deterministic predictions.\n`;
+}
+
+function buildPartnerAnchorSource(engineData: Record<string, any>): string {
+  const partners = partnerEngineData(engineData);
+  if (partners.length === 0) return '';
+  return `# Partner Deterministic Anchors\n\nUse this source as the authority for partner-specific facts. If another source disagrees, this source wins.\n\n${partners.map(partner => {
+    const lines = Object.entries(partner.facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n');
+    return `## ${partner.name}\n\n${lines}`;
+  }).join('\n\n')}\n`;
 }
 
 function buildStudyGuideBrief(personName: string): string {
@@ -867,6 +961,8 @@ function writeSourcePack(personName: string, personId: string, packDir: string, 
   mkdirSync(sourcePackDir, { recursive: true });
 
   writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personName, reading, facts, engineData));
+  const partnerAnchors = buildPartnerAnchorSource(engineData);
+  if (partnerAnchors) writeFileSync(join(sourcePackDir, '00a-partner-deterministic-anchors.md'), partnerAnchors);
   writeFileSync(join(sourcePackDir, '01-audio-experience-brief.md'), buildAudioBrief(personName, facts));
   writeFileSync(join(sourcePackDir, '02-personal-study-guide-brief.md'), buildStudyGuideBrief(personName));
   writeFileSync(join(sourcePackDir, '03-personal-video-brief.md'), buildVideoBrief(personName));

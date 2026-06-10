@@ -101,3 +101,21 @@ The audit checks the chain from deterministic engine data to interpretation text
 - manifest gate passing despite audit blockers
 
 Exit code `2` means blockers were found.
+
+## Synastry Inputs
+
+Synastry/composite packs must use deterministic partner anchors, not only generated synastry prose. The accepted input shape is:
+
+```json
+{
+  "kind": "synastry_partners",
+  "relationship_id": "witnessalchemist-harshita-synastry",
+  "relationship_name": "Witnessalchemist x Harshita Synastry",
+  "synastry_partners": [
+    { "id": "witnessalchemist", "name": "Witnessalchemist", "engines": [] },
+    { "id": "harshita", "name": "Harshita", "engines": [] }
+  ]
+}
+```
+
+The asset factory extracts each partner's deterministic anchors and writes `source-pack/00a-partner-deterministic-anchors.md`. Generated synastry prose is treated as narrative texture only; partner chart facts in that prose are not authoritative.
