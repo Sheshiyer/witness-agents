@@ -13,6 +13,9 @@
  * Optional NotebookLM outputs (--notebooklm):
  *   - audio/deep-dive.mp3
  *   - video/video-brief.mp4
+ *   - slide-decks/detailed.pdf
+ *   - slide-decks/preview.pdf
+ *   - slide-decks/vimshottari-timeline.pdf
  *   - reports/study-guide.md
  *   - reports/briefing.md
  *   - flashcards/
@@ -203,6 +206,26 @@ function extractFacts(engineData: Record<string, any>): Record<string, unknown> 
   return Object.fromEntries(Object.entries(facts).filter(([, value]) => value !== undefined && value !== null));
 }
 
+function extractVimshottariTimeline(engineData: Record<string, any>): Array<Record<string, unknown>> {
+  const output = engineData['vimshottari'];
+  const result = output?.result || output;
+  const timeline = result?.timeline?.mahadashas;
+  if (Array.isArray(timeline)) {
+    return timeline.map((period: any) => ({
+      planet: period.planet,
+      start: period.start_date || period.start,
+      end: period.end_date || period.end,
+      duration_years: period.duration_years,
+    })).filter(period => period.planet);
+  }
+
+  const current = result?.current_period;
+  if (!current) return [];
+  return ['mahadasha', 'antardasha', 'pratyantardasha']
+    .map(level => ({ level, ...(current[level] || {}) }))
+    .filter(period => period.planet);
+}
+
 function summarizeEngines(engineData: Record<string, any>): string {
   const rows = Object.entries(engineData).map(([engineId, output]) => {
     const result = (output as any).result || output;
@@ -249,6 +272,24 @@ function buildStudyGuideBrief(personName: string): string {
 
 function buildVideoBrief(personName: string): string {
   return `# Personal Video Brief: ${personName}\n\nCreate a short premium video overview that introduces the reading as a reflective personal artifact.\n\n## Visual Direction\n\nElegant, editorial, calm. Think parchment, soft gold, night-sky blue, subtle orbit lines, clean typography, and gentle motion. Avoid generic astrology clip art.\n\n## Narrative Shape\n\n1. Open with the central emotional or timing pattern.\n2. Show three anchor themes.\n3. Translate the pattern into everyday life.\n4. End with one reflective question.\n\nThe video should feel like an invitation to return to the PDF and audio, not like a sales reel.\n`;
+}
+
+function buildSlideDeckBrief(personName: string, kind: 'detailed' | 'preview'): string {
+  const isDetailed = kind === 'detailed';
+  return `# ${isDetailed ? 'Detailed' : 'Short Preview'} Slide Deck Brief: ${personName}\n\nCreate a ${isDetailed ? 'detailed premium personal slide deck' : 'short preview slide deck'} for ${personName}. This deck is for the recipient, not for system developers. It should feel like a polished, visually coherent product.\n\n## Visual Theme\n\nUse a consistent visual language: warm parchment, soft gold accents, deep indigo/night-sky fields, subtle orbit lines, refined serif headings, clean sans-serif captions, and calm spacing. Avoid raw engine tables, generic astrology clip art, neon overload, or technical diagrams that feel internal.\n\n## Deck Shape\n\n${isDetailed ? `1. Cover: ${personName}'s Premium Witness Reading.\n2. Core Pattern: the central emotional/timing signature.\n3. Decision Rhythm: how clarity forms.\n4. Timing Field: the current life-rhythm and dasha context.\n5. Relationship/Collaboration: how connection bridges the pattern.\n6. Body Integration: how the pattern may be felt and practiced.\n7. Tensions: the central paradoxes to observe.\n8. Practices: 3-5 grounded practices.\n9. Reflection Questions: a closing page for self-inquiry.\n10. Closing: one sentence the recipient can carry.` : `1. Cover.\n2. Three Key Themes.\n3. One Timing Insight.\n4. One Practice.\n5. Closing Reflection Question.`}\n\n## Output Standard\n\nMake the deck visually deliverable. It should be suitable to export as a PDF and share directly with ${personName}.\n`;
+}
+
+function buildVimshottariTimelineBrief(personName: string, timeline: Array<Record<string, unknown>>, facts: Record<string, unknown>): string {
+  const current = [
+    facts.vimshottari_mahadasha ? `Mahadasha: ${facts.vimshottari_mahadasha}` : '',
+    facts.vimshottari_antardasha ? `Antardasha: ${facts.vimshottari_antardasha}` : '',
+    facts.vimshottari_pratyantardasha ? `Pratyantardasha: ${facts.vimshottari_pratyantardasha}` : '',
+  ].filter(Boolean).join(' · ');
+  const rows = timeline.length
+    ? timeline.map(period => `- ${period.level ? `${period.level}: ` : ''}${period.planet}: ${period.start || 'unknown start'} → ${period.end || 'unknown end'}${period.duration_years ? ` (${period.duration_years} years)` : ''}`).join('\n')
+    : '- No full Vimshottari timeline was available; use only current period anchors.';
+
+  return `# Vimshottari Timeline Slide Brief: ${personName}\n\nCreate a timeline-focused slide deck PDF for ${personName}. This should translate the Vimshottari timing field into a clear visual journey. It is for the recipient, not for engineers.\n\n## Current Period Anchor\n\n${current || 'Current period details are limited.'}\n\n## Timeline Data\n\n${rows}\n\n## Visual Theme\n\nUse a horizontal or vertical gold-thread timeline on a deep indigo/parchment background. Each planetary period should feel like a chapter, not a raw table. Use subtle icons, calm labels, and enough whitespace for the recipient to understand the life-rhythm at a glance.\n\n## Deck Shape\n\n1. Cover: ${personName}'s Vimshottari Timing Map.\n2. How to read the timeline.\n3. Current period in focus.\n4. Major timeline chapters.\n5. What this timing asks the recipient to observe.\n6. Reflection questions for the current period.\n\n## Boundaries\n\nDo not make deterministic predictions. Present timing as a reflective rhythm for inquiry.\n`;
 }
 
 function markdownToHtml(md: string): string {
@@ -432,10 +473,11 @@ function downloadNotebookLMArtifacts(notebookId: string, packDir: string): Recor
   const audioDir = join(packDir, 'audio');
   const videoDir = join(packDir, 'video');
   const reportDir = join(packDir, 'reports');
+  const slideDeckDir = join(packDir, 'slide-decks');
   const quizDir = join(packDir, 'quiz');
   const flashcardsDir = join(packDir, 'flashcards');
   const mindMapDir = join(packDir, 'mind-map');
-  for (const dir of [audioDir, videoDir, reportDir, quizDir, flashcardsDir, mindMapDir]) mkdirSync(dir, { recursive: true });
+  for (const dir of [audioDir, videoDir, reportDir, slideDeckDir, quizDir, flashcardsDir, mindMapDir]) mkdirSync(dir, { recursive: true });
 
   const download = (key: string, type: string, args: (id: string) => string[], outputPath: string, titleNeedle?: string) => {
     const artifactId = artifactByType(notebookId, type, titleNeedle);
@@ -455,6 +497,9 @@ function downloadNotebookLMArtifacts(notebookId: string, packDir: string): Recor
   download('video_brief', 'video', id => ['download', 'video', join(videoDir, 'video-brief.mp4'), '--notebook', notebookId, '--artifact', id, '--force'], join(videoDir, 'video-brief.mp4'));
   download('study_guide', 'report', id => ['download', 'report', join(reportDir, 'study-guide.md'), '--notebook', notebookId, '--artifact', id, '--force'], join(reportDir, 'study-guide.md'), 'study');
   download('briefing_doc', 'report', id => ['download', 'report', join(reportDir, 'briefing.md'), '--notebook', notebookId, '--artifact', id, '--force'], join(reportDir, 'briefing.md'), 'brief');
+  download('slide_deck_detailed', 'slide_deck', id => ['download', 'slide-deck', join(slideDeckDir, 'detailed.pdf'), '--notebook', notebookId, '--artifact', id, '--force'], join(slideDeckDir, 'detailed.pdf'), 'detailed');
+  download('slide_deck_preview', 'slide_deck', id => ['download', 'slide-deck', join(slideDeckDir, 'preview.pdf'), '--notebook', notebookId, '--artifact', id, '--force'], join(slideDeckDir, 'preview.pdf'), 'preview');
+  download('slide_deck_vimshottari_timeline', 'slide_deck', id => ['download', 'slide-deck', join(slideDeckDir, 'vimshottari-timeline.pdf'), '--notebook', notebookId, '--artifact', id, '--force'], join(slideDeckDir, 'vimshottari-timeline.pdf'), 'vimshottari');
   download('quiz', 'quiz', id => ['download', 'quiz', '--format', 'markdown', join(quizDir, 'quiz.md'), '--notebook', notebookId, '--artifact', id], join(quizDir, 'quiz.md'));
   download('flashcards', 'flashcards', id => ['download', 'flashcards', '--format', 'markdown', join(flashcardsDir, 'flashcards.md'), '--notebook', notebookId, '--artifact', id], join(flashcardsDir, 'flashcards.md'));
   download('mind_map', 'mind_map', id => ['download', 'mind-map', '--all', mindMapDir, '--notebook', notebookId, '--force'], mindMapDir);
@@ -491,10 +536,11 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
   const audioDir = join(packDir, 'audio');
   const videoDir = join(packDir, 'video');
   const reportDir = join(packDir, 'reports');
+  const slideDeckDir = join(packDir, 'slide-decks');
   const quizDir = join(packDir, 'quiz');
   const flashcardsDir = join(packDir, 'flashcards');
   const mindMapDir = join(packDir, 'mind-map');
-  for (const dir of [audioDir, videoDir, reportDir, quizDir, flashcardsDir, mindMapDir]) mkdirSync(dir, { recursive: true });
+  for (const dir of [audioDir, videoDir, reportDir, slideDeckDir, quizDir, flashcardsDir, mindMapDir]) mkdirSync(dir, { recursive: true });
   const artifacts: Record<string, NotebookLMArtifactStatus> = {};
 
   const generate = (key: string, args: string[], downloadArgs: (artifactId?: string) => string[], outputPath: string, opts?: { wait?: boolean; retry?: boolean; timeoutMs?: number; artifactType?: string }) => {
@@ -544,6 +590,30 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
   );
 
   generate(
+    'slide_deck_detailed',
+    ['generate', 'slide-deck', '--format', 'detailed', `Create the detailed premium personal slide deck for ${personName}. Use the detailed deck brief and keep a consistent parchment, soft-gold, night-indigo visual theme. This should be a recipient-ready PDF, not raw system output.`],
+    (artifactId) => ['download', 'slide-deck', join(slideDeckDir, 'detailed.pdf'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
+    join(slideDeckDir, 'detailed.pdf'),
+    { timeoutMs: 900_000, artifactType: 'slide_deck' },
+  );
+
+  generate(
+    'slide_deck_preview',
+    ['generate', 'slide-deck', '--format', 'presenter', '--length', 'short', `Create the short preview slide deck for ${personName}. Use the preview deck brief. Keep the same visual language as the detailed deck: parchment, soft gold, night indigo, refined typography, calm spacing.`],
+    (artifactId) => ['download', 'slide-deck', join(slideDeckDir, 'preview.pdf'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
+    join(slideDeckDir, 'preview.pdf'),
+    { timeoutMs: 900_000, artifactType: 'slide_deck' },
+  );
+
+  generate(
+    'slide_deck_vimshottari_timeline',
+    ['generate', 'slide-deck', '--format', 'detailed', `Create the Vimshottari timeline slide deck for ${personName}. Use the Vimshottari Timeline Slide Brief as primary source. Make the timeline visual, chaptered, and recipient-facing; do not make deterministic predictions.`],
+    (artifactId) => ['download', 'slide-deck', join(slideDeckDir, 'vimshottari-timeline.pdf'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
+    join(slideDeckDir, 'vimshottari-timeline.pdf'),
+    { timeoutMs: 900_000, artifactType: 'slide_deck' },
+  );
+
+  generate(
     'quiz',
     ['generate', 'quiz', '--difficulty', 'medium', '--quantity', 'standard', `Create a reflective self-knowledge quiz for ${personName}. It should help them internalize the reading, not memorize engine labels.`],
     (artifactId) => ['download', 'quiz', '--format', 'markdown', join(quizDir, 'quiz.md'), '--notebook', notebookId, ...(artifactId ? ['--artifact', artifactId] : [])],
@@ -583,8 +653,11 @@ function writeSourcePack(personName: string, personId: string, packDir: string, 
   writeFileSync(join(sourcePackDir, '01-audio-experience-brief.md'), buildAudioBrief(personName, facts));
   writeFileSync(join(sourcePackDir, '02-personal-study-guide-brief.md'), buildStudyGuideBrief(personName));
   writeFileSync(join(sourcePackDir, '03-personal-video-brief.md'), buildVideoBrief(personName));
-  writeFileSync(join(sourcePackDir, '04-orientation-anchors.md'), `# Orientation Anchors\n\nThese are anchors for accuracy, not the product. Use them to prevent drift while producing vivid personal assets.\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n`);
-  writeFileSync(join(sourcePackDir, '05-boundaries-and-style.md'), `# Boundaries and Style\n\n## Make It Deliverable\n\nTurn the reading into a polished product: audio, video, study guide, quiz, flashcards, and mind map. The audience should feel they received a personal companion, not a structured engine output.\n\n## Boundaries\n\n- Do not invent missing engine data.\n- Do not make medical, financial, or deterministic life predictions.\n- Treat all content as reflective witnessing, not diagnosis or instruction.\n- If a system lacks data, name the absence rather than filling the gap.\n- Preserve the Euclidean-runtime vs non-Euclidean-Noesis distinction: outputs are mirrors for inquiry, not commands.\n\n## Voice\n\nWarm, exact, human, reflective, premium, embodied. Avoid generic mystical language. Avoid raw JSON/schema phrasing.\n`);
+  writeFileSync(join(sourcePackDir, '04-slide-deck-detailed-brief.md'), buildSlideDeckBrief(personName, 'detailed'));
+  writeFileSync(join(sourcePackDir, '05-slide-deck-preview-brief.md'), buildSlideDeckBrief(personName, 'preview'));
+  writeFileSync(join(sourcePackDir, '06-vimshottari-timeline-brief.md'), buildVimshottariTimelineBrief(personName, extractVimshottariTimeline(engineData), facts));
+  writeFileSync(join(sourcePackDir, '07-orientation-anchors.md'), `# Orientation Anchors\n\nThese are anchors for accuracy, not the product. Use them to prevent drift while producing vivid personal assets.\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n`);
+  writeFileSync(join(sourcePackDir, '08-boundaries-and-style.md'), `# Boundaries and Style\n\n## Make It Deliverable\n\nTurn the reading into a polished product: audio, video, slide decks, study guide, quiz, flashcards, and mind map. The audience should feel they received a personal companion, not a structured engine output.\n\n## Consistent Visual Theme\n\nUse warm parchment, soft gold, night indigo, refined typography, subtle orbit lines, calm spacing, and editorial restraint across PDFs and slide decks.\n\n## Boundaries\n\n- Do not invent missing engine data.\n- Do not make medical, financial, or deterministic life predictions.\n- Treat all content as reflective witnessing, not diagnosis or instruction.\n- If a system lacks data, name the absence rather than filling the gap.\n- Preserve the Euclidean-runtime vs non-Euclidean-Noesis distinction: outputs are mirrors for inquiry, not commands.\n\n## Voice\n\nWarm, exact, human, reflective, premium, embodied. Avoid generic mystical language. Avoid raw JSON/schema phrasing.\n`);
 
   return sourcePackDir;
 }

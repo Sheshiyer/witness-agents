@@ -22,8 +22,11 @@ Outputs are written to `.premium-assets/<person>/`:
 - `source-pack/01-audio-experience-brief.md`
 - `source-pack/02-personal-study-guide-brief.md`
 - `source-pack/03-personal-video-brief.md`
-- `source-pack/04-orientation-anchors.md`
-- `source-pack/05-boundaries-and-style.md`
+- `source-pack/04-slide-deck-detailed-brief.md`
+- `source-pack/05-slide-deck-preview-brief.md`
+- `source-pack/06-vimshottari-timeline-brief.md`
+- `source-pack/07-orientation-anchors.md`
+- `source-pack/08-boundaries-and-style.md`
 - `local/reading.html`
 - `local/reading.pdf`
 - `local/reflection-questions.md`
@@ -54,6 +57,9 @@ Expected NotebookLM assets:
 
 - `audio/deep-dive-long.mp3`
 - `video/video-brief.mp4`
+- `slide-decks/detailed.pdf`
+- `slide-decks/preview.pdf`
+- `slide-decks/vimshottari-timeline.pdf`
 - `reports/study-guide.md`
 - `reports/briefing.md`
 - `quiz/`
