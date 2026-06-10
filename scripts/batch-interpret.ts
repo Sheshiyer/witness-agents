@@ -15,7 +15,7 @@
  *   npx tsx scripts/batch-interpret.ts --dir path/to/subjects/ --output ./interpretations/ --resume
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
 import { join, basename } from 'path';
 
 // Import rate-limited provider
@@ -106,7 +106,7 @@ function loadSubjects(args: ReturnType<typeof parseArgs>): SubjectEntry[] {
     process.exit(1);
   }
 
-  const files = require('fs').readdirSync(args.dataDir)
+  const files = readdirSync(args.dataDir)
     .filter((f: string) => f.endsWith('.json'))
     .map((f: string) => ({
       id: f.replace(/\.json$/, '').replace(/^\d+_selemene_/, ''),
