@@ -3,7 +3,6 @@
 // This is the first concrete "real" graph using the atomic wiring pattern.
 
 import type { AtomicTask, FactLock } from '@witness/orchestration';
-import { injectGroundedContext } from '@witness/orchestration';
 
 /**
  * Creates a production dyad witness task graph.
@@ -13,6 +12,10 @@ import { injectGroundedContext } from '@witness/orchestration';
  * - pichet: somatic, relational, felt-sense
  * - selemene: precise engine anchors (no interpretation)
  * - synthesis: cross-perspective weaving + final witness field
+ *
+ * Note: Grounded context injection is handled by the orchestrator (P2-W2-SC-T15).
+ * Tasks with requiresGrounding: true will have retrieved passages injected
+ * AFTER the FactLock section, BEFORE the system prompt.
  */
 export function createDyadWitnessGraph(lock: FactLock): AtomicTask<'aletheios' | 'pichet' | 'selemene' | 'synthesis'>[] {
   return [
@@ -24,12 +27,12 @@ export function createDyadWitnessGraph(lock: FactLock): AtomicTask<'aletheios' |
       targetTokens: 1600,
       temperature: 0.32,
       requiresGrounding: true,
-      buildPrompts: (lock, prior, grounding) => {
-        const grounded = injectGroundedContext(lock, grounding);
+      buildPrompts: (_lock, _prior, _grounding) => {
+        // Note: grounding param passed for backward compat; orchestrator handles injection
         return {
           system: `You are Aletheios: the clear, structural, integrative witness.
 Your job is to map the locked facts into precise meaning structures (identity stack, dharma, current field).
-Be exact. Never soften or reinterpret locked facts.${grounded ? '\n\n' + grounded : ''}`,
+Be exact. Never soften or reinterpret locked facts.`,
           user: `Give the Aletheios identity witnessing for this subject.
 Focus on how the locked Moon, Lagna, current Mahadasha, and relationship status form the current structural field.
 Use clear sections.`,
@@ -43,12 +46,11 @@ Use clear sections.`,
       targetTokens: 1600,
       temperature: 0.42,
       requiresGrounding: true,
-      buildPrompts: (lock, prior, grounding) => {
-        const grounded = injectGroundedContext(lock, grounding);
+      buildPrompts: (_lock, _prior, _grounding) => {
         return {
           system: `You are Pichet: the somatic, embodied, relational witness.
 Honor the locked facts while surfacing felt texture, relational field, and bodily knowing.
-Never contradict the FACT LOCK.${grounded ? '\n\n' + grounded : ''}`,
+Never contradict the FACT LOCK.`,
           user: `Give the Pichet identity witnessing.
 Especially attend to the 10-year unmarried long-term relationship and how the current Mahadasha is felt somatically and relationally.`,
         };
@@ -76,8 +78,7 @@ Especially attend to the 10-year unmarried long-term relationship and how the cu
       targetTokens: 2400,
       temperature: 0.26,
       requiresGrounding: true,
-      buildPrompts: (lock, prior, grounding) => {
-        const grounded = injectGroundedContext(lock, grounding);
+      buildPrompts: (_lock, _prior, _grounding) => {
         return {
           system: `You are the final Witness Dyad synthesis.
 You receive three independent streams:
@@ -86,7 +87,7 @@ You receive three independent streams:
 - Selemene anchors (precise facts)
 
 Weave them into one coherent field. The locked facts are non-negotiable spine.
-Surface convergences, productive tensions, and the living quality of the partnership field.${grounded ? '\n\n' + grounded : ''}`,
+Surface convergences, productive tensions, and the living quality of the partnership field.`,
           user: `Synthesize the three prior streams into a single integrated dyad witnessing.
 Respect the locked facts (especially the 10-year relationship status and current Mahadasha) at every step.
 End with the strongest single sentence that captures the current joint field.`,

@@ -5,6 +5,7 @@ import { renderFactLock, buildFactsReminder } from './fact-lock.js';
 import type { OrchestrationObserver } from './observability.js';
 import { NoopObserver } from './observability.js';
 import type { GroundingProvider, GroundedPassage, RetrievalQuery } from './grounding.js';
+import { injectGroundedContext } from './grounding.js';
 
 export interface OrchestratorOptions {
   maxParallel?: number;
@@ -114,7 +115,16 @@ export class WitnessOrchestrator {
           }
 
           const { system, user } = task.buildPrompts(lock, priorOutputs, grounding);
-          const lockedSystem = [renderFactLock(lock), system].join('\n\n---\n\n');
+
+          // Inject grounded context AFTER FactLock, BEFORE system prompt (P2-W2-SC-T15)
+          // Format: [FactLock] --- [Retrieved Context] --- [System prompt]
+          const groundedSection = injectGroundedContext(lock, grounding);
+          const lockedSystem = [
+            renderFactLock(lock),
+            groundedSection,  // inserted between FactLock and system
+            system,
+          ].filter(Boolean).join('\n\n');
+
           const lockedUser = [user, buildFactsReminder(lock)].join('\n\n');
 
           const augmentedTask: AtomicTask = {
