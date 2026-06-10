@@ -38,3 +38,13 @@ export {
   type PrivateIndexManager,
   type IndexScope,
 } from './grounding.js';
+
+// Vectorize grounding provider (Cloudflare Vectorize adapter)
+export {
+  VectorizeGroundingProvider,
+  createVectorizeGroundingProvider,
+  createWitnessWisdomGroundingProvider,
+  type VectorizeGroundingConfig,
+  type EmbeddingProvider,
+  type EmbeddingResult,
+} from './vectorize-grounding.js';
