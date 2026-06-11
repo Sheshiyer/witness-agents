@@ -39,6 +39,7 @@ import {
 import { basename, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { formatModeContext, formatModePolicy, getModePolicy, validateModeContext, type ConsciousnessLevel, type ModePolicy } from './asset-mode-policy.js';
+import { SOMATIC_LAYER_APPROVED, CREATIVE_ORACLE_LAYER_APPROVED } from '../src/wiring/graphs/section-witness.js';
 
 const DEFAULT_INPUT_DIR = '.batch-inputs';
 const DEFAULT_READING_DIR = '.batch-outputs';
@@ -177,6 +178,20 @@ function slugToName(slug: string): string {
     .filter(Boolean)
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function slugToPersonaName(slug: string): string {
+  const parts = slug
+    .replace(/\.json$|\.md$/g, '')
+    .split('-')
+    .filter(Boolean);
+  // Indian South Indian naming: 3+ parts, last part is the given name
+  // Western/short: 1-2 parts, first part is the given name
+  // Fallback: if last part is a single initial, use first part
+  if (parts.length >= 3 && parts[parts.length - 1].length > 1) {
+    return parts[parts.length - 1].charAt(0).toUpperCase() + parts[parts.length - 1].slice(1);
+  }
+  return parts[0]?.charAt(0).toUpperCase() + parts[0]?.slice(1) || '';
 }
 
 function humanizeKey(key: string): string {
@@ -363,12 +378,12 @@ function plainFactValue(value: unknown): string | undefined {
   return String(value);
 }
 
-function gateSourcePack(personId: string, reading: string, sourceText: string, facts: Record<string, unknown>, engineData: Record<string, any>): GateFinding[] {
+function gateSourcePack(personId: string, reading: string, sourceText: string, facts: Record<string, unknown>): GateFinding[] {
   const findings: GateFinding[] = [];
   const isSynastry = /synastry|composite|partner/i.test(personId);
   const text = `${reading}\n\n${sourceText}`;
 
-  if (isSynastry && (!isSynastryEngineData(engineData) || Object.keys(facts).length < 12)) {
+  if (isSynastry && Object.keys(facts).length < 12) {
     findings.push({
       code: 'synastry_missing_deterministic_facts',
       severity: 'blocker',
@@ -389,39 +404,31 @@ function gateSourcePack(personId: string, reading: string, sourceText: string, f
     }
   }
 
-  if (isSynastry && isSynastryEngineData(engineData)) {
-    const expected = partnerEngineData(engineData)
-      .map(partner => String(partner.facts.natal_panchanga_nakshatra || ''))
-      .filter(Boolean)
-      .map(name => name.toLowerCase());
-    const unexpected = KNOWN_NAKSHATRAS.filter(name => new RegExp(`\\b${name.replace(/ /g, '\\s+')}\\b`, 'i').test(sourceText))
-      .filter(name => !expected.includes(name.toLowerCase()));
-    if (unexpected.length > 0) {
-      findings.push({
-        code: 'synastry_partner_nakshatra_drift',
-        severity: 'blocker',
-        detail: `Expected partner nakshatras ${expected.join(', ')}, but source text also mentions: ${[...new Set(unexpected)].join(', ')}.`,
-      });
-    }
-  }
-
-  const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
+  const hasSomaticData = !!facts.biofield_available || !!facts.face_reading_available;
   if (hasSomaticData) {
-    const sourceMentionsSomatic = /biofield|face reading|dosha|somatic|coherence|dominant element/i.test(sourceText);
-    const deniesSomatic = /no recorded data for .*Somatic|no somatic data|not available for .*Somatic|absence of (a )?somatic map|absence of somatic data/i.test(sourceText);
-    if (!sourceMentionsSomatic) {
+    if (!SOMATIC_LAYER_APPROVED) {
       findings.push({
-        code: 'somatic_data_omitted',
+        code: 'somatic_layer_not_approved',
         severity: 'blocker',
-        detail: 'Input contains somatic engines, but NotebookLM source pack does not include somatic anchors.',
+        detail: 'Somatic engine data is present but SOMATIC_LAYER_APPROVED is false. Remove biofield, face-reading, and nadabrahman from engine inputs, or set SOMATIC_LAYER_APPROVED=true only after explicit roadmap approval.',
       });
-    }
-    if (deniesSomatic) {
-      findings.push({
-        code: 'somatic_false_absence',
-        severity: 'blocker',
-        detail: 'Input contains somatic engines, but source text says somatic data is absent or unavailable.',
-      });
+    } else {
+      const sourceMentionsSomatic = /biofield|face reading|dosha|somatic|coherence|dominant element/i.test(sourceText);
+      const deniesSomatic = /no recorded data for .*Somatic|no somatic data|not available for .*Somatic|absence of (a )?somatic map|absence of somatic data/i.test(sourceText);
+      if (!sourceMentionsSomatic) {
+        findings.push({
+          code: 'somatic_data_omitted',
+          severity: 'blocker',
+          detail: 'Input contains somatic engines, but NotebookLM source pack does not include somatic anchors.',
+        });
+      }
+      if (deniesSomatic) {
+        findings.push({
+          code: 'somatic_false_absence',
+          severity: 'blocker',
+          detail: 'Input contains somatic engines, but source text says somatic data is absent or unavailable.',
+        });
+      }
     }
   }
 
@@ -504,19 +511,51 @@ function sanitizePanchangaScope(text: string, hasCurrentPanchanga: boolean): str
     .replace(/Vedic weather/gi, 'current-day Panchanga');
 }
 
-function buildNarrativeDossier(personName: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>, policy: ModePolicy): string {
-  if (isSynastryEngineData(engineData)) return buildSynastryNarrativeDossier(personName, reading, engineData, policy);
-
-  const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
+function buildNarrativeDossier(personaName: string, reading: string, facts: Record<string, unknown>, policy: ModePolicy): string {
+  const hasSomaticData = !!facts.biofield_available || !!facts.face_reading_available;
   const hasCurrentPanchanga = !!facts.current_panchanga_tithi || !!facts.current_panchanga_nakshatra;
   const safeReading = sanitizePanchangaScope(sanitizeSomaticFalseAbsence(reading, hasSomaticData), hasCurrentPanchanga);
-  const western = extractSection(safeReading, 'western-systems');
-  const vedic = extractSection(safeReading, 'vedic-systems');
-  const somatic = buildSomaticNarrative(facts, engineData, extractSection(reading, 'somatic-systems'));
-  const synthesis = extractSection(safeReading, 'section-synthesis');
-  const factLines = Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n');
 
-  return `# Personal Companion Dossier: ${personName}\n\nThis dossier is written for ${personName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n${formatModePolicy(policy)}\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Panchanga Scope\n\nNatal Panchanga describes the birth moment. Current Panchanga, when present, describes the current-day five-limb Panchanga. Do not treat natal Panchanga as current-day timing.\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Decision And Identity Thread\n\n${western || 'No decision and identity narrative section is available.'}\n\n## Timing And Life-Rhythm Thread\n\n${vedic || 'No timing and life-rhythm narrative section is available.'}\n\n## Body And Integration Thread\n\n${somatic || 'No body and integration narrative section is available.'}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personName} can listen to, revisit, study, and practice with.\n`;
+  // New layer-based sections (16-engine consciousness stack)
+  let temporal = extractSection(safeReading, 'temporal-foundation');
+  let structural = extractSection(safeReading, 'structural-identity');
+  let synthesis = extractSection(safeReading, 'layer-synthesis');
+
+  // Somatic Resonance is gated by roadmap approval (SOMATIC_LAYER_APPROVED).
+  // When false (default), somatic engines are excluded from interpretation
+  // and no somatic thread is rendered in the dossier.
+  let somatic = '';
+  if (SOMATIC_LAYER_APPROVED && hasSomaticData) {
+    somatic = buildSomaticNarrative(facts, extractSection(reading, 'somatic-resonance'));
+  }
+
+  // Creative Oracle is gated by roadmap approval (CREATIVE_ORACLE_LAYER_APPROVED).
+  // When false (default), oracle engines are excluded from interpretation
+  // and no oracle thread is rendered in the dossier.
+  let oracle = '';
+  if (CREATIVE_ORACLE_LAYER_APPROVED) {
+    oracle = extractSection(safeReading, 'creative-oracle');
+  }
+
+  // Backward compatibility: if new layers are absent, fall back to old cultural sections
+  if (!temporal && !structural && !somatic && !oracle && !synthesis) {
+    temporal = extractSection(safeReading, 'vedic-systems');
+    structural = extractSection(safeReading, 'western-systems');
+    if (SOMATIC_LAYER_APPROVED && hasSomaticData) {
+      somatic = buildSomaticNarrative(facts, extractSection(reading, 'somatic-systems'));
+    }
+    synthesis = extractSection(safeReading, 'section-synthesis');
+  }
+
+  const factLines = Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n');
+  const somaticThread = (SOMATIC_LAYER_APPROVED && hasSomaticData)
+    ? `\n\n## Somatic Resonance Thread\n\n${somatic || 'No somatic resonance narrative section is available.'}`
+    : '';
+  const oracleThread = CREATIVE_ORACLE_LAYER_APPROVED
+    ? `\n\n## Creative Oracle Thread\n\n${oracle || 'No creative oracle narrative section is available.'}\n`
+    : '';
+
+  return `# Personal Companion Dossier: ${personaName}\n\nThis dossier is written for ${personaName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n${formatModePolicy(policy)}\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Panchanga Scope\n\nNatal Panchanga describes the birth moment. Current Panchanga, when present, describes the current-day five-limb Panchanga. Do not treat natal Panchanga as current-day timing.\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Temporal Foundation Thread\n\n${temporal || 'No temporal foundation narrative section is available.'}\n\n## Structural Identity Thread\n\n${structural || 'No structural identity narrative section is available.'}${somaticThread}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personaName} can listen to, revisit, study, and practice with.\n${oracleThread}`;
 }
 
 function buildSynastryNarrativeDossier(personName: string, reading: string, engineData: Record<string, any>, policy: ModePolicy): string {
@@ -544,8 +583,8 @@ function synastryTextureOnly(reading: string): string {
   return texture;
 }
 
-function buildSomaticNarrative(facts: Record<string, unknown>, engineData: Record<string, any>, generatedSomatic: string): string {
-  const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
+function buildSomaticNarrative(facts: Record<string, unknown>, generatedSomatic: string): string {
+  const hasSomaticData = !!facts.biofield_available || !!facts.face_reading_available;
   if (!hasSomaticData) return generatedSomatic || 'No body and integration narrative section is available.';
 
   const anchors = [
@@ -560,9 +599,11 @@ function buildSomaticNarrative(facts: Record<string, unknown>, engineData: Recor
   return `Deterministic somatic data is available and should be used as the body-level anchor. Do not say somatic data is absent.\n\n${anchors}\n\nUse this as a reflective body-awareness layer, not diagnosis or medical instruction.`;
 }
 
-function buildSomaticAnchor(facts: Record<string, unknown>, engineData: Record<string, any>): string {
-  const hasBiofield = hasEngine(engineData, 'biofield');
-  const hasFace = hasEngine(engineData, 'face-reading');
+function buildSomaticAnchor(facts: Record<string, unknown>): string {
+  const hasBiofield = !!facts.biofield_available;
+  const hasFace = !!facts.face_reading_available;
+  if (!hasBiofield && !hasFace) return '';
+
   const lines = [
     `Biofield data available: ${hasBiofield ? 'yes' : 'no'}`,
     `Face-reading data available: ${hasFace ? 'yes' : 'no'}`,
@@ -575,8 +616,8 @@ function buildSomaticAnchor(facts: Record<string, unknown>, engineData: Record<s
   return `# Somatic Anchor\n\nThis source prevents false statements about missing body-level data. Use these anchors only where they are present.\n\n${lines}\n\nIf data is available, do not say it is absent. If a specific somatic field is not listed, do not invent it.\n`;
 }
 
-function buildAudioBrief(personName: string, facts: Record<string, unknown>): string {
-  return `# Audio Experience Brief: ${personName}\n\nCreate a long-form audio companion, not a mechanical report. The experience should feel like two thoughtful hosts guiding ${personName} through their own premium personal reading.\n\n## Tone\n\nWarm, grounded, reflective, and specific. Avoid theatrical mysticism. Avoid diagnosis. Make the audio feel lived-in: explain what the patterns may feel like in decisions, relationships, body signals, timing, and practice.\n\n## Structure\n\n1. Opening orientation: how to listen to this reading.\n2. Core pattern: the most important repeating theme.\n3. Timing and decision rhythm.\n4. Relationship and collaboration field.\n5. Body-level integration.\n6. Practical reflection prompts.\n7. Closing integration: one small practice for the next week.\n\n## Must Anchor\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n\n## Panchanga Scope\n\nBirth/natal Panchanga is not current-day timing. Only describe current-day five-limb Panchanga when Current Panchanga anchors are present.\n\n## Avoid\n\nDo not list every system. Do not sound like a database. Do not invent missing systems. Do not make deterministic predictions.\n`;
+function buildAudioBrief(personaName: string, facts: Record<string, unknown>): string {
+  return `# Audio Experience Brief: ${personaName}\n\nCreate a long-form audio companion, not a mechanical report. The experience should feel like two thoughtful hosts guiding ${personaName} through their own premium personal reading.\n\n## Tone\n\nWarm, grounded, reflective, and specific. Avoid theatrical mysticism. Avoid diagnosis. Make the audio feel lived-in: explain what the patterns may feel like in decisions, relationships, body signals, timing, and practice.\n\n## Structure\n\n1. Opening orientation: how to listen to this reading.\n2. Core pattern: the most important repeating theme.\n3. Timing and decision rhythm.\n4. Relationship and collaboration field.\n5. Body-level integration.\n6. Practical reflection prompts.\n7. Closing integration: one small practice for the next week.\n\n## Must Anchor\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n\n## Panchanga Scope\n\nBirth/natal Panchanga is not current-day timing. Only describe current-day five-limb Panchanga when Current Panchanga anchors are present.\n\n## Avoid\n\nDo not list every system. Do not sound like a database. Do not invent missing systems. Do not make deterministic predictions.\n`;
 }
 
 function buildPartnerAnchorSource(engineData: Record<string, any>): string {
@@ -588,20 +629,20 @@ function buildPartnerAnchorSource(engineData: Record<string, any>): string {
   }).join('\n\n')}\n`;
 }
 
-function buildStudyGuideBrief(personName: string): string {
-  return `# Personal Study Guide Brief: ${personName}\n\nCreate a study guide that turns the reading into a practical companion. It should help ${personName} revisit the material over 7-14 days.\n\n## Required Sections\n\n1. The central pattern in plain language.\n2. Key terms explained simply, only where useful.\n3. A personal themes map.\n4. Integration practices.\n5. Reflection questions.\n6. A short weekly review template.\n7. What not to over-interpret.\n\nThe guide should be clear enough for someone new to these systems, but deep enough to feel personal.\n`;
+function buildStudyGuideBrief(personaName: string): string {
+  return `# Personal Study Guide Brief: ${personaName}\n\nCreate a study guide that turns the reading into a practical companion. It should help ${personaName} revisit the material over 7-14 days.\n\n## Required Sections\n\n1. The central pattern in plain language.\n2. Key terms explained simply, only where useful.\n3. A personal themes map.\n4. Integration practices.\n5. Reflection questions.\n6. A short weekly review template.\n7. What not to over-interpret.\n\nThe guide should be clear enough for someone new to these systems, but deep enough to feel personal.\n`;
 }
 
-function buildVideoBrief(personName: string): string {
-  return `# Personal Video Brief: ${personName}\n\nCreate a short premium video overview that introduces the reading as a reflective personal artifact.\n\n## Visual Direction\n\nElegant, editorial, calm. Think parchment, soft gold, night-sky blue, subtle orbit lines, clean typography, and gentle motion. Avoid generic astrology clip art.\n\n## Narrative Shape\n\n1. Open with the central emotional or timing pattern.\n2. Show three anchor themes.\n3. Translate the pattern into everyday life.\n4. End with one reflective question.\n\nThe video should feel like an invitation to return to the PDF and audio, not like a sales reel.\n`;
+function buildVideoBrief(personaName: string): string {
+  return `# Personal Video Brief: ${personaName}\n\nCreate a short premium video overview that introduces the reading as a reflective personal artifact.\n\n## Visual Direction\n\nElegant, editorial, calm. Think parchment, soft gold, night-sky blue, subtle orbit lines, clean typography, and gentle motion. Avoid generic astrology clip art.\n\n## Narrative Shape\n\n1. Open with the central emotional or timing pattern.\n2. Show three anchor themes.\n3. Translate the pattern into everyday life.\n4. End with one reflective question.\n\nThe video should feel like an invitation to return to the PDF and audio, not like a sales reel.\n`;
 }
 
-function buildSlideDeckBrief(personName: string, kind: 'detailed' | 'preview'): string {
+function buildSlideDeckBrief(personaName: string, kind: 'detailed' | 'preview'): string {
   const isDetailed = kind === 'detailed';
-  return `# ${isDetailed ? 'Detailed' : 'Short Preview'} Slide Deck Brief: ${personName}\n\nCreate a ${isDetailed ? 'detailed premium personal slide deck' : 'short preview slide deck'} for ${personName}. This deck is for the recipient, not for system developers. It should feel like a polished, visually coherent product.\n\n## Visual Theme\n\nUse a consistent visual language: warm parchment, soft gold accents, deep indigo/night-sky fields, subtle orbit lines, refined serif headings, clean sans-serif captions, and calm spacing. Avoid raw engine tables, generic astrology clip art, neon overload, or technical diagrams that feel internal.\n\n## Deck Shape\n\n${isDetailed ? `1. Cover: ${personName}'s Premium Witness Reading.\n2. Core Pattern: the central emotional/timing signature.\n3. Decision Rhythm: how clarity forms.\n4. Timing Field: the current life-rhythm and dasha context.\n5. Relationship/Collaboration: how connection bridges the pattern.\n6. Body Integration: how the pattern may be felt and practiced.\n7. Tensions: the central paradoxes to observe.\n8. Practices: 3-5 grounded practices.\n9. Reflection Questions: a closing page for self-inquiry.\n10. Closing: one sentence the recipient can carry.` : `1. Cover.\n2. Three Key Themes.\n3. One Timing Insight.\n4. One Practice.\n5. Closing Reflection Question.`}\n\n## Output Standard\n\nMake the deck visually deliverable. It should be suitable to export as a PDF and share directly with ${personName}.\n`;
+  return `# ${isDetailed ? 'Detailed' : 'Short Preview'} Slide Deck Brief: ${personaName}\n\nCreate a ${isDetailed ? 'detailed premium personal slide deck' : 'short preview slide deck'} for ${personaName}. This deck is for the recipient, not for system developers. It should feel like a polished, visually coherent product.\n\n## Visual Theme\n\nUse a consistent visual language: warm parchment, soft gold accents, deep indigo/night-sky fields, subtle orbit lines, refined serif headings, clean sans-serif captions, and calm spacing. Avoid raw engine tables, generic astrology clip art, neon overload, or technical diagrams that feel internal.\n\n## Deck Shape\n\n${isDetailed ? `1. Cover: ${personaName}'s Premium Witness Reading.\n2. Core Pattern: the central emotional/timing signature.\n3. Decision Rhythm: how clarity forms.\n4. Timing Field: the current life-rhythm and dasha context.\n5. Relationship/Collaboration: how connection bridges the pattern.\n6. Body Integration: how the pattern may be felt and practiced.\n7. Tensions: the central paradoxes to observe.\n8. Practices: 3-5 grounded practices.\n9. Reflection Questions: a closing page for self-inquiry.\n10. Closing: one sentence the recipient can carry.` : `1. Cover.\n2. Three Key Themes.\n3. One Timing Insight.\n4. One Practice.\n5. Closing Reflection Question.`}\n\n## Output Standard\n\nMake the deck visually deliverable. It should be suitable to export as a PDF and share directly with ${personaName}.\n`;
 }
 
-function buildVimshottariTimelineBrief(personName: string, timeline: Array<Record<string, unknown>>, facts: Record<string, unknown>): string {
+function buildVimshottariTimelineBrief(personaName: string, timeline: Array<Record<string, unknown>>, facts: Record<string, unknown>): string {
   const current = [
     facts.vimshottari_mahadasha ? `Mahadasha: ${facts.vimshottari_mahadasha}` : '',
     facts.vimshottari_antardasha ? `Antardasha: ${facts.vimshottari_antardasha}` : '',
@@ -611,7 +652,7 @@ function buildVimshottariTimelineBrief(personName: string, timeline: Array<Recor
     ? timeline.map(period => `- ${period.level ? `${period.level}: ` : ''}${period.planet}: ${period.start || 'unknown start'} → ${period.end || 'unknown end'}${period.duration_years ? ` (${period.duration_years} years)` : ''}`).join('\n')
     : '- No full Vimshottari timeline was available; use only current period anchors.';
 
-  return `# Vimshottari Timeline Slide Brief: ${personName}\n\nCreate a timeline-focused slide deck PDF for ${personName}. This should translate the Vimshottari timing field into a clear visual journey. It is for the recipient, not for engineers.\n\n## Current Period Anchor\n\n${current || 'Current period details are limited.'}\n\n## Timeline Data\n\n${rows}\n\n## Visual Theme\n\nUse a horizontal or vertical gold-thread timeline on a deep indigo/parchment background. Each planetary period should feel like a chapter, not a raw table. Use subtle icons, calm labels, and enough whitespace for the recipient to understand the life-rhythm at a glance.\n\n## Deck Shape\n\n1. Cover: ${personName}'s Vimshottari Timing Map.\n2. How to read the timeline.\n3. Current period in focus.\n4. Major timeline chapters.\n5. What this timing asks the recipient to observe.\n6. Reflection questions for the current period.\n\n## Boundaries\n\nDo not make deterministic predictions. Present timing as a reflective rhythm for inquiry.\n`;
+  return `# Vimshottari Timeline Slide Brief: ${personaName}\n\nCreate a timeline-focused slide deck PDF for ${personaName}. This should translate the Vimshottari timing field into a clear visual journey. It is for the recipient, not for engineers.\n\n## Current Period Anchor\n\n${current || 'Current period details are limited.'}\n\n## Timeline Data\n\n${rows}\n\n## Visual Theme\n\nUse a horizontal or vertical gold-thread timeline on a deep indigo/parchment background. Each planetary period should feel like a chapter, not a raw table. Use subtle icons, calm labels, and enough whitespace for the recipient to understand the life-rhythm at a glance.\n\n## Deck Shape\n\n1. Cover: ${personaName}'s Vimshottari Timing Map.\n2. How to read the timeline.\n3. Current period in focus.\n4. Major timeline chapters.\n5. What this timing asks the recipient to observe.\n6. Reflection questions for the current period.\n\n## Boundaries\n\nDo not make deterministic predictions. Present timing as a reflective rhythm for inquiry.\n`;
 }
 
 function markdownToHtml(md: string): string {
@@ -637,7 +678,7 @@ function escapeHtml(input: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function renderPremiumHtml(personName: string, readingMd: string, reflectionMd: string, facts: Record<string, unknown>): string {
+function renderPremiumHtml(personName: string, personaName: string, readingMd: string, reflectionMd: string, facts: Record<string, unknown>): string {
   const readingHtml = markdownToHtml(readingMd);
   const reflectionHtml = markdownToHtml(reflectionMd);
   const factsHtml = Object.entries(facts)
@@ -710,12 +751,12 @@ function exportPdf(htmlPath: string, pdfPath: string): AssetStatus {
   }
 }
 
-function reflectionQuestions(personName: string, facts: Record<string, unknown>): string {
+function reflectionQuestions(personaName: string, facts: Record<string, unknown>): string {
   const authority = facts.human_design_authority ? `Your Human Design authority is ${facts.human_design_authority}.` : '';
   const dasha = facts.vimshottari_mahadasha ? `Your current Vimshottari mahadasha is ${facts.vimshottari_mahadasha}.` : '';
   const nakshatra = facts.natal_panchanga_nakshatra ? `Your natal Panchanga nakshatra signal is ${facts.natal_panchanga_nakshatra}.` : '';
 
-  return `# Reflection Questions for ${personName}\n\nThese questions are generated from the locked facts and reading outputs. They are prompts for self-observation, not prescriptions.\n\n${[authority, dasha, nakshatra].filter(Boolean).join(' ')}\n\n## Decision\n\n1. What decision currently asks for more time before action?\n2. What changes when you wait for the emotional signal to stabilize?\n3. Which choice feels clear in the body after a full day of distance?\n\n## Relationship\n\n4. Where are you seeking completion through another person instead of noticing your own pattern?\n5. Which collaborations genuinely bridge your split, and which ones only distract from it?\n6. What kind of support helps you become more honest rather than more dependent?\n\n## Body\n\n7. Where does urgency show up first: throat, chest, gut, jaw, breath, or posture?\n8. What physical cue tells you a yes is becoming clear?\n9. What physical cue tells you a no is being overridden?\n\n## Timing\n\n10. What cycle is asking to complete before the next commitment begins?\n11. What is the difference between pressure from timing and clarity from timing?\n12. What would become easier if you treated this period as observation rather than verdict?\n\n## Practice\n\n13. What is one small experiment you can run this week without over-identifying with the result?\n14. What lesson from a recent mistake is now mature enough to share?\n15. What daily ritual would help you remember the reading without becoming dependent on it?\n`;
+  return `# Reflection Questions for ${personaName}\n\nThese questions are generated from the locked facts and reading outputs. They are prompts for self-observation, not prescriptions.\n\n${[authority, dasha, nakshatra].filter(Boolean).join(' ')}\n\n## Decision\n\n1. What decision currently asks for more time before action?\n2. What changes when you wait for the emotional signal to stabilize?\n3. Which choice feels clear in the body after a full day of distance?\n\n## Relationship\n\n4. Where are you seeking completion through another person instead of noticing your own pattern?\n5. Which collaborations genuinely bridge your split, and which ones only distract from it?\n6. What kind of support helps you become more honest rather than more dependent?\n\n## Body\n\n7. Where does urgency show up first: throat, chest, gut, jaw, breath, or posture?\n8. What physical cue tells you a yes is becoming clear?\n9. What physical cue tells you a no is being overridden?\n\n## Timing\n\n10. What cycle is asking to complete before the next commitment begins?\n11. What is the difference between pressure from timing and clarity from timing?\n12. What would become easier if you treated this period as observation rather than verdict?\n\n## Practice\n\n13. What is one small experiment you can run this week without over-identifying with the result?\n14. What lesson from a recent mistake is now mature enough to share?\n15. What daily ritual would help you remember the reading without becoming dependent on it?\n`;
 }
 
 function qualityChecks(reading: string, facts: Record<string, unknown>): QualityCheck[] {
@@ -727,8 +768,8 @@ function qualityChecks(reading: string, facts: Record<string, unknown>): Quality
   });
   checks.push({
     name: 'has_section_synthesis',
-    status: reading.includes('section-synthesis') ? 'pass' : 'warn',
-    detail: reading.includes('section-synthesis') ? 'Synthesis section present' : 'No synthesis section marker found',
+    status: (reading.includes('layer-synthesis') || reading.includes('section-synthesis')) ? 'pass' : 'warn',
+    detail: (reading.includes('layer-synthesis') || reading.includes('section-synthesis')) ? 'Synthesis section present' : 'No synthesis section marker found',
   });
   checks.push({
     name: 'structured_facts',
@@ -829,7 +870,7 @@ function downloadNotebookLMArtifacts(notebookId: string, packDir: string): Recor
   return artifacts;
 }
 
-function runNotebookLM(personName: string, packDir: string, sourcePackDir: string, manifest: Manifest, args: CliArgs): Manifest['notebooklm'] {
+function runNotebookLM(personName: string, personaName: string, packDir: string, sourcePackDir: string, manifest: Manifest, args: CliArgs): Manifest['notebooklm'] {
   if (args.downloadOnly) {
     if (!args.notebookId) throw new Error('--download-only requires --notebook-id');
     return {
@@ -896,7 +937,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'audio_deep_dive_long',
-    ['generate', 'audio', '--format', 'deep-dive', '--length', 'long', `Create the premium long-form audio companion for ${personName}. Use the Audio Production Brief and Premium Narrative Dossier as the primary sources. Make it vivid, human, and deliverable; do not recite engine fields.`],
+    ['generate', 'audio', '--format', 'deep-dive', '--length', 'long', `Create the premium long-form audio companion for ${personaName}. Use the Audio Production Brief and Premium Narrative Dossier as the primary sources. Make it vivid, human, and deliverable; do not recite engine fields.`],
     (artifactId) => ['download', 'audio', join(audioDir, 'deep-dive-long.mp3'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(audioDir, 'deep-dive-long.mp3'),
     { timeoutMs: 900_000, artifactType: 'audio' },
@@ -904,7 +945,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'video_brief',
-    ['generate', 'video', '--format', 'brief', '--style', 'heritage', `Create a premium short video brief for ${personName}. Use the Video Brief and Narrative Dossier. The output should feel like a vivid personal companion, not a technical engine summary.`],
+    ['generate', 'video', '--format', 'brief', '--style', 'heritage', `Create a premium short video brief for ${personaName}. Use the Video Brief and Narrative Dossier. The output should feel like a vivid personal companion, not a technical engine summary.`],
     (artifactId) => ['download', 'video', join(videoDir, 'video-brief.mp4'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(videoDir, 'video-brief.mp4'),
     { timeoutMs: 900_000, artifactType: 'video' },
@@ -912,7 +953,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'study_guide',
-    ['generate', 'report', '--format', 'study-guide', `Create a premium personal study guide for ${personName}. Use the Study Guide Brief and Narrative Dossier. Make it usable over 7-14 days; do not produce a raw system-by-system dump.`],
+    ['generate', 'report', '--format', 'study-guide', `Create a premium personal study guide for ${personaName}. Use the Study Guide Brief and Narrative Dossier. Make it usable over 7-14 days; do not produce a raw system-by-system dump.`],
     (artifactId) => ['download', 'report', join(reportDir, 'study-guide.md'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(reportDir, 'study-guide.md'),
     { artifactType: 'report' },
@@ -920,7 +961,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'briefing_doc',
-    ['generate', 'report', '--format', 'briefing-doc', `Create a concise premium one-page briefing for ${personName}. Make it clear, vivid, and deliverable. Ground every claim in the source pack.`],
+    ['generate', 'report', '--format', 'briefing-doc', `Create a concise premium one-page briefing for ${personaName}. Make it clear, vivid, and deliverable. Ground every claim in the source pack.`],
     (artifactId) => ['download', 'report', join(reportDir, 'briefing.md'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(reportDir, 'briefing.md'),
     { artifactType: 'report' },
@@ -928,7 +969,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'slide_deck_detailed',
-    ['generate', 'slide-deck', '--format', 'detailed', `Create the detailed premium personal slide deck for ${personName}. Use the detailed deck brief and keep a consistent parchment, soft-gold, night-indigo visual theme. This should be a recipient-ready PDF, not raw system output.`],
+    ['generate', 'slide-deck', '--format', 'detailed', `Create the detailed premium personal slide deck for ${personaName}. Use the detailed deck brief and keep a consistent parchment, soft-gold, night-indigo visual theme. This should be a recipient-ready PDF, not raw system output.`],
     (artifactId) => ['download', 'slide-deck', join(slideDeckDir, 'detailed.pdf'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(slideDeckDir, 'detailed.pdf'),
     { timeoutMs: 900_000, artifactType: 'slide_deck' },
@@ -936,7 +977,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'slide_deck_preview',
-    ['generate', 'slide-deck', '--format', 'presenter', '--length', 'short', `Create the short preview slide deck for ${personName}. Use the preview deck brief. Keep the same visual language as the detailed deck: parchment, soft gold, night indigo, refined typography, calm spacing.`],
+    ['generate', 'slide-deck', '--format', 'presenter', '--length', 'short', `Create the short preview slide deck for ${personaName}. Use the preview deck brief. Keep the same visual language as the detailed deck: parchment, soft gold, night indigo, refined typography, calm spacing.`],
     (artifactId) => ['download', 'slide-deck', join(slideDeckDir, 'preview.pdf'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(slideDeckDir, 'preview.pdf'),
     { timeoutMs: 900_000, artifactType: 'slide_deck' },
@@ -944,7 +985,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'slide_deck_vimshottari_timeline',
-    ['generate', 'slide-deck', '--format', 'detailed', `Create the Vimshottari timeline slide deck for ${personName}. Use the Vimshottari Timeline Slide Brief as primary source. Make the timeline visual, chaptered, and recipient-facing; do not make deterministic predictions.`],
+    ['generate', 'slide-deck', '--format', 'detailed', `Create the Vimshottari timeline slide deck for ${personaName}. Use the Vimshottari Timeline Slide Brief as primary source. Make the timeline visual, chaptered, and recipient-facing; do not make deterministic predictions.`],
     (artifactId) => ['download', 'slide-deck', join(slideDeckDir, 'vimshottari-timeline.pdf'), '--notebook', notebookId, artifactId ? '--artifact' : '--latest', artifactId || '', '--force'].filter(Boolean),
     join(slideDeckDir, 'vimshottari-timeline.pdf'),
     { timeoutMs: 900_000, artifactType: 'slide_deck' },
@@ -952,7 +993,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'quiz',
-    ['generate', 'quiz', '--difficulty', 'medium', '--quantity', 'standard', `Create a reflective self-knowledge quiz for ${personName}. It should help them internalize the reading, not memorize engine labels.`],
+    ['generate', 'quiz', '--difficulty', 'medium', '--quantity', 'standard', `Create a reflective self-knowledge quiz for ${personaName}. It should help them internalize the reading, not memorize engine labels.`],
     (artifactId) => ['download', 'quiz', '--format', 'markdown', join(quizDir, 'quiz.md'), '--notebook', notebookId, ...(artifactId ? ['--artifact', artifactId] : [])],
     join(quizDir, 'quiz.md'),
     { artifactType: 'quiz' },
@@ -960,7 +1001,7 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
 
   generate(
     'flashcards',
-    ['generate', 'flashcards', '--difficulty', 'medium', '--quantity', 'standard', `Create flashcards for ${personName}'s themes, practices, and key terms. Favor usable meaning over raw facts.`],
+    ['generate', 'flashcards', '--difficulty', 'medium', '--quantity', 'standard', `Create flashcards for ${personaName}'s themes, practices, and key terms. Favor usable meaning over raw facts.`],
     (artifactId) => ['download', 'flashcards', '--format', 'markdown', join(flashcardsDir, 'flashcards.md'), '--notebook', notebookId, ...(artifactId ? ['--artifact', artifactId] : [])],
     join(flashcardsDir, 'flashcards.md'),
     { artifactType: 'flashcards' },
@@ -982,23 +1023,23 @@ function runNotebookLM(personName: string, packDir: string, sourcePackDir: strin
   };
 }
 
-function writeSourcePack(personName: string, personId: string, packDir: string, reading: string, facts: Record<string, unknown>, engineData: Record<string, any>, policy: ModePolicy, modeContext: Record<string, unknown> | undefined) {
+function writeSourcePack(personName: string, personaName: string, personId: string, packDir: string, reading: string, facts: Record<string, unknown>, policy: ModePolicy, modeContext: Record<string, unknown> | undefined) {
   const sourcePackDir = join(packDir, 'source-pack');
   mkdirSync(sourcePackDir, { recursive: true });
 
-  writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personName, reading, facts, engineData, policy));
-  const partnerAnchors = buildPartnerAnchorSource(engineData);
-  if (partnerAnchors) writeFileSync(join(sourcePackDir, '00a-partner-deterministic-anchors.md'), partnerAnchors);
+  writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personaName, reading, facts, policy));
   writeFileSync(join(sourcePackDir, '00b-mode-register-policy.md'), formatModePolicy(policy));
   writeFileSync(join(sourcePackDir, '00c-answered-mode-context.md'), formatModeContext(modeContext));
-  writeFileSync(join(sourcePackDir, '01-audio-experience-brief.md'), buildAudioBrief(personName, facts));
-  writeFileSync(join(sourcePackDir, '02-personal-study-guide-brief.md'), buildStudyGuideBrief(personName));
-  writeFileSync(join(sourcePackDir, '03-personal-video-brief.md'), buildVideoBrief(personName));
-  writeFileSync(join(sourcePackDir, '04-slide-deck-detailed-brief.md'), buildSlideDeckBrief(personName, 'detailed'));
-  writeFileSync(join(sourcePackDir, '05-slide-deck-preview-brief.md'), buildSlideDeckBrief(personName, 'preview'));
-  writeFileSync(join(sourcePackDir, '06-vimshottari-timeline-brief.md'), buildVimshottariTimelineBrief(personName, extractVimshottariTimeline(engineData), facts));
+  writeFileSync(join(sourcePackDir, '01-audio-experience-brief.md'), buildAudioBrief(personaName, facts));
+  writeFileSync(join(sourcePackDir, '02-personal-study-guide-brief.md'), buildStudyGuideBrief(personaName));
+  writeFileSync(join(sourcePackDir, '03-personal-video-brief.md'), buildVideoBrief(personaName));
+  writeFileSync(join(sourcePackDir, '04-slide-deck-detailed-brief.md'), buildSlideDeckBrief(personaName, 'detailed'));
+  writeFileSync(join(sourcePackDir, '05-slide-deck-preview-brief.md'), buildSlideDeckBrief(personaName, 'preview'));
+  writeFileSync(join(sourcePackDir, '06-vimshottari-timeline-brief.md'), buildVimshottariTimelineBrief(personaName, [], facts));
   writeFileSync(join(sourcePackDir, '07-orientation-anchors.md'), `# Orientation Anchors\n\nThese are anchors for accuracy, not the product. Use them to prevent drift while producing vivid personal assets.\n\n${Object.entries(facts).map(([key, value]) => `- ${humanizeKey(key)}: ${value}`).join('\n')}\n`);
-  writeFileSync(join(sourcePackDir, '08-somatic-anchor.md'), buildSomaticAnchor(facts, engineData));
+  // Somatic anchor is only written when the somatic layer is roadmap-approved.
+  const somaticAnchor = SOMATIC_LAYER_APPROVED ? buildSomaticAnchor(facts) : '';
+  if (somaticAnchor) writeFileSync(join(sourcePackDir, '08-somatic-anchor.md'), somaticAnchor);
   writeFileSync(join(sourcePackDir, '09-boundaries-and-style.md'), `# Boundaries and Style\n\n## Make It Deliverable\n\nTurn the reading into a polished product: audio, video, slide decks, study guide, quiz, flashcards, and mind map. The audience should feel they received a personal companion, not a structured engine output.\n\n## Consistent Visual Theme\n\nUse warm parchment, soft gold, night indigo, refined typography, subtle orbit lines, calm spacing, and editorial restraint across PDFs and slide decks.\n\n## Boundaries\n\n- Do not invent missing engine data.\n- Do not make medical, financial, or deterministic life predictions.\n- Treat all content as reflective witnessing, not diagnosis or instruction.\n- If a system lacks data, name the absence rather than filling the gap.\n- Preserve the Euclidean-runtime vs non-Euclidean-Noesis distinction: outputs are mirrors for inquiry, not commands.\n\n## Voice\n\nWarm, exact, human, reflective, premium, embodied. Avoid generic mystical language. Avoid raw JSON/schema phrasing.\n`);
 
   return sourcePackDir;
@@ -1006,6 +1047,7 @@ function writeSourcePack(personName: string, personId: string, packDir: string, 
 
 function processPerson(personId: string, args: CliArgs): Manifest {
   const personName = slugToName(personId);
+  const personaName = slugToPersonaName(personId);
   const mode = args.mode || (personId.match(/synastry|composite|partner/i) ? 'general-synastry' : 'solo');
   const policy = getModePolicy(mode, args.level);
   const modeContext = loadModeContext(args.contextPath);
@@ -1031,22 +1073,22 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   if (currentPanchanga) engineData['current-panchanga'] = currentPanchanga;
   const facts = extractFacts(engineData);
   const reading = readFileSync(readingPath, 'utf-8');
-  const sourcePackDir = writeSourcePack(personName, personId, packDir, reading, facts, engineData, policy, modeContext);
+  const sourcePackDir = writeSourcePack(personName, personaName, personId, packDir, reading, facts, policy, modeContext);
   const sourceText = readdirSync(sourcePackDir)
     .filter(file => file.endsWith('.md'))
     .sort()
     .map(file => readFileSync(join(sourcePackDir, file), 'utf-8'))
     .join('\n\n');
-  const gateFindings = gateSourcePack(personId, reading, sourceText, facts, engineData);
+  const gateFindings = gateSourcePack(personId, reading, sourceText, facts);
   const provenancePath = join(localDir, 'provenance.md');
   writeFileSync(provenancePath, `# Local Provenance\n\nThis file is local-only. It is not uploaded to NotebookLM.\n\n## Engine Inventory\n\n${summarizeEngines(engineData)}\n`);
-  const reflectionMd = reflectionQuestions(personName, facts);
+  const reflectionMd = reflectionQuestions(personaName, facts);
   const reflectionPath = join(localDir, 'reflection-questions.md');
   writeFileSync(reflectionPath, reflectionMd);
 
   const htmlPath = join(localDir, 'reading.html');
   const pdfPath = join(localDir, 'reading.pdf');
-  writeFileSync(htmlPath, renderPremiumHtml(personName, reading, reflectionMd, facts));
+  writeFileSync(htmlPath, renderPremiumHtml(personName, personaName, reading, reflectionMd, facts));
   const pdfStatus = args.noPdf ? 'skipped' : exportPdf(htmlPath, pdfPath);
 
   const manifest: Manifest = {
@@ -1081,7 +1123,7 @@ function processPerson(personId: string, args: CliArgs): Manifest {
       writeFileSync(join(packDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
       throw new Error(`NotebookLM blocked by deterministic source gate: ${manifest.gate.findings.map(f => f.code).join(', ')}`);
     }
-    manifest.notebooklm = runNotebookLM(personName, packDir, sourcePackDir, manifest, args);
+    manifest.notebooklm = runNotebookLM(personName, personaName, packDir, sourcePackDir, manifest, args);
   }
 
   writeFileSync(join(packDir, 'manifest.json'), JSON.stringify(manifest, null, 2));

@@ -5,7 +5,7 @@
 //   - NVIDIA baai/bge-m3 for embeddings (vectorize grounding)
 //   - OpenAI GPT-4o for LLM inference (clean output, no reasoning chain)
 //   - Cloudflare Vectorize for wisdom + engine data retrieval
-//   - Section-witness graph for parallel Western/Vedic/Somatic → Synthesis
+//   - Section-witness graph for parallel Temporal/Structural/Somatic/Oracle → Layer Synthesis
 //
 // Usage:
 //   const service = createSectionInterpretationService({

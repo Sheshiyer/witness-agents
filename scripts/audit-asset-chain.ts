@@ -11,6 +11,7 @@
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { SOMATIC_LAYER_APPROVED, CREATIVE_ORACLE_LAYER_APPROVED } from '../src/wiring/graphs/section-witness.js';
 
 type Severity = 'blocker' | 'warning';
 
@@ -220,12 +221,21 @@ function auditPerson(personId: string, args: Args): Finding[] {
 
   const hasSomaticData = hasEngine(engineData, 'biofield') || hasEngine(engineData, 'face-reading') || hasEngine(engineData, 'biofield-capture');
   if (hasSomaticData) {
-    if (!/biofield|face-reading|face reading|dosha|somatic|coherence/i.test(sourcePack)) {
-      findings.push({ personId, layer: 'source-pack', code: 'somatic_data_omitted', severity: 'blocker', detail: 'Somatic engines exist but source pack lacks somatic anchors.' });
+    if (!SOMATIC_LAYER_APPROVED) {
+      findings.push({ personId, layer: 'engine', code: 'somatic_layer_not_approved', severity: 'blocker', detail: 'Somatic engine data is present but SOMATIC_LAYER_APPROVED is false. Remove biofield, face-reading, and nadabrahman from inputs, or set SOMATIC_LAYER_APPROVED=true only after explicit roadmap approval.' });
+    } else {
+      if (!/biofield|face-reading|face reading|dosha|somatic|coherence/i.test(sourcePack)) {
+        findings.push({ personId, layer: 'source-pack', code: 'somatic_data_omitted', severity: 'blocker', detail: 'Somatic engines exist but source pack lacks somatic anchors.' });
+      }
+      if (/no recorded data for .*Somatic|no somatic data|absence of (a )?somatic map|absence of somatic data/i.test(sourcePack)) {
+        findings.push({ personId, layer: 'source-pack', code: 'somatic_false_absence', severity: 'blocker', detail: 'Somatic engines exist but source pack claims absence.' });
+      }
     }
-    if (/no recorded data for .*Somatic|no somatic data|absence of (a )?somatic map|absence of somatic data/i.test(sourcePack)) {
-      findings.push({ personId, layer: 'source-pack', code: 'somatic_false_absence', severity: 'blocker', detail: 'Somatic engines exist but source pack claims absence.' });
-    }
+  }
+
+  const hasOracleData = hasEngine(engineData, 'i-ching') || hasEngine(engineData, 'tarot') || hasEngine(engineData, 'sacred-geometry') || hasEngine(engineData, 'sigil-forge');
+  if (hasOracleData && !CREATIVE_ORACLE_LAYER_APPROVED) {
+    findings.push({ personId, layer: 'engine', code: 'creative_oracle_layer_not_approved', severity: 'blocker', detail: 'Creative Oracle engine data is present but CREATIVE_ORACLE_LAYER_APPROVED is false. Remove i-ching, tarot, sacred-geometry, and sigil-forge from inputs, or set CREATIVE_ORACLE_LAYER_APPROVED=true only after explicit roadmap approval.' });
   }
 
   const hasCurrentPanchanga = !!facts.current_panchanga_tithi || !!facts.current_panchanga_nakshatra;
