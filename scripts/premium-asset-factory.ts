@@ -34,11 +34,13 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { formatModeContext, formatModePolicy, getModePolicy, validateModeContext, type ConsciousnessLevel, type ModePolicy } from './asset-mode-policy.js';
+import { selectCompletedArtifact, type NotebookLMArtifactRow } from './notebooklm-artifacts.js';
 import { SOMATIC_LAYER_APPROVED, CREATIVE_ORACLE_LAYER_APPROVED } from '../src/wiring/graphs/section-witness.js';
 
 const DEFAULT_INPUT_DIR = '.batch-inputs';
@@ -378,7 +380,7 @@ function plainFactValue(value: unknown): string | undefined {
   return String(value);
 }
 
-function gateSourcePack(personId: string, reading: string, sourceText: string, facts: Record<string, unknown>): GateFinding[] {
+function gateSourcePack(personId: string, reading: string, sourceText: string, facts: Record<string, unknown>, engineData: Record<string, any>): GateFinding[] {
   const findings: GateFinding[] = [];
   const isSynastry = /synastry|composite|partner/i.test(personId);
   const text = `${reading}\n\n${sourceText}`;
@@ -404,7 +406,10 @@ function gateSourcePack(personId: string, reading: string, sourceText: string, f
     }
   }
 
-  const hasSomaticData = !!facts.biofield_available || !!facts.face_reading_available;
+  const hasSomaticData = hasEngine(engineData, 'biofield')
+    || hasEngine(engineData, 'face-reading')
+    || hasEngine(engineData, 'biofield-capture')
+    || hasEngine(engineData, 'nadabrahman');
   if (hasSomaticData) {
     if (!SOMATIC_LAYER_APPROVED) {
       findings.push({
@@ -413,7 +418,7 @@ function gateSourcePack(personId: string, reading: string, sourceText: string, f
         detail: 'Somatic engine data is present but SOMATIC_LAYER_APPROVED is false. Remove biofield, face-reading, and nadabrahman from engine inputs, or set SOMATIC_LAYER_APPROVED=true only after explicit roadmap approval.',
       });
     } else {
-      const sourceMentionsSomatic = /biofield|face reading|dosha|somatic|coherence|dominant element/i.test(sourceText);
+      const sourceMentionsSomatic = /biofield|face reading|face-reading|dosha|somatic|coherence|dominant element|nadabrahman|raga|raaga/i.test(sourceText);
       const deniesSomatic = /no recorded data for .*Somatic|no somatic data|not available for .*Somatic|absence of (a )?somatic map|absence of somatic data/i.test(sourceText);
       if (!sourceMentionsSomatic) {
         findings.push({
@@ -430,6 +435,18 @@ function gateSourcePack(personId: string, reading: string, sourceText: string, f
         });
       }
     }
+  }
+
+  const hasOracleData = hasEngine(engineData, 'i-ching')
+    || hasEngine(engineData, 'tarot')
+    || hasEngine(engineData, 'sacred-geometry')
+    || hasEngine(engineData, 'sigil-forge');
+  if (hasOracleData && !CREATIVE_ORACLE_LAYER_APPROVED) {
+    findings.push({
+      code: 'creative_oracle_layer_not_approved',
+      severity: 'blocker',
+      detail: 'Creative Oracle engine data is present but CREATIVE_ORACLE_LAYER_APPROVED is false. Remove i-ching, tarot, sacred-geometry, and sigil-forge from inputs, or set CREATIVE_ORACLE_LAYER_APPROVED=true only after explicit roadmap approval.',
+    });
   }
 
   const hasCurrentPanchanga = !!facts.current_panchanga_tithi || !!facts.current_panchanga_nakshatra;
@@ -808,7 +825,7 @@ function pickId(payload: any): string | undefined {
     || payload?.artifact?.id;
 }
 
-function listArtifacts(notebookId: string): Array<{ id: string; type: string; status: string; title: string; createdAt: string }> {
+function listArtifacts(notebookId: string): NotebookLMArtifactRow[] {
   try {
     const payload = notebooklmJson(['artifact', 'list', '--notebook', notebookId], 120_000);
     const rows = payload?.artifacts || payload?.items || [];
@@ -824,15 +841,13 @@ function listArtifacts(notebookId: string): Array<{ id: string; type: string; st
   }
 }
 
-function artifactByType(notebookId: string, typeNeedle: string, titleNeedle?: string): string | undefined {
-  return listArtifacts(notebookId)
-    .filter(row => row.type.includes(typeNeedle.replace(/-/g, '_')) && row.status === 'completed')
-    .filter(row => !titleNeedle || row.title.toLowerCase().includes(titleNeedle.toLowerCase()))
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.id;
+function artifactByType(notebookId: string, typeNeedle: string, titleNeedle?: string, usedArtifactIds?: Set<string>): string | undefined {
+  return selectCompletedArtifact(listArtifacts(notebookId), typeNeedle, titleNeedle, usedArtifactIds)?.id;
 }
 
 function downloadNotebookLMArtifacts(notebookId: string, packDir: string): Record<string, NotebookLMArtifactStatus> {
   const artifacts: Record<string, NotebookLMArtifactStatus> = {};
+  const usedArtifactIds = new Set<string>();
   const audioDir = join(packDir, 'audio');
   const videoDir = join(packDir, 'video');
   const reportDir = join(packDir, 'reports');
@@ -843,16 +858,21 @@ function downloadNotebookLMArtifacts(notebookId: string, packDir: string): Recor
   for (const dir of [audioDir, videoDir, reportDir, slideDeckDir, quizDir, flashcardsDir, mindMapDir]) mkdirSync(dir, { recursive: true });
 
   const download = (key: string, type: string, args: (id: string) => string[], outputPath: string, titleNeedle?: string) => {
-    const artifactId = artifactByType(notebookId, type, titleNeedle);
+    const artifactId = artifactByType(notebookId, type, titleNeedle, usedArtifactIds);
     if (!artifactId) {
-      artifacts[key] = { status: 'pending', error: `No completed ${type}${titleNeedle ? ` (${titleNeedle})` : ''} artifact found` };
+      artifacts[key] = existsSync(outputPath)
+        ? { status: 'ready', outputPath, error: `No completed ${type}${titleNeedle ? ` (${titleNeedle})` : ''} artifact found; keeping existing local artifact` }
+        : { status: 'pending', error: `No completed ${type}${titleNeedle ? ` (${titleNeedle})` : ''} artifact found` };
       return;
     }
+    usedArtifactIds.add(artifactId);
     try {
       execFileSync('notebooklm', args(artifactId), { stdio: 'pipe', timeout: 240_000 });
       artifacts[key] = { status: existsSync(outputPath) ? 'ready' : 'pending', artifactId, outputPath };
     } catch (err: any) {
-      artifacts[key] = { status: 'failed', artifactId, error: err.message };
+      artifacts[key] = existsSync(outputPath)
+        ? { status: 'ready', artifactId, outputPath, error: err.message }
+        : { status: 'failed', artifactId, error: err.message };
     }
   };
 
@@ -1023,11 +1043,20 @@ function runNotebookLM(personName: string, personaName: string, packDir: string,
   };
 }
 
-function writeSourcePack(personName: string, personaName: string, personId: string, packDir: string, reading: string, facts: Record<string, unknown>, policy: ModePolicy, modeContext: Record<string, unknown> | undefined) {
+function writeSourcePack(personName: string, personaName: string, personId: string, packDir: string, reading: string, engineData: Record<string, any>, facts: Record<string, unknown>, policy: ModePolicy, modeContext: Record<string, unknown> | undefined) {
   const sourcePackDir = join(packDir, 'source-pack');
   mkdirSync(sourcePackDir, { recursive: true });
+  for (const file of readdirSync(sourcePackDir).filter(name => name.endsWith('.md'))) {
+    rmSync(join(sourcePackDir, file));
+  }
 
-  writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personaName, reading, facts, policy));
+  if (isSynastryEngineData(engineData)) {
+    writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildSynastryNarrativeDossier(personName, reading, engineData, policy));
+    const partnerAnchorSource = buildPartnerAnchorSource(engineData);
+    if (partnerAnchorSource) writeFileSync(join(sourcePackDir, '00a-partner-deterministic-anchors.md'), partnerAnchorSource);
+  } else {
+    writeFileSync(join(sourcePackDir, '00-personal-companion-dossier.md'), buildNarrativeDossier(personaName, reading, facts, policy));
+  }
   writeFileSync(join(sourcePackDir, '00b-mode-register-policy.md'), formatModePolicy(policy));
   writeFileSync(join(sourcePackDir, '00c-answered-mode-context.md'), formatModeContext(modeContext));
   writeFileSync(join(sourcePackDir, '01-audio-experience-brief.md'), buildAudioBrief(personaName, facts));
@@ -1073,13 +1102,13 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   if (currentPanchanga) engineData['current-panchanga'] = currentPanchanga;
   const facts = extractFacts(engineData);
   const reading = readFileSync(readingPath, 'utf-8');
-  const sourcePackDir = writeSourcePack(personName, personaName, personId, packDir, reading, facts, policy, modeContext);
+  const sourcePackDir = writeSourcePack(personName, personaName, personId, packDir, reading, engineData, facts, policy, modeContext);
   const sourceText = readdirSync(sourcePackDir)
     .filter(file => file.endsWith('.md'))
     .sort()
     .map(file => readFileSync(join(sourcePackDir, file), 'utf-8'))
     .join('\n\n');
-  const gateFindings = gateSourcePack(personId, reading, sourceText, facts);
+  const gateFindings = gateSourcePack(personId, reading, sourceText, facts, engineData);
   const provenancePath = join(localDir, 'provenance.md');
   writeFileSync(provenancePath, `# Local Provenance\n\nThis file is local-only. It is not uploaded to NotebookLM.\n\n## Engine Inventory\n\n${summarizeEngines(engineData)}\n`);
   const reflectionMd = reflectionQuestions(personaName, facts);
