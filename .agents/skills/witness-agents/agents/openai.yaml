@@ -1,0 +1,6 @@
+interface:
+  display_name: "Witness Agents"
+  short_description: "Repo-specific patterns and workflows for witness-agents"
+  default_prompt: "Use the witness-agents repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
