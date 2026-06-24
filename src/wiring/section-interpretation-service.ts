@@ -21,10 +21,12 @@ import type {
   TaskResult,
   GroundingProvider,
   GroundedPassage,
-} from '../../packages/orchestration/src/types.js';
-import { InProcessWitnessOrchestrationService } from '../../packages/orchestration/src/in-process-service.js';
-import { createFactLock } from '../../packages/orchestration/src/fact-lock.js';
-import { VectorizeGroundingProvider } from '../../packages/orchestration/src/vectorize-grounding.js';
+} from '@witness/orchestration';
+import {
+  InProcessWitnessOrchestrationService,
+  createFactLock,
+  VectorizeGroundingProvider,
+} from '@witness/orchestration';
 import { createSectionWitnessGraph } from './graphs/section-witness.js';
 import { NvidiaEmbeddingProvider } from '../inference/nvidia-embedding.js';
 import { createWitnessInferenceExecutor } from './inference-adapter.js';

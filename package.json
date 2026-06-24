@@ -6,11 +6,15 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "build:orchestration": "npm --prefix packages/orchestration run build",
+    "prebuild": "npm run build:orchestration",
     "build": "tsc",
     "start": "node dist/serve.js",
     "dev": "node --import tsx src/serve.ts",
+    "pretest": "npm run build:orchestration",
     "test": "node --import tsx --test tests/*.test.ts",
     "probe:nvidia-routing": "node --import tsx scripts/probe-active-nvidia-routing.ts",
+    "pretypecheck": "npm run build:orchestration",
     "typecheck": "tsc --noEmit",
     "wisdom:ingest": "tsx scripts/ingest-wisdom-corpus.ts"
   },
