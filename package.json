@@ -23,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.104.1",
+    "@witness/orchestration": "file:packages/orchestration",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {

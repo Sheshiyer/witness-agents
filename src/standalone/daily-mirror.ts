@@ -169,6 +169,7 @@ export class DailyMirror {
     
     // ─── Step 7: Build Layer 3 (if unlocked) ────────────────────
     let metaPattern: Layer3_MetaPattern | undefined;
+    const tier = this.config.tier ?? 'free';
     if (tier !== 'free') {
       // For higher tiers, try to enrich Layer 3 with atomic daily witness synthesis
       let atomicDailyField: string | undefined;
