@@ -129,13 +129,25 @@ export const MODELS = {
   GPT_OSS_120B:   'openai/gpt-oss-120b',                       // verified ✓ ~30s
   GPT_OSS_20B:    'openai/gpt-oss-20b',                        // verified ✓ ~400ms
   // moonshotai/kimi-k2-instruct hit EOL 2026-05-12 (HTTP 410 Gone).
-  // moonshotai/kimi-k2-instruct-0905 returns 404. kimi-k2-thinking also 410.
-  // Re-pointed the constants at Llama 4 Maverick (verified 2026-05-18) so the
-  // synthesis + composite phases continue working without renaming downstream.
+  // The -0905 + kimi-k2-thinking variants are also 404/410. Re-pointed the
+  // constants at Llama 4 Maverick (verified 2026-05-18) so the synthesis +
+  // composite phases continue working without renaming downstream call sites.
   KIMI_K2:        'meta/llama-4-maverick-17b-128e-instruct',   // verified ✓ 2026-05-18 (was kimi-k2-instruct; EOL 2026-05-12)
-  KIMI_K2_0905:   'meta/llama-4-maverick-17b-128e-instruct',   // verified ✓ 2026-05-18 (was kimi-k2 alias; EOL)
+  KIMI_K2_0905:   'meta/llama-4-maverick-17b-128e-instruct',   // verified ✓ 2026-05-18 (was kimi-k2 alias; same EOL)
+  // z-ai/glm4.7 began returning HTTP 410 Gone in mid-May 2026. The astro
+  // phase already has a gpt-oss-120b fallback path that handles this, but
+  // the wasted 60s timeout per run was annoying. Re-pointed at Nemotron
+  // Super 49B (reasoning-tuned) which keeps the routing diversity the
+  // original design intended (different engine on a different model).
   GLM_47:         'nvidia/llama-3.3-nemotron-super-49b-v1',    // verified ✓ 2026-05-18 (was z-ai/glm4.7; EOL)
   GLM_47_ALT:     'nvidia/llama-3.3-nemotron-super-49b-v1',    // verified ✓ 2026-05-18 (was glm4.7 alias; same EOL)
-  MINIMAX:        'meta/llama-4-maverick-17b-128e-instruct',   // verified ✓ 2026-05-18 (was minimax-m2.7; chronic timeouts → empty-V1 regex fallback)
+  // minimaxai/minimax-m2.7 has been chronically unreliable on this NVIDIA key
+  // (probe timed out at 60s on 2026-05-10; a 2026-05-18 e2e run hit
+  // `fetch failed` mid-call). When the chunker fails, the orchestrator falls
+  // back to a regex chunker that uses V1-schema keys — and since the
+  // synthesis phase emits V2 "## Part X" headers, the regex matches almost
+  // nothing and the stitched output ends up mostly empty. Re-pointed at
+  // Llama 4 Maverick which handles the chunking JSON instruction reliably.
+  MINIMAX:        'meta/llama-4-maverick-17b-128e-instruct',   // verified ✓ 2026-05-18 (was minimax-m2.7; chronic timeouts + regex fallback schema bug)
   NEMOTRON_120B:  'nvidia/nemotron-3-super-120b-a12b',         // verified ✓ ~3s (adversarial)
 } as const;

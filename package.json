@@ -6,12 +6,17 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "build:orchestration": "npm --prefix packages/orchestration run build",
+    "prebuild": "npm run build:orchestration",
     "build": "tsc",
     "start": "node dist/serve.js",
     "dev": "node --import tsx src/serve.ts",
+    "pretest": "npm run build:orchestration",
     "test": "node --import tsx --test tests/*.test.ts",
     "probe:nvidia-routing": "node --import tsx scripts/probe-active-nvidia-routing.ts",
-    "typecheck": "tsc --noEmit"
+    "pretypecheck": "npm run build:orchestration",
+    "typecheck": "tsc --noEmit",
+    "wisdom:ingest": "tsx scripts/ingest-wisdom-corpus.ts"
   },
   "keywords": [
     "witness-agents",
@@ -22,11 +27,14 @@
   "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.104.1",
+    "@witness/orchestration": "file:packages/orchestration",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
+    "openai": "^6.42.0",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0"
   }

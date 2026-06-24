@@ -398,6 +398,18 @@ function escapeXml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
+function renderTocRail(parts: PartBlock[]): string {
+  const items = parts.map((p) => `
+      <li data-part="${p.partNum}">
+        <a href="#part-${p.partNum}">${escapeXml(p.title)}</a>
+      </li>`).join('');
+  return `<nav class="toc-rail">
+    <div class="toc-rail-title">Contents</div>
+    <ol>${items}
+    </ol>
+  </nav>`;
+}
+
 /**
  * Constellation-grid field-cartography background (P1 of v2 design).
  *
@@ -497,6 +509,7 @@ export function renderInteractiveHTMLPage(opts: {
 
   // Topology + mode-keyed interaction layer (inlined)
   const interaction = buildInteractionPayload(opts.topology, opts.mode);
+  const tocRail = renderTocRail(opts.parts);
 
   // Body parts assembly — each Part is a single-column block followed by
   // a la-arc-fade closer (gradient breath-out before next Part begins).
@@ -544,7 +557,9 @@ ${renderConstellationGrid()}
     ${orbitalCover}
   </section>
 
-  <!-- ───────────── BODY (single centered column, no TOC rail) ───────────── -->
+  ${tocRail}
+
+  <!-- ───────────── BODY (single centered column, fixed TOC rail) ───────────── -->
   <article class="body-page interactive">
     <div class="body-content">
       ${opts.opening_html ? `<section class="opening">${opts.opening_html}</section>` : ''}

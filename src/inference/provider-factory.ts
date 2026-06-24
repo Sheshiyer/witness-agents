@@ -16,13 +16,17 @@
 import type { LLMProvider } from './types.js';
 import { OpenRouterProvider } from './openrouter.js';
 import { NvidiaProvider } from './nvidia.js';
+import { OpenAIProvider } from './openai-provider.js';
 
-export type ProviderChoice = 'openrouter' | 'nvidia';
+export type ProviderChoice = 'openrouter' | 'nvidia' | 'openai';
 
 export interface FactoryOptions {
   provider?: ProviderChoice;       // Explicit override
   openrouter_api_key?: string;
   nvidia_api_key?: string;
+  openai_api_key?: string;         // OpenAI direct
+  openai_organization?: string;    // OpenAI org ID
+  openai_project?: string;         // OpenAI project ID
   site_url?: string;               // OpenRouter only
   site_name?: string;              // OpenRouter only
   timeout_ms?: number;
@@ -32,20 +36,23 @@ export function resolveProviderChoice(opts: {
   provider?: ProviderChoice;
   openrouter_api_key?: string;
   nvidia_api_key?: string;
+  openai_api_key?: string;
 }): ProviderChoice | null {
   if (opts.provider) return opts.provider;
 
   const envChoice = (process.env.LLM_PROVIDER || '').toLowerCase();
-  if (envChoice === 'nvidia' || envChoice === 'openrouter') {
+  if (envChoice === 'nvidia' || envChoice === 'openrouter' || envChoice === 'openai') {
     return envChoice as ProviderChoice;
   }
 
   const hasNvidia = !!opts.nvidia_api_key;
   const hasOpenrouter = !!opts.openrouter_api_key;
+  const hasOpenAI = !!opts.openai_api_key;
 
-  if (hasNvidia && !hasOpenrouter) return 'nvidia';
-  if (hasOpenrouter && !hasNvidia) return 'openrouter';
-  if (hasOpenrouter && hasNvidia) return 'openrouter';   // backward-compat default
+  // Priority: explicit provider > OpenAI > OpenRouter > NVIDIA
+  if (hasOpenAI) return 'openai';
+  if (hasOpenrouter) return 'openrouter';
+  if (hasNvidia) return 'nvidia';
   return null;
 }
 
@@ -53,8 +60,20 @@ export function createLLMProvider(opts: FactoryOptions): LLMProvider {
   const choice = resolveProviderChoice(opts);
   if (!choice) {
     throw new Error(
-      'createLLMProvider: no API key provided. Set NVIDIA_API_KEY or OPENROUTER_API_KEY.',
+      'createLLMProvider: no API key provided. Set OPENAI_API_KEY, OPENROUTER_API_KEY, or NVIDIA_API_KEY.',
     );
+  }
+
+  if (choice === 'openai') {
+    if (!opts.openai_api_key) {
+      throw new Error('createLLMProvider: provider=openai but openai_api_key not provided.');
+    }
+    return new OpenAIProvider({
+      api_key: opts.openai_api_key,
+      organization: opts.openai_organization,
+      project: opts.openai_project,
+      timeout_ms: opts.timeout_ms,
+    });
   }
 
   if (choice === 'nvidia') {

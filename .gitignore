@@ -1,8 +1,16 @@
 .DS_Store
 node_modules/
 dist/
+*.tsbuildinfo
 *.js.map
 .env
 .env.local
 supabase/.temp/
 .playwright-mcp/
+.comparison-output/
+.premium-assets/
+.asset-run-inputs*/
+.asset-run-readings*/
+.premium-assets*/
+.asset-chain-audit*.json
+.mode-contexts/

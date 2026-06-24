@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Selemene Engine API Flowchart</title>
+  <style>
+body{margin:0;background:#070B1D;color:#F0EDE3;font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:1200px;margin:0 auto;padding:32px 20px 70px}h1{font-size:54px;margin:0 0 10px;letter-spacing:-.04em}p{color:#8A9BA8}.hero{background:linear-gradient(135deg,#070B1D 0%,#2D0050 52%,#0B50FB 100%);color:#F0EDE3;border:1px solid #2D0050;border-radius:28px;padding:36px;margin-bottom:24px}.hero p{color:#dfe6ff}.panel{background:#0E1428;border:1px solid #2D0050;border-radius:22px;padding:24px;margin-top:22px;box-shadow:0 18px 50px rgba(0,0,0,.22)}.flow{overflow-x:auto;background:#050814;border-radius:18px;padding:20px}svg{min-width:980px;width:100%}.start{fill:#10B5A7}.process{fill:#0B50FB}.decision{fill:#C5A017}.error{fill:#C65D3B}.store{fill:#2D0050}.txt{fill:#F0EDE3;font:700 14px system-ui}.small{fill:#d8e2f6;font:12px system-ui}.arrow{stroke:#C5A017;stroke-width:3;fill:none;marker-end:url(#arrow)}.lane{fill:rgba(255,255,255,.05);stroke:#334155;stroke-width:1}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.card{border:1px solid #2D0050;border-radius:16px;padding:16px;background:#111b36}code{background:#172447;padding:2px 6px;border-radius:6px;color:#F0EDE3}</style>
+</head>
+<body><main>
+<section class="hero"><h1>Selemene Engine API Flowchart</h1><p>Transport-to-engine flow for calculation requests, validation, phase gating, workflow execution, bridge engines, current-time semantics, and response handling.</p></section>
+  <section class="panel"><h2>Primary Request Flow</h2><div class="flow"><svg viewBox="0 0 1040 760" role="img" aria-label="Selemene engine API request flowchart"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#cbd5e1"/></marker></defs>
+    <rect x="55" y="30" width="930" height="130" class="lane" rx="18"/><text x="75" y="58" class="small">Transport Layer</text>
+    <rect x="430" y="78" width="180" height="54" rx="26" class="start"/><text x="520" y="110" text-anchor="middle" class="txt">HTTP Request</text>
+    <path d="M520 132 V198" class="arrow"/>
+    <rect x="400" y="198" width="240" height="64" class="process" rx="10"/><text x="520" y="226" text-anchor="middle" class="txt">Router Match</text><text x="520" y="246" text-anchor="middle" class="small">/api/v1/engines/:id/calculate</text>
+    <path d="M520 262 V320" class="arrow"/>
+    <path d="M520 320 L620 378 L520 436 L420 378 Z" class="decision"/><text x="520" y="374" text-anchor="middle" class="txt">Auth and</text><text x="520" y="394" text-anchor="middle" class="txt">rate OK?</text>
+    <path d="M420 378 H230 V505" class="arrow"/><text x="300" y="360" class="small">no</text>
+    <rect x="120" y="505" width="220" height="64" class="error" rx="10"/><text x="230" y="542" text-anchor="middle" class="txt">Reject</text>
+    <path d="M620 378 H790 V505" class="arrow"/><text x="675" y="360" class="small">yes</text>
+    <rect x="680" y="505" width="220" height="64" class="process" rx="10"/><text x="790" y="532" text-anchor="middle" class="txt">Validate EngineInput</text><text x="790" y="552" text-anchor="middle" class="small">birth_data/current_time/options</text>
+    <path d="M790 569 V620" class="arrow"/>
+    <path d="M790 620 L900 680 L790 740 L680 680 Z" class="decision"/><text x="790" y="676" text-anchor="middle" class="txt">Phase</text><text x="790" y="696" text-anchor="middle" class="txt">allowed?</text>
+    <path d="M680 680 H520 V635" class="arrow"/><text x="595" y="662" class="small">no</text>
+    <rect x="410" y="590" width="220" height="64" class="error" rx="10"/><text x="520" y="628" text-anchor="middle" class="txt">PhaseAccessDenied</text>
+    <path d="M900 680 H960 V250 H760" class="arrow"/><text x="928" y="662" class="small">yes</text>
+    <rect x="650" y="218" width="220" height="64" class="store" rx="10"/><text x="760" y="244" text-anchor="middle" class="txt">Engine Registry</text><text x="760" y="264" text-anchor="middle" class="small">Arc&lt;dyn ConsciousnessEngine&gt;</text>
+    <path d="M650 250 H610" class="arrow"/>
+    <rect x="360" y="500" width="220" height="64" class="process" rx="10"/><text x="470" y="526" text-anchor="middle" class="txt">Execute Engine</text><text x="470" y="546" text-anchor="middle" class="small">native Rust or bridge</text>
+    <path d="M470 500 V455" class="arrow"/>
+    <rect x="360" y="390" width="220" height="64" class="process" rx="10"/><text x="470" y="416" text-anchor="middle" class="txt">Serialize Output</text><text x="470" y="436" text-anchor="middle" class="small">result, prompt, metadata</text>
+    <path d="M470 390 V330" class="arrow"/>
+    <rect x="360" y="282" width="220" height="48" rx="24" class="start"/><text x="470" y="312" text-anchor="middle" class="txt">Response</text>
+  </svg></div></section>
+  <section class="panel"><h2>Special Engine Branches</h2><div class="grid"><div class="card"><h3>Panchanga Natal Mode</h3><p>Default Panchanga uses <code>birth_data.date</code> and is a birth imprint.</p></div><div class="card"><h3>Panchanga Daily Mode</h3><p><code>options.mode = daily</code> uses <code>current_time</code> and can be described as current-day timing.</p></div><div class="card"><h3>Vimshottari Current Period</h3><p>Vimshottari uses <code>current_time</code> to select active mahadasha, antardasha, and pratyantardasha.</p></div><div class="card"><h3>Bridge Engines</h3><p>TypeScript engines such as tarot, I Ching, enneagram, sacred geometry, and sigil-forge can be registered through the bridge manager.</p></div></div></section>
+  <section class="panel"><h2>Downstream Witness Consumption</h2><div class="grid"><div class="card"><h3>Aletheios / Pichet</h3><p>Engine outputs feed the dual-agent witness layer: Aletheios maps structure, Pichet lands the same data in embodied/somatic language.</p></div><div class="card"><h3>Knowledge Store</h3><p>Engine IDs map into knowledge domains through the Witness Agents knowledge loader and routing engine.</p></div><div class="card"><h3>Clifford Memory</h3><p>Past user/session context can be read or written only when the active Clifford level allows that memory category.</p></div><div class="card"><h3>Anti-Dependency</h3><p>The goal of the engine output is not retention. It is self-authorship: the user's decreasing dependence on the mirror.</p></div></div></section>
+</main></body></html>

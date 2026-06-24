@@ -22,6 +22,12 @@ import type {
 } from '../types/reading-request.js';
 import { resolveLevel } from '../../scripts/integratedreading/level-resolver.js';
 import { deriveCallerIdentity, gateConsciousnessLevelOverride } from './auth.js';
+import {
+  type OnboardingState,
+  type OnboardingTurn,
+  nextOnboardingTurn,
+  buildWelcomeTurn,
+} from '../agents/onboarding-prompt.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // API TYPES
@@ -97,6 +103,20 @@ export interface MirrorResponse {
   quine_check: boolean;           // Does the encoding describe what it does?
   reflection_prompt: string;      // Mirror question back to user
   self_authorship_score: number;
+}
+
+export interface OnboardRequest {
+  /** Current onboarding state (omit for fresh session) */
+  state?: OnboardingState;
+  /** User's latest message */
+  message: string;
+}
+
+export interface OnboardResponse {
+  agent_text: string;
+  state: OnboardingState;
+  ready: boolean;
+  birth_data?: BirthData;
 }
 
 export interface RhythmEvent {
@@ -249,6 +269,8 @@ export interface ApiDependencies {
    * currently no central user-profile fetcher exists in this codebase.
    */
   getUserConsciousnessLevel?: (userId: string) => number | undefined;
+  /** Optional geocoder for onboarding: (location) => { lat, lng, tz } */
+  geocodeLocation?: (location: string) => Promise<{ latitude: number; longitude: number; timezone: string } | null>;
 }
 
 /**
@@ -384,6 +406,26 @@ export function createApiHandlers(deps: ApiDependencies) {
     },
 
     /**
+     * POST /onboard
+     * Conversational birth-data collection. One field per turn.
+     */
+    async onboard(req: OnboardRequest): Promise<{ status: number; body: OnboardResponse }> {
+      const turn = req.state
+        ? await nextOnboardingTurn(req.state, req.message, deps.geocodeLocation)
+        : buildWelcomeTurn();
+
+      return {
+        status: 200,
+        body: {
+          agent_text: turn.state.history[turn.state.history.length - 1]?.text || '',
+          state: turn.state,
+          ready: turn.ready,
+          birth_data: turn.birthData,
+        },
+      };
+    },
+
+    /**
      * Rhythm event generator (for WebSocket /rhythm)
      * Returns events to push to the client
      */
@@ -446,9 +488,14 @@ export async function createServer(config: ServerConfig): Promise<{
         const result = await config.handlers.mirror(body as MirrorRequest);
         res.writeHead(result.status);
         res.end(JSON.stringify(result.body));
+      } else if (path === '/onboard' && req.method === 'POST') {
+        const body = await readBody(req);
+        const result = await config.handlers.onboard(body as OnboardRequest);
+        res.writeHead(result.status);
+        res.end(JSON.stringify(result.body));
       } else {
         res.writeHead(404);
-        res.end(JSON.stringify({ error: 'Not found', endpoints: ['/interpret', '/heartbeat', '/mirror'] }));
+        res.end(JSON.stringify({ error: 'Not found', endpoints: ['/interpret', '/heartbeat', '/mirror', '/onboard'] }));
       }
     } catch (err) {
       res.writeHead(500);

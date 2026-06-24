@@ -54,6 +54,12 @@ import {
   findOrCreateCachedRunDir,
   countCrossRefs,
 } from './autoresearch-integratedreading/defaults.js';
+import {
+  formatModeContext,
+  formatModePolicy,
+  getModePolicy,
+  validateModeContext,
+} from './asset-mode-policy.js';
 
 // ────────────────────────────────────────────────────────────────────────
 // CLI parsing
@@ -73,6 +79,7 @@ interface CliArgs {
    * auth middleware path which gates the override.
    */
   level?: ConsciousnessLevel;
+  modeContextPath?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -87,6 +94,7 @@ function parseArgs(argv: string[]): CliArgs {
   const subjectsDir = getFlag('subjects-dir');
   const outputDir = getFlag('output-dir');
   const rawLevel = getFlag('level');
+  const modeContextPath = getFlag('mode-context');
 
   if (!mode || !subjectsDir || !outputDir) {
     console.error('Usage: integratedreading-mode.ts --mode <name> --subjects-dir <path> --output-dir <path> [--use-cache] [--skip-solos] [--dry-run] [--level 1-5]');
@@ -111,7 +119,18 @@ function parseArgs(argv: string[]): CliArgs {
     skipSolos: hasFlag('skip-solos'),
     dryRun: hasFlag('dry-run'),
     level,
+    modeContextPath: modeContextPath ? resolve(modeContextPath) : undefined,
   };
+}
+
+function loadModeContext(path: string | undefined): Record<string, unknown> | undefined {
+  if (!path) return undefined;
+  if (!existsSync(path)) throw new Error(`Mode context file not found: ${path}`);
+  const parsed = JSON.parse(readFileSync(path, 'utf-8'));
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`Mode context must be a JSON object: ${path}`);
+  }
+  return parsed as Record<string, unknown>;
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -284,6 +303,8 @@ async function ensureSolos(
 interface InterpolationContext {
   subject_names: string;
   subject_roster: string;
+  mode_policy: string;
+  mode_context: string;
   prior_pass: string;
   lessons_summary: string;
   overlay_summary: string;
@@ -398,7 +419,7 @@ anti-dependency telos. Stay in the practical, age-ranged, honest-prediction
 register.`
     : `${ANATOMIST_PERSONA}\n\n${KOSHA_GRAMMAR}\n\n${DYADIC_LOOP}`;
 
-  const system = `${registerHeader}\n\n` +
+  const system = `${registerHeader}\n\n${ctx.mode_policy}\n\n${ctx.mode_context}\n\n` +
     (ctx.lessons_summary ? `${ctx.lessons_summary}\n\n` : '') +
     `## Mode Overlay Rules\n\n${ctx.overlay_summary}\n\n## Bridge Mandates\n\n${ctx.bridge_mandates}` +
     (lexiconBlock ? `\n\n${lexiconBlock}` : '');
@@ -634,6 +655,18 @@ async function main() {
   console.log(`  Level:        ${effectiveLevel} (${register}, source=${resolved.source})`);
   console.log(`  Lexicons:    ${foregroundedEngines.length} foregrounded engine(s)${lexiconBlock ? '' : ' — empty block'}`);
 
+  const modePolicy = getModePolicy(args.mode, effectiveLevel as any);
+  const modeContext = loadModeContext(args.modeContextPath);
+  const modeContextValidation = validateModeContext(modePolicy, modeContext);
+  if (!modeContextValidation.ok) {
+    console.error('\nFATAL: Missing required mode-context fields:');
+    for (const field of modeContextValidation.missing) console.error(`  - ${field}`);
+    console.error('\nAsk/answer these before running this mode:');
+    for (const question of modeContextValidation.questions) console.error(`  - ${question}`);
+    console.error('\nPass answers with: --mode-context <context.json>');
+    process.exit(1);
+  }
+
   // ─── Load subjects ────────────────────────────────────────────────
   const subjects = loadSubjects(args.subjectsDir);
   const sc = doc.frontmatter.subject_count;
@@ -681,6 +714,8 @@ async function main() {
       const notes = s.relationship.notes ? `   NOTES: ${s.relationship.notes}` : '';
       return [baseLine, role, relations, notes].filter(Boolean).join('\n');
     }).join('\n'),
+    mode_policy: formatModePolicy(modePolicy),
+    mode_context: formatModeContext(modeContext),
     lessons_summary: summarizeLessons(doc.lessons),
     overlay_summary: buildOverlaySummary(doc),
     bridge_mandates: buildBridgeMandates(doc),

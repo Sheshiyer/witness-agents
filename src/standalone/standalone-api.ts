@@ -111,6 +111,10 @@ export interface ReadingRequest {
    * resolver falls back to `default_level` (1, uninitiated).
    */
   user_id?: string;
+  /** Relationship/use-case mode for no-assumption intake gating. */
+  relationship_mode?: string;
+  /** Answers to required mode-intake questions; downstream assets inherit this. */
+  mode_context?: Record<string, unknown>;
 }
 
 /**
@@ -290,6 +294,10 @@ function validateReadingRequest(body: unknown): ReadingRequest | ApiError {
     timezone: (req.timezone as string) || 'UTC',
     consciousness_level,
     user_id: typeof req.user_id === 'string' ? req.user_id : undefined,
+    relationship_mode: typeof req.relationship_mode === 'string' ? req.relationship_mode : undefined,
+    mode_context: req.mode_context && typeof req.mode_context === 'object' && !Array.isArray(req.mode_context)
+      ? req.mode_context as Record<string, unknown>
+      : undefined,
   };
 }
 

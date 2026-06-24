@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mode Policy Technical Reference</title><style>
+body{margin:0;background:#070B1D;color:#F0EDE3;font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:1180px;margin:0 auto;padding:34px 20px 70px}.hero{background:linear-gradient(135deg,#070B1D,#2D0050,#0B50FB);color:#F0EDE3;border:1px solid #2D0050;border-radius:28px;padding:36px;margin-bottom:24px}h1{font-size:54px;margin:0 0 10px;letter-spacing:-.04em}.hero p{color:#ede9fe}.panel{background:#0E1428;border:1px solid #2D0050;border-radius:22px;padding:24px;margin-top:22px;box-shadow:0 12px 34px rgba(0,0,0,.25)}code,pre{background:#050814;color:#F0EDE3;border-radius:10px}code{padding:2px 6px}pre{padding:18px;overflow:auto}.schema{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.card{border:1px solid #2D0050;border-radius:16px;padding:16px;background:#111b36}.card h3{margin:0 0 8px}.card p,.card li{color:#8A9BA8}.matrix{width:100%;border-collapse:collapse}.matrix th,.matrix td{padding:12px;border-bottom:1px solid #2D0050;text-align:left;vertical-align:top}.matrix td{color:#8A9BA8}.matrix th{color:#C5A017;background:#111b36}</style></head><body><main>
+<section class="hero"><h1>Mode Policy Technical Reference</h1><p>Contract for how readings choose relationship mode, register band, intake fields, forbidden assumptions, and downstream source-pack behavior.</p></section>
+<section class="panel"><h2>Contract Shape</h2><pre>{
+  mode: "solo | married | partner-relationship | general-synastry | family | business",
+  register: "l1_l3 | l4_l5",
+  requiredContextFields: string[],
+  intakeQuestions: string[],
+  requiredAnchors: string[],
+  forbiddenFrames: string[],
+  sourceRules: string[]
+}</pre></section>
+<section class="panel"><h2>Consumers</h2><div class="schema"><div class="card"><h3>Reading Runner</h3><p>Validates mode context before LLM calls and injects policy/context into the system prompt.</p></div><div class="card"><h3>Asset Factory</h3><p>Writes policy and answered context into the NotebookLM source pack.</p></div><div class="card"><h3>Audit Chain</h3><p>Verifies source packs do not contradict deterministic facts or allowed assumptions.</p></div></div></section>
+<section class="panel"><h2>Grounding and Inference Dependencies</h2><div class="schema"><div class="card"><h3>NVIDIA Embeddings</h3><p>BGE-M3 1024-dimensional embeddings turn fact/perspective queries into vectors for retrieval.</p></div><div class="card"><h3>Cloudflare Vectorize</h3><p><code>witness-wisdom-corpus</code> stores wisdom passages and subject engine data.</p></div><div class="card"><h3>LLM Providers</h3><p>NVIDIA, OpenRouter, and OpenAI sit behind provider factory/inference adapters.</p></div></div></section>
+<section class="panel"><h2>Dual-Agent Interaction</h2><div class="schema"><div class="card"><h3>Aletheios</h3><p>Receives structural/engine context and speaks as the observing witness.</p></div><div class="card"><h3>Pichet</h3><p>Receives body/state context and speaks as the embodied walker.</p></div><div class="card"><h3>Knowledge Domains</h3><p>Knowledge store domains and routing rules can enrich the dyad when engine/state/temporal triggers match.</p></div><div class="card"><h3>Clifford Memory</h3><p>Memory categories are readable/writable only when the active Clifford level is sufficient.</p></div><div class="card"><h3>Anti-Dependency</h3><p>Every mode policy should preserve user sovereignty: the system succeeds when the user needs it less.</p></div></div></section>
+<section class="panel"><h2>Mode Matrix</h2><table class="matrix"><thead><tr><th>Mode</th><th>Required Context</th><th>Forbidden Frame</th></tr></thead><tbody>
+<tr><td>solo</td><td>recipient_intent</td><td>relationship prediction</td></tr>
+<tr><td>married</td><td>relationship_status, shared_household_status, primary_question</td><td>dating or hypothetical vow frame</td></tr>
+<tr><td>partner-relationship</td><td>relationship_status, commitment_status, primary_question</td><td>assuming marriage</td></tr>
+<tr><td>general-synastry</td><td>connection_type, primary_question</td><td>romantic or sexual assumptions</td></tr>
+<tr><td>family</td><td>family_roles, primary_question</td><td>romantic framing or blame</td></tr>
+<tr><td>business</td><td>business_roles, decision_context, primary_question</td><td>investment advice or guaranteed outcome</td></tr>
+</tbody></table></section>
+<section class="panel"><h2>Example Intake Context</h2><pre>{
+  "relationship_status": "long-term romantic relationship, not assumed married",
+  "commitment_status": "current partnership; marriage should not be assumed unless explicitly discussed",
+  "primary_question": "understand relational rhythm, communication, timing, and anti-dependency without prediction"
+}</pre></section>
+</main></body></html>

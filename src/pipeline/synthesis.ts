@@ -47,17 +47,43 @@ export interface CrossPattern {
 }
 
 // Known engine pairings with deep synthesis potential
+// Organized by cross-layer resonance: Temporal ↔ Structural ↔ Somatic ↔ Oracle
 const SYNERGY_PAIRS: [WitnessEngineAlias, WitnessEngineAlias, string][] = [
+  // ─── Temporal × Structural ─────────────────────────────────────────
   ['chronofield', 'nine-point-architecture', 'Dasha period amplifies Enneagram fixation'],
+  ['chronofield', 'energetic-authority', 'Life chapter reshapes how authority is exercised'],
+  ['active-planetary-weather', 'gift-shadow-spectrum', 'Transit weather activates specific Gene Key shadows or gifts'],
+  ['temporal-grammar', 'numeric-architecture', 'Tithi-nakshatra frame reveals number-cycle resonance'],
+  ['circadian-cartography', 'energetic-authority', 'Organ-clock peak aligns with HD decision center'],
+
+  // ─── Temporal × Somatic ────────────────────────────────────────────
   ['three-wave-cycle', 'circadian-cartography', 'Biorhythm sync with organ clock'],
-  ['gift-shadow-spectrum', 'nine-point-architecture', 'Gene Key shadow maps to Enneagram stress line'],
-  ['chronofield', 'active-planetary-weather', 'Current Dasha within transit context'],
-  ['bioelectric-field', 'resonance-architecture', 'Biofield coherence with sound frequency'],
-  ['numeric-architecture', 'temporal-grammar', 'Number cycle within temporal frame'],
+  ['active-planetary-weather', 'bioelectric-field', 'Planetary weather shifts energy-field coherence'],
+  ['temporal-grammar', 'physiognomic-mapping', 'Nakshatra quality mirrors constitutional type'],
+  ['three-wave-cycle', 'resonance-architecture', 'Biorhythm emotional peak selects optimal raga'],
+
+  // ─── Temporal × Oracle ─────────────────────────────────────────────
+  ['chronofield', 'hexagram-navigation', 'I Ching hexagram in planetary context'],
+  ['temporal-grammar', 'archetypal-mirror', 'Panchanga quality reflects the archetype seeking expression'],
+  ['active-planetary-weather', 'hexagram-navigation', 'Transit aspect asks a specific change question'],
+
+  // ─── Structural × Somatic ──────────────────────────────────────────
   ['energetic-authority', 'three-wave-cycle', 'Human Design strategy meets biorhythm'],
-  ['hexagram-navigation', 'chronofield', 'I Ching hexagram in planetary context'],
-  ['archetypal-mirror', 'gift-shadow-spectrum', 'Tarot archetype maps to Gene Key'],
+  ['bioelectric-field', 'resonance-architecture', 'Biofield coherence with sound frequency'],
   ['bioelectric-field', 'three-wave-cycle', 'Biofield responds to biorhythm peaks'],
+  ['nine-point-architecture', 'physiognomic-mapping', 'Enneagram type maps to dosha constitution'],
+  ['gift-shadow-spectrum', 'bioelectric-field', 'Activated Gene Key shifts chakra activity'],
+
+  // ─── Structural × Oracle ───────────────────────────────────────────
+  ['archetypal-mirror', 'gift-shadow-spectrum', 'Tarot archetype maps to Gene Key'],
+  ['energetic-authority', 'hexagram-navigation', 'HD gate activation mirrors hexagram change pattern'],
+  ['numeric-architecture', 'geometric-resonance', 'Life Path number reveals resonant sacred form'],
+  ['nine-point-architecture', 'archetypal-mirror', 'Enneagram fixation draws a specific Major Arcana'],
+
+  // ─── Somatic × Oracle ──────────────────────────────────────────────
+  ['bioelectric-field', 'geometric-resonance', 'Chakra geometry reveals optimal meditation form'],
+  ['resonance-architecture', 'sigil-forge', 'Raga frequency encodes intention into symbol'],
+  ['physiognomic-mapping', 'archetypal-mirror', 'Facial constitution reflects the archetype in play'],
 ];
 
 // ═══════════════════════════════════════════════════════════════════════
