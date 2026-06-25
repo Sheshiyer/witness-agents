@@ -150,7 +150,7 @@ export function createInMemoryPrivateIndexManager(): PrivateIndexManager {
     },
     async retrieve(query) {
       const includeGlobal = query.scope?.includeGlobalCorpus ?? false;
-      const subjectId = query.scope?.subjectId ?? query.subjectId;
+      const subjectId = query.subjectId;
       const candidates = [
         ...(subjectIndexes.get(subjectId) ?? []),
         ...(includeGlobal ? globalIndex : []),

@@ -95,6 +95,18 @@ test('in-memory private index scopes retrieval by subject and optional global co
   assert.ok(withGlobal.some(p => p.id === 'a-private'));
   assert.ok(withGlobal.some(p => p.id === 'global'));
   assert.ok(!withGlobal.some(p => p.id === 'b-private'));
+
+  const mismatchedScope = await index.retrieve({
+    subjectId: lock.subjectId,
+    facts: lock.facts,
+    perspective: 'aletheios',
+    taskId: 'privacy-test',
+    maxPassages: 10,
+    scope: { subjectId: 'subject-b', includeGlobalCorpus: true },
+  });
+  assert.ok(mismatchedScope.some(p => p.id === 'a-private'));
+  assert.ok(mismatchedScope.some(p => p.id === 'global'));
+  assert.ok(!mismatchedScope.some(p => p.id === 'b-private'));
 });
 
 test('ingestWitnessCorpus writes extracted passages into private index (P3 T21)', async () => {
