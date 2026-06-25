@@ -342,8 +342,9 @@ export class SectionInterpretationService {
         const subjectName = factLock.facts?.name || 'the subject';
 
         let engineContext = '\n## Engine Outputs\n';
-        for (const [engineId, data] of Object.entries((factLock as any).engineData || {})) {
-          const truncated = data.length > 2000 ? data.slice(0, 2000) + '...' : data;
+        for (const [engineId, data] of Object.entries(factLock.engineData || {})) {
+          const serialized = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+          const truncated = serialized.length > 2000 ? serialized.slice(0, 2000) + '...' : serialized;
           engineContext += `\n### ${engineId}\n\`\`\`json\n${truncated}\n\`\`\`\n`;
         }
 

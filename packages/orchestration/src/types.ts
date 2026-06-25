@@ -15,6 +15,7 @@ export interface FactLock {
   facts: Record<string, LockedFact>;
   frozenAt: string;
   version: string;
+  engineData?: Record<string, unknown>;
   retrievedContext?: import('./grounding.js').GroundedPassage[];
 }
 

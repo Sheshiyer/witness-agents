@@ -45,6 +45,7 @@ export interface ExtractionProvider {
     source: string; // url, file path, or buffer id
     kind?: 'pdf' | 'image' | 'text' | 'auto';
     subjectId?: string;
+    content?: string;
   }): Promise<GroundedPassage[]>;
 }
 
@@ -55,24 +56,37 @@ export const NoopExtractionProvider: ExtractionProvider = {
 };
 
 /**
- * P3-W1 skeleton: Factory for a future NeMo Retriever extraction-backed provider.
- * When real endpoints + auth are available, this would:
- *   - Call the NeMo extraction NIM (OCR / table / layout) for the given source.
- *   - Convert results into GroundedPassage[] with rich metadata and 'sourced-fact' provenance.
- *   - Respect subjectId for scoping.
- *
- * For now: returns empty (same as Noop). Replace the body when the NIM client is ready.
+ * P3-W1: Factory for a NeMo Retriever extraction-backed provider.
+ * The endpoint contract is intentionally small and adapter-friendly: POST JSON
+ * with source/kind/subjectId/content and accept either { passages: [...] },
+ * { results: [...] }, { text: "..." }, or a raw array.
  */
 export function createNemoExtractionProvider(config: {
   endpoint?: string;
   apiKey?: string;
-  // future: model id, timeout, etc.
+  timeoutMs?: number;
 } = {}): ExtractionProvider {
-  // TODO (P3): implement actual call to NeMo extraction NIM
-  // Example shape once real:
-  // const response = await fetch(`${config.endpoint}/v1/extract`, { ... });
-  // return response.passages.map(p => ({ id: ..., source: ..., excerpt: ..., score: 1.0, provenance: 'sourced-fact', metadata: p.metadata }));
-  return NoopExtractionProvider;
+  if (!config.endpoint) return NoopExtractionProvider;
+
+  return {
+    async extract(params) {
+      const response = await fetchWithTimeout(config.endpoint!, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}),
+        },
+        body: JSON.stringify(params),
+      }, config.timeoutMs ?? 30_000);
+
+      if (!response.ok) {
+        throw new Error(`NeMo extraction failed: ${response.status} ${response.statusText}`);
+      }
+
+      const payload = await response.json() as unknown;
+      return normalizeExtractionPayload(payload, params.source, params.subjectId);
+    },
+  };
 }
 
 /**
@@ -114,6 +128,40 @@ export const NoopPrivateIndexManager: PrivateIndexManager = {
   },
 };
 
+export function createInMemoryPrivateIndexManager(): PrivateIndexManager {
+  const subjectIndexes = new Map<string, GroundedPassage[]>();
+  const globalIndex: GroundedPassage[] = [];
+
+  return {
+    async addPassages(subjectId, passages, scope = {}) {
+      const subjectScoped = subjectIndexes.get(subjectId) ?? [];
+      subjectScoped.push(...passages.map(p => ({
+        ...p,
+        metadata: { ...p.metadata, subjectId, scope: 'subject' },
+      })));
+      subjectIndexes.set(subjectId, subjectScoped);
+
+      if (scope.includeGlobalCorpus) {
+        globalIndex.push(...passages.map(p => ({
+          ...p,
+          metadata: { ...p.metadata, subjectId, scope: 'global' },
+        })));
+      }
+    },
+    async retrieve(query) {
+      const includeGlobal = query.scope?.includeGlobalCorpus ?? false;
+      const subjectId = query.subjectId;
+      const candidates = [
+        ...(subjectIndexes.get(subjectId) ?? []),
+        ...(includeGlobal ? globalIndex : []),
+      ];
+      const ranked = rankPassages(candidates, query)
+        .filter(p => p.metadata?.scope === 'global' || p.metadata?.subjectId === subjectId);
+      return ranked.slice(0, query.maxPassages ?? 6);
+    },
+  };
+}
+
 /**
  * P3 skeleton: Optional streaming / async extension points for actor-model grounding.
  * Current implementation is request/response. Future actor/OTP or Durable Object backends
@@ -139,6 +187,8 @@ export async function ingestWitnessCorpus(
   sources: Array<{ source: string; kind?: 'pdf' | 'image' | 'text' | 'auto' }>,
   subjectId: string,
   extractionProvider: ExtractionProvider = NoopExtractionProvider,
+  indexManager?: PrivateIndexManager,
+  scope: IndexScope = {},
 ): Promise<GroundedPassage[]> {
   const all: GroundedPassage[] = [];
   for (const s of sources) {
@@ -148,6 +198,9 @@ export async function ingestWitnessCorpus(
       subjectId,
     });
     all.push(...passages);
+    if (indexManager && passages.length > 0) {
+      await indexManager.addPassages(subjectId, passages, scope);
+    }
   }
   return all;
 }
@@ -171,4 +224,88 @@ export function injectGroundedContext(
   }
   lines.push('Use the above only as additional mirrors for depth. The Fact Lock above remains the sole source of truth for locked values.');
   return lines.join('\n');
+}
+
+function normalizeExtractionPayload(payload: unknown, source: string, subjectId?: string): GroundedPassage[] {
+  const raw = Array.isArray(payload)
+    ? payload
+    : isRecord(payload) && Array.isArray(payload.passages)
+      ? payload.passages
+      : isRecord(payload) && Array.isArray(payload.results)
+        ? payload.results
+        : isRecord(payload) && typeof payload.text === 'string'
+          ? [{ excerpt: payload.text, metadata: payload.metadata }]
+          : [];
+
+  return raw.map((item, index) => {
+    const record = isRecord(item) ? item : { excerpt: String(item) };
+    const excerpt = typeof record.excerpt === 'string'
+      ? record.excerpt
+      : typeof record.text === 'string'
+        ? record.text
+        : JSON.stringify(record);
+    return {
+      id: typeof record.id === 'string' ? record.id : `${source}#${index + 1}`,
+      source: typeof record.source === 'string' ? record.source : source,
+      excerpt,
+      score: typeof record.score === 'number' ? clampScore(record.score) : 1,
+      provenance: 'sourced-fact',
+      metadata: {
+        ...(isRecord(record.metadata) ? record.metadata : {}),
+        subjectId,
+        extractionKind: record.kind,
+      },
+    };
+  });
+}
+
+function rankPassages(passages: GroundedPassage[], query: RetrievalQuery): GroundedPassage[] {
+  const terms = new Set(
+    [
+      query.perspective,
+      query.taskId,
+      ...Object.keys(query.facts || {}),
+      ...Object.values(query.facts || {}).flatMap(value => {
+        if (isRecord(value) && 'value' in value) return [String(value.value)];
+        return [String(value)];
+      }),
+    ]
+      .join(' ')
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean),
+  );
+
+  return [...passages]
+    .map((passage) => {
+      const text = `${passage.source} ${passage.excerpt}`.toLowerCase();
+      const matches = [...terms].filter(term => text.includes(term)).length;
+      return {
+        ...passage,
+        score: clampScore(Math.max(passage.score, Math.min(1, 0.35 + matches * 0.1))),
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function clampScore(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }

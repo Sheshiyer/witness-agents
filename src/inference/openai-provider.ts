@@ -36,24 +36,28 @@ const DEFAULT_OPENAI_ROUTING: ModelRoutingTable = {
     synthesis: { model_id: 'gpt-4o-mini', max_tokens: 2048, temperature: 0.3 },
     aletheios: { model_id: 'gpt-4o-mini', max_tokens: 2048, temperature: 0.25 },
     pichet: { model_id: 'gpt-4o-mini', max_tokens: 2048, temperature: 0.25 },
+    deep: { model_id: 'gpt-4o-mini', max_tokens: 4096, temperature: 0.2 },
   },
   subscriber: {
     fast: { model_id: 'gpt-4o-mini', max_tokens: 1024, temperature: 0.5 },
     synthesis: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.2 },
     aletheios: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.18 },
     pichet: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.18 },
+    deep: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.16 },
   },
-  premium: {
+  initiate: {
     fast: { model_id: 'gpt-4o-mini', max_tokens: 1024, temperature: 0.5 },
     synthesis: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.15 },
     aletheios: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.15 },
     pichet: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.15 },
+    deep: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.12 },
   },
   enterprise: {
     fast: { model_id: 'gpt-4o-mini', max_tokens: 1024, temperature: 0.5 },
     synthesis: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.12 },
     aletheios: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.12 },
     pichet: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.12 },
+    deep: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.1 },
   },
 };
 

@@ -15,6 +15,8 @@ export interface AssemblerOptions {
   factChecker?: (fullOutput: string, lock: FactLock) => Promise<Contradiction[]>;
   observer?: OrchestrationObserver;
   groundingProvider?: GroundingProvider;
+  minRepairRelevance?: number;
+  maxRetrievalLatencyMs?: number;
 }
 
 export function detectContradictions(output: string, lock: FactLock): Contradiction[] {
@@ -120,9 +122,14 @@ export async function assemble(
           taskId: 'assembler-repair',
           maxPassages: 4,
         };
-        const passages: GroundedPassage[] = await options.groundingProvider.retrieve(query);
-        if (passages.length > 0) {
-          const context = passages
+        const passages: GroundedPassage[] = await retrieveWithinLatency(
+          options.groundingProvider,
+          query,
+          options.maxRetrievalLatencyMs,
+        );
+        const relevant = passages.filter(p => p.score >= (options.minRepairRelevance ?? 0.65));
+        if (relevant.length > 0) {
+          const context = relevant
             .map(p => `• ${p.excerpt} [${p.source || 'unknown'}] (relevance ${p.score.toFixed(2)})`)
             .join('\n');
           repairPrompt += `\n\nSupporting mirrors from corpus (use only as resonance, never override locked facts):\n${context}`;
@@ -149,4 +156,26 @@ export async function assemble(
     contradictions: allContradictions,
     repairIterations: iterations,
   };
+}
+
+async function retrieveWithinLatency(
+  provider: GroundingProvider,
+  query: RetrievalQuery,
+  maxRetrievalLatencyMs?: number,
+): Promise<GroundedPassage[]> {
+  if (!maxRetrievalLatencyMs || maxRetrievalLatencyMs <= 0) {
+    return provider.retrieve(query);
+  }
+
+  let timeout: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      provider.retrieve(query),
+      new Promise<GroundedPassage[]>((resolve) => {
+        timeout = setTimeout(() => resolve([]), maxRetrievalLatencyMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }

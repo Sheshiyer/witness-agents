@@ -12,8 +12,15 @@ import type {
   ConsciousnessLevel,
   LevelSource,
   RegisterBand,
-} from '../../scripts/integratedreading/level-resolver.js';
-import type { RelationshipMode } from '../../scripts/asset-mode-policy.js';
+} from './level-resolver.js';
+
+export type RelationshipMode =
+  | 'solo'
+  | 'married'
+  | 'partner-relationship'
+  | 'general-synastry'
+  | 'family'
+  | 'business';
 
 // ────────────────────────────────────────────────────────────────────────
 // Re-exports — single import surface for consumers

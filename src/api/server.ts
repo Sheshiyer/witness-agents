@@ -20,7 +20,7 @@ import type {
   ReadingErrorResponse,
   CallerIdentity,
 } from '../types/reading-request.js';
-import { resolveLevel } from '../../scripts/integratedreading/level-resolver.js';
+import { resolveLevel } from '../types/level-resolver.js';
 import { deriveCallerIdentity, gateConsciousnessLevelOverride } from './auth.js';
 import {
   type OnboardingState,

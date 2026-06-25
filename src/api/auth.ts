@@ -22,10 +22,10 @@
 // Production deployments will replace this with JWT/OIDC/session
 // middleware. The current shape is a transitional dev-friendly mapping:
 //
-//   1. Headers (case-insensitive lookup):
+//   1. Untrusted headers (case-insensitive lookup):
 //        X-Caller-Id        → caller_id (string)
-//        X-Caller-Tier      → caller_tier (Tier enum, validated)
-//        X-Caller-Admin     → caller_is_admin ('1' | 'true' → true)
+//        X-Caller-Tier      → non-privileged caller_tier only (free/subscriber/enterprise)
+//        X-Caller-Admin     → ignored; admin cannot be client-asserted
 //
 //   2. Environment escape hatch (LOCAL DEV ONLY):
 //        WITNESS_DEV_ADMIN=1 → caller_is_admin = true
@@ -37,7 +37,7 @@
 //        caller_tier → 'free'
 //        caller_is_admin → false
 
-import { isCallerAdmin } from '../../scripts/integratedreading/level-resolver.js';
+import { isCallerAdmin } from '../types/level-resolver.js';
 import type { CallerIdentity, ReadingErrorResponse } from '../types/reading-request.js';
 import type { Tier } from '../types/interpretation.js';
 
@@ -52,8 +52,21 @@ const VALID_TIERS: ReadonlySet<Tier> = new Set<Tier>([
   'initiate',
 ]);
 
+const UNTRUSTED_HEADER_TIERS: ReadonlySet<Tier> = new Set<Tier>([
+  'free',
+  'subscriber',
+  'enterprise',
+]);
+
 function parseTier(value: unknown): Tier {
   if (typeof value === 'string' && VALID_TIERS.has(value as Tier)) {
+    return value as Tier;
+  }
+  return 'free';
+}
+
+function parseHeaderTier(value: unknown): Tier {
+  if (typeof value === 'string' && UNTRUSTED_HEADER_TIERS.has(value as Tier)) {
     return value as Tier;
   }
   return 'free';
@@ -92,20 +105,22 @@ export function deriveCallerIdentity(input: DeriveCallerIdentityInput): CallerId
   const h = input.headers;
   const rawId = h['x-caller-id'];
   const rawTier = h['x-caller-tier'];
-  const rawAdmin = h['x-caller-admin'];
 
   const caller_id =
     (typeof rawId === 'string' && rawId.trim()) ||
     (Array.isArray(rawId) && rawId[0]) ||
     'anonymous';
 
-  const caller_tier = parseTier(Array.isArray(rawTier) ? rawTier[0] : rawTier);
+  let caller_tier = parseHeaderTier(Array.isArray(rawTier) ? rawTier[0] : rawTier);
 
-  let caller_is_admin = parseBool(Array.isArray(rawAdmin) ? rawAdmin[0] : rawAdmin);
+  let caller_is_admin = false;
 
   // Dev escape hatch — see header comment block.
   if (parseBool(input.env.WITNESS_DEV_ADMIN)) {
     caller_is_admin = true;
+    caller_tier = parseTier(input.env.WITNESS_DEV_TIER) === 'initiate'
+      ? 'initiate'
+      : caller_tier;
   }
 
   return { caller_id, caller_tier, caller_is_admin };

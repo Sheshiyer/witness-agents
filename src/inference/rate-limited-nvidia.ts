@@ -98,6 +98,7 @@ export class RateLimitedNvidiaProvider {
     this.config = {
       api_key: config.api_key,
       base_url: config.base_url,
+      timeout_ms: config.timeout_ms ?? 60_000,
       rpm_limit: config.rpm_limit ?? 40,
       retry_max: config.retry_max ?? 5,
       retry_base_ms: config.retry_base_ms ?? 2000,
