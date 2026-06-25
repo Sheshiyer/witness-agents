@@ -37,7 +37,7 @@
 //        caller_tier → 'free'
 //        caller_is_admin → false
 
-import { isCallerAdmin } from '../../scripts/integratedreading/level-resolver.js';
+import { isCallerAdmin } from '../types/level-resolver.js';
 import type { CallerIdentity, ReadingErrorResponse } from '../types/reading-request.js';
 import type { Tier } from '../types/interpretation.js';
 

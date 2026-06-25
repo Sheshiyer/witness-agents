@@ -64,7 +64,7 @@ import type {
 import {
   resolveLevel,
   ForbiddenLevelOverrideError,
-} from '../../scripts/integratedreading/level-resolver.js';
+} from '../types/level-resolver.js';
 import { deriveCallerIdentity, gateConsciousnessLevelOverride } from '../api/auth.js';
 
 // ═══════════════════════════════════════════════════════════════════════
