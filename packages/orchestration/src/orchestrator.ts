@@ -13,6 +13,7 @@ export interface OrchestratorOptions {
   observer?: OrchestrationObserver;
   groundingProvider?: GroundingProvider;
   minRelevance?: number;
+  maxRetrievalLatencyMs?: number;
   retrievalBudgetTokens?: number;
 }
 
@@ -29,6 +30,8 @@ export class WitnessOrchestrator {
     const maxParallel = this.options.maxParallel ?? 3;
     const provider = this.options.groundingProvider;
     const minRel = this.options.minRelevance ?? 0.65;
+    const maxRetrievalLatencyMs = this.options.maxRetrievalLatencyMs;
+    let retrievalBudgetRemaining = this.options.retrievalBudgetTokens;
 
     for (const wave of waves) {
       const batch = [...wave.tasks];
@@ -56,52 +59,32 @@ export class WitnessOrchestrator {
               taskId: task.id,
               maxPassages: 6,
             };
-            // Budget check (T11): if estimateCost available and budget in options, skip if would exceed
-            const budget = (this.options as any).retrievalBudgetTokens;
-            if (budget && provider.estimateCost) {
-              const est = await provider.estimateCost(query);
-              if (est.tokens && est.tokens > budget) {
-                // skip retrieval for this task under budget
-                grounding = undefined;
-                const latency = Date.now() - start;
-                this.observer.onRetrievalComplete?.({
-                  taskId: task.id,
-                  perspective: task.perspective,
-                  passageCount: 0,
-                  avgRelevance: 0,
-                  latencyMs: latency,
-                  costUsd: 0,
-                } as any);
-              } else {
-                const passages = await provider.retrieve(query);
-                const filtered = passages.filter(p => p.score >= minRel);
-                const latency = Date.now() - start;
-                const avgRel = filtered.length > 0 ? filtered.reduce((s, p) => s + p.score, 0) / filtered.length : 0;
-                let costUsd = 0;
-                if (provider.estimateCost) {
-                  const est = await provider.estimateCost(query);
-                  costUsd = (est as any).costUsd || 0;
-                }
-                this.observer.onRetrievalComplete?.({
-                  taskId: task.id,
-                  perspective: task.perspective,
-                  passageCount: filtered.length,
-                  avgRelevance: avgRel,
-                  latencyMs: latency,
-                  costUsd,
-                } as any);
-                grounding = filtered.length > 0 ? filtered : undefined;
-              }
+
+            const estimate = provider.estimateCost ? await provider.estimateCost(query) : undefined;
+            const estimatedTokens = estimate?.tokens ?? 0;
+            const wouldExceedBudget =
+              retrievalBudgetRemaining !== undefined &&
+              estimatedTokens > retrievalBudgetRemaining;
+
+            if (wouldExceedBudget) {
+              const latency = Date.now() - start;
+              this.observer.onRetrievalComplete?.({
+                taskId: task.id,
+                perspective: task.perspective,
+                passageCount: 0,
+                avgRelevance: 0,
+                latencyMs: latency,
+                costUsd: 0,
+              });
             } else {
-              const passages = await provider.retrieve(query);
+              if (retrievalBudgetRemaining !== undefined) {
+                retrievalBudgetRemaining = Math.max(0, retrievalBudgetRemaining - estimatedTokens);
+              }
+              const passages = await retrieveWithinLatency(provider, query, maxRetrievalLatencyMs);
               const filtered = passages.filter(p => p.score >= minRel);
               const latency = Date.now() - start;
               const avgRel = filtered.length > 0 ? filtered.reduce((s, p) => s + p.score, 0) / filtered.length : 0;
-              let costUsd = 0;
-              if (provider.estimateCost) {
-                const est = await provider.estimateCost(query);
-                costUsd = (est as any).costUsd || 0;
-              }
+              const costUsd = estimate?.costUsd ?? 0;
               this.observer.onRetrievalComplete?.({
                 taskId: task.id,
                 perspective: task.perspective,
@@ -109,7 +92,7 @@ export class WitnessOrchestrator {
                 avgRelevance: avgRel,
                 latencyMs: latency,
                 costUsd,
-              } as any);
+              });
               grounding = filtered.length > 0 ? filtered : undefined;
             }
           }
@@ -148,5 +131,27 @@ export class WitnessOrchestrator {
     }
 
     return Array.from(results.values());
+  }
+}
+
+async function retrieveWithinLatency(
+  provider: GroundingProvider,
+  query: RetrievalQuery,
+  maxRetrievalLatencyMs?: number,
+): Promise<GroundedPassage[]> {
+  if (!maxRetrievalLatencyMs || maxRetrievalLatencyMs <= 0) {
+    return provider.retrieve(query);
+  }
+
+  let timeout: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      provider.retrieve(query),
+      new Promise<GroundedPassage[]>((resolve) => {
+        timeout = setTimeout(() => resolve([]), maxRetrievalLatencyMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 }

@@ -35,6 +35,7 @@ export {
   ingestWitnessCorpus,
   type ExtractionProvider,
   NoopPrivateIndexManager,
+  createInMemoryPrivateIndexManager,
   type PrivateIndexManager,
   type IndexScope,
 } from './grounding.js';

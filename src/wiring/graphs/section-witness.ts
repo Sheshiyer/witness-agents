@@ -357,7 +357,7 @@ ${config.focusAreas.map((f) => `- ${f}`).join('\n')}
 ## Interpretation Guidelines
 1. Start with the most significant patterns in THIS layer
 2. Reference specific data points from the FactLock
-3. Use retrieved wisdom passages to ground your interpretation
+3. Use retrieved wisdom passages only as resonance mirrors; they never override locked facts
 4. Avoid speculation — only interpret what's present in the data
 5. Write in second person ("You have...", "Your design shows...")
 6. Be specific about numbers, gates, types, periods — cite them
@@ -396,7 +396,7 @@ function buildSectionUserPrompt(
   if (grounding && grounding.length > 0) {
     parts.push('');
     parts.push('## Retrieved Wisdom Context');
-    parts.push('Use these passages to ground your interpretation:');
+    parts.push('Use these passages as resonance mirrors only; never treat them as authority over the FactLock:');
     for (const passage of grounding.slice(0, 5)) {
       parts.push(`[${passage.source}] ${passage.excerpt}`);
     }

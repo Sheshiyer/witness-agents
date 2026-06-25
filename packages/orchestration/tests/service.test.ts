@@ -149,8 +149,7 @@ test('InProcess service respects retrievalBudgetTokens via estimateCost (P2 T11 
   const svc = new InProcessWitnessOrchestrationService(exec, {
     observer: obs,
     groundingProvider: budgetProvider,
-    // @ts-expect-error internal option for test
-    retrievalBudgetTokens: 100,
+    defaultRetrievalBudgetTokens: 100,
   });
 
   const res = await svc.orchestrate({ factLock: lock, tasks });
@@ -160,4 +159,76 @@ test('InProcess service respects retrievalBudgetTokens via estimateCost (P2 T11 
   const completes = events.filter(e => e.t === 'complete');
   assert.ok(completes.length >= 1);
   assert.equal(completes[0].passageCount, 0);
+});
+
+test('InProcess service decrements aggregate retrievalBudgetTokens across tasks (P2 T11)', async () => {
+  const lock = createFactLock({ subjectId: 'aggregate-budget', subject: 'Budgeted', facts: { x: 1 } });
+  const tasks = ['t1', 't2'].map(id => ({
+    id,
+    perspective: 'test',
+    dependsOn: [],
+    targetTokens: 50,
+    requiresGrounding: true,
+    buildPrompts: () => ({ system: '', user: '' }),
+  }));
+
+  let retrieveCalls = 0;
+  const budgetProvider: GroundingProvider = {
+    async retrieve(): Promise<GroundedPassage[]> {
+      retrieveCalls += 1;
+      return [{ id: `p${retrieveCalls}`, source: 'x', excerpt: 'budgeted passage', score: 0.9, provenance: 'sourced-fact' }];
+    },
+    async estimateCost() { return { latencyMs: 10, tokens: 60 }; },
+  };
+
+  const exec = async (task: any, _l: any, _pr: any, g?: any) => ({
+    taskId: task.id,
+    perspective: task.perspective,
+    content: `${task.id}:g=${g?.length || 0}`,
+    latencyMs: 1,
+  });
+
+  const svc = new InProcessWitnessOrchestrationService(exec, {
+    groundingProvider: budgetProvider,
+    defaultRetrievalBudgetTokens: 100,
+  });
+
+  const res = await svc.orchestrate({ factLock: lock, tasks });
+  assert.equal(retrieveCalls, 1);
+  assert.ok(res.output.includes('t1:g=1'));
+  assert.ok(res.output.includes('t2:g=0'));
+});
+
+test('InProcess service enforces maxRetrievalLatencyMs as default-deny timeout', async () => {
+  const lock = createFactLock({ subjectId: 'timeout-test', subject: 'Timeout', facts: { x: 1 } });
+  const tasks = [{
+    id: 'slow',
+    perspective: 'test',
+    dependsOn: [],
+    targetTokens: 50,
+    requiresGrounding: true,
+    buildPrompts: () => ({ system: '', user: '' }),
+  }];
+
+  const slowProvider: GroundingProvider = {
+    async retrieve(): Promise<GroundedPassage[]> {
+      await new Promise(resolve => setTimeout(resolve, 40));
+      return [{ id: 'late', source: 'slow', excerpt: 'too late', score: 0.9, provenance: 'sourced-fact' }];
+    },
+  };
+
+  const exec = async (task: any, _l: any, _pr: any, g?: any) => ({
+    taskId: task.id,
+    perspective: task.perspective,
+    content: `g=${g?.length || 0}`,
+    latencyMs: 1,
+  });
+
+  const svc = new InProcessWitnessOrchestrationService(exec, {
+    groundingProvider: slowProvider,
+    defaultMaxRetrievalLatencyMs: 5,
+  });
+
+  const res = await svc.orchestrate({ factLock: lock, tasks });
+  assert.ok(res.output.includes('g=0'));
 });

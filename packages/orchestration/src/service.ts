@@ -16,6 +16,7 @@ export interface OrchestrateRequest {
     maxRepairIterations?: number;
     groundingProvider?: GroundingProvider;
     minRelevance?: number;
+    maxRetrievalLatencyMs?: number;
     retrievalBudgetTokens?: number;
   };
 }

@@ -62,7 +62,7 @@
   - Retrieval cost/latency in cost-routing and budgets.
   - Full test coverage + metrics dashboards.
 - Waves: 3+
-- **Status (2026-06-09):** P2-W1 closed with full evidence on #99. Graphs (W2) front-loaded and completed. Living validation evidence package + review harness created (`docs/p2-grounding-validation-evidence.md`, `docs/P2-GROUNDING-REVIEW-HARNESS.md`). P3 skeleton work (extraction provider, index scope, streaming/actor grounding, ADR-003) started in parallel (see evidence file "P3 Skeleton Work Started in Parallel" section and new ADR). Awaiting human fidelity review notes to formally close P2 gate, then immediate continuation into full P3 waves.
+- **Status (2026-06-25): Completed.** P2 service/graph generalization, aggregate budget enforcement, retrieval latency cap, graph tests, dyad review example, migration docs, and autonomous operator fidelity review are complete. Evidence: `docs/p2-grounding-validation-evidence.md`, `docs/plans/02-REVIEWS.md`, `docs/P2-GROUNDING-MIGRATION.md`.
 
 ### Phase 3 — Full NEM ecosystem leverage + future-proofing
 - Goal: Add extraction pipeline, private per-subject indexes, advanced observability, prepare for actor-model.
@@ -74,6 +74,7 @@
   - ADR + migration guide complete.
   - Skeleton for actor-model grounding provider.
 - Waves: 3+
+- **Status (2026-06-25): Release-candidate complete.** P3 extraction adapter seam, corpus ingestion, private index reference implementation, retrieval-augmented repair, advanced metrics evidence, actor skeleton, release notes, examples, and validation tests are complete. Evidence: `docs/p2-grounding-validation-evidence.md`, `docs/P3-GROUNDING-RELEASE.md`, `docs/ADR-003-grounding-actor.md`.
 
 ## 5. Detailed Phase 1 Wave Layout
 
@@ -548,4 +549,3 @@
   - deliverable: Comprehensive evidence package (extraction tests, private index demo, augmented repair quality, advanced metrics, full human review of 3-phase impact on witness fidelity); final wave/phase close comments on all GitHub epics; mark plan complete.
   - acceptance: All P3 exit criteria met; initiative ready for broader adoption.
   - validation: Evidence in GitHub; plan document updated with "Completed" status.
-

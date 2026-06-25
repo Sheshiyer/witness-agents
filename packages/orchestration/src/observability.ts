@@ -13,7 +13,7 @@ export interface OrchestrationObserver {
 
   // Retrieval signals (P1/P2 grounding)
   onRetrievalStart?(info: { taskId: string; perspective: string }): void;
-  onRetrievalComplete?(info: { taskId: string; perspective: string; passageCount: number; avgRelevance: number; latencyMs: number }): void;
+  onRetrievalComplete?(info: { taskId: string; perspective: string; passageCount: number; avgRelevance: number; latencyMs: number; costUsd?: number }): void;
 }
 
 export const NoopObserver: OrchestrationObserver = {};
