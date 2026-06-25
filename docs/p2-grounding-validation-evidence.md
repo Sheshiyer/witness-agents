@@ -13,7 +13,7 @@
 - [x] Full test coverage + metrics dashboards (12/12 orchestration tests passing including dedicated grounding + budget tests; metrics collector extended).
 - [x] Zero-retrieval path unchanged (existing daily flows + all prior tests continue to work identically when no provider or Noop).
 - [ ] Human review of 2+ graph types for fidelity improvement (with retrieval) vs. regression (without).
-- [ ] Metrics showing retrieval usage + correlation signals (hit rate, relevance vs. contradictions/repairs) in example runs or real sessions.
+- [x] Metrics showing retrieval usage + correlation signals (hit rate, relevance vs. contradictions/repairs) in example runs or real sessions.
 - [ ] Phase 2 close comment + evidence attached to epic.
 
 ## Evidence Collected (as of 2026-06-09)
@@ -53,6 +53,36 @@ Command:
 DEMO_MOCK_GROUNDING=1 npx tsx examples/daily-atomic-layer3.ts
 ```
 (Full terminal output captured in the P2-W1 GitHub comment on #99.)
+
+### 3b. Harness Rerun for P2 Gate Prep (2026-06-25)
+
+Objective harness evidence was refreshed in this worktree after installing dependencies and building the local orchestration package.
+
+**Daily graph, NOOP grounding:**
+- retrieval calls: 3 (`aletheios`, `pichet`, `synthesis`)
+- passages: 0 for all calls
+- avgRelevance: 0.00
+- latency: 0ms reported per retrieval event
+- atomic tasks completed: 3
+- contradictions: 0
+- repairIterations: 1
+
+**Daily graph, MOCK grounding:**
+- retrieval calls: 3 (`aletheios`, `pichet`, `synthesis`)
+- passages: 1 for all calls
+- avgRelevance: 0.87
+- latency: 0ms reported per retrieval event
+- atomic tasks completed: 3
+- contradictions: 0
+- repairIterations: 1
+
+**Dyad graph, MOCK grounding:**
+- retrieval calls: 3
+- taskResults: 4
+- contradictions: 0
+- repairIterations: 1
+
+Interpretation: the example metrics confirm the P2 plumbing remains default-deny, emits retrieval usage signals, and preserves contradiction/repair behavior in deterministic harness runs. This does **not** replace the required human fidelity review of 2+ graph types; it only satisfies the objective metrics/evidence portion of the close gate.
 
 ### 4. Metrics & Observability
 - `AtomicRunMetrics` now includes optional `retrieval` block (calls, totalLatencyMs, totalPassages, avgRelevance, totalCostUsd, byPerspective with per-perspective breakdown).
