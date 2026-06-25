@@ -36,22 +36,20 @@ describe('P2.5 — deriveCallerIdentity', () => {
     assert.equal(id.caller_is_admin, false);
   });
 
-  it('reads X-Caller-Admin header as boolean true', () => {
+  it('ignores X-Caller-Admin header because it is client-controlled', () => {
     const id = deriveCallerIdentity({
       headers: { 'x-caller-admin': '1' },
       env: {},
     });
-    assert.equal(id.caller_is_admin, true);
+    assert.equal(id.caller_is_admin, false);
   });
 
-  it('initiate tier callers are treated as admin via tier (not explicit flag)', () => {
+  it('does not accept initiate tier from untrusted X-Caller-Tier header', () => {
     const id = deriveCallerIdentity({
       headers: { 'x-caller-tier': 'initiate' },
       env: {},
     });
-    assert.equal(id.caller_tier, 'initiate');
-    // caller_is_admin is the explicit flag — initiate tier is admin
-    // through the isCallerAdmin() check, not by promoting this field.
+    assert.equal(id.caller_tier, 'free');
     assert.equal(id.caller_is_admin, false);
   });
 
@@ -60,6 +58,15 @@ describe('P2.5 — deriveCallerIdentity', () => {
       headers: {},
       env: { WITNESS_DEV_ADMIN: '1' },
     });
+    assert.equal(id.caller_is_admin, true);
+  });
+
+  it('WITNESS_DEV_ADMIN can opt into trusted initiate tier for local admin tooling', () => {
+    const id = deriveCallerIdentity({
+      headers: { 'x-caller-tier': 'free' },
+      env: { WITNESS_DEV_ADMIN: '1', WITNESS_DEV_TIER: 'initiate' },
+    });
+    assert.equal(id.caller_tier, 'initiate');
     assert.equal(id.caller_is_admin, true);
   });
 
@@ -127,6 +134,22 @@ describe('P2.5 — gateConsciousnessLevelOverride', () => {
       { caller_id: 'admin-1', caller_tier: 'free', caller_is_admin: true },
     );
     assert.equal(result, null);
+  });
+
+  it('spoofed HTTP admin/tier headers cannot pass the consciousness_level gate', () => {
+    const caller = deriveCallerIdentity({
+      headers: {
+        'x-caller-admin': 'true',
+        'x-caller-tier': 'initiate',
+      },
+      env: {},
+    });
+    const result = gateConsciousnessLevelOverride(
+      { consciousness_level: 5 },
+      caller,
+    );
+    assert.equal(result?.status, 403);
+    assert.equal(result?.body.code, 'FORBIDDEN_LEVEL_OVERRIDE');
   });
 
   it('no consciousness_level in body → null regardless of caller tier', () => {
