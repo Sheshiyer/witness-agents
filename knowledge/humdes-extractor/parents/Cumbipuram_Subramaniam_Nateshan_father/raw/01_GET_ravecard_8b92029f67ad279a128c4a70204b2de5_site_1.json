@@ -1,0 +1,635 @@
+{
+  "_meta": {
+    "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/?site=1",
+    "method": "GET",
+    "status": 200,
+    "captured_at": "2026-05-16T12:52:29"
+  },
+  "data": {
+    "id": "8b92029f67ad279a128c4a70204b2de5",
+    "type": "personal",
+    "code": "P_4_1_a2210104b4",
+    "user": "510132",
+    "name": "Cumbipuram Subramaniam Nateshan , P, 4/1, 20.11.1960, 17:15, Bengaluru, India",
+    "tags": "",
+    "compatibility_formula": "",
+    "compatibility_definition": "",
+    "active_gates": "",
+    "modifiedBy": "0",
+    "modifiedDate": {},
+    "createdBy": "0",
+    "createdDate": {},
+    "linkShort": "",
+    "favorite": "0",
+    "favoriteSort": "0",
+    "privacyFull": "0",
+    "privacyData": "0",
+    "remindBirthday": "0",
+    "counterView": "0",
+    "ravecards": [
+      {
+        "id": "df3c538d7201a43b73da415190563f49",
+        "data": "aaeb165400d99a92fef84d58141639b9",
+        "label": "Cumbipuram Subramaniam Nateshan , P, 4/1, 20.11.1960, 17:15, Bengaluru, India",
+        "labelList": {
+          "date": "20.11.1960",
+          "type": "Projector",
+          "profile": [
+            "4",
+            "1"
+          ],
+          "vars": [
+            "PLL",
+            "DLL"
+          ],
+          "authority": "Splen."
+        },
+        "name": "Cumbipuram Subramaniam Nateshan ",
+        "results": "",
+        "date": "1960-11-20",
+        "time": "17:15",
+        "age": 65,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "P",
+        "profile": {
+          "num": [
+            "4",
+            "1"
+          ],
+          "text": [
+            "Opportunist",
+            "Investigator"
+          ]
+        },
+        "cross": {
+          "name": "The Juxtaposition Cross of Empowering",
+          "num": [
+            "14",
+            "8",
+            "59",
+            "55"
+          ]
+        },
+        "variables": [
+          "PLL",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      }
+    ],
+    "ravecardCount": 1,
+    "actions": {
+      "canRemove": true,
+      "canUpdate": true
+    },
+    "results": "P_4_1_a2210104b4",
+    "permission": {
+      "update": {
+        "visible": true,
+        "enable": true
+      },
+      "tag": {
+        "visible": true,
+        "enable": true,
+        "active": false
+      },
+      "comment": {
+        "visible": false,
+        "enable": false,
+        "active": false,
+        "paywall": true,
+        "offer": true
+      },
+      "save": {
+        "visible": true,
+        "enable": true,
+        "active": true
+      }
+    },
+    "save": true,
+    "saveDisable": false,
+    "ravecardCountMin": 1,
+    "ravecardCountMax": 1,
+    "tabs": [
+      {
+        "code": "ravecard",
+        "title": "Ravechart",
+        "childs": [
+          {
+            "code": "ravecard",
+            "title": "Ravechart",
+            "active": true,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/ravecard/ravecard/"
+          },
+          {
+            "code": "person",
+            "title": "Personality",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/ravecard/person/"
+          },
+          {
+            "code": "design",
+            "title": "Design",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/ravecard/design/"
+          },
+          {
+            "code": "falseself",
+            "title": "Not-Self",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/ravecard/falseself/"
+          }
+        ],
+        "childType": "1",
+        "active": true,
+        "disabled": false,
+        "icon": false
+      },
+      {
+        "code": "mechanics",
+        "title": "Mechanics",
+        "childs": [
+          {
+            "code": "type",
+            "title": "Type Mechanics",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/mechanics/type/"
+          },
+          {
+            "code": "iauthority",
+            "title": "Inner Authority",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/mechanics/iauthority/"
+          },
+          {
+            "code": "profile",
+            "title": "Profile",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/mechanics/profile/"
+          },
+          {
+            "code": "certainty",
+            "title": "Definition",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/mechanics/certainty/"
+          },
+          {
+            "code": "centerswhat",
+            "title": "What are Centres",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/mechanics/centerswhat/"
+          },
+          {
+            "code": "centersclosed",
+            "title": "Defined Centres",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/mechanics/centersclosed/"
+          },
+          {
+            "code": "centersopen",
+            "title": "Undefined Centres",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/mechanics/centersopen/"
+          },
+          {
+            "code": "channelsactive",
+            "title": "Active Channels",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/mechanics/channelsactive/"
+          }
+        ],
+        "childType": "1",
+        "active": false,
+        "disabled": false,
+        "icon": false
+      },
+      {
+        "code": "phs",
+        "title": "Variables and PHS",
+        "childs": [
+          {
+            "code": "variables",
+            "title": "Variables",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/phs/variables/"
+          },
+          {
+            "code": "personalmotivation",
+            "title": "Mind and Motivation",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/phs/personalmotivation/"
+          },
+          {
+            "code": "externalvision",
+            "title": "Perspective on Life",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/phs/externalvision/"
+          },
+          {
+            "code": "typediet",
+            "title": "Body and Diet",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/phs/typediet/"
+          },
+          {
+            "code": "bodyhabitat",
+            "title": "Environment",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/phs/bodyhabitat/"
+          }
+        ],
+        "childType": "1",
+        "active": false,
+        "disabled": false,
+        "icon": false
+      },
+      {
+        "code": "gates",
+        "title": "Gates and Lines",
+        "childs": [
+          {
+            "code": "lines",
+            "title": "Lines in the Chart",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/gates/lines/"
+          },
+          {
+            "code": "design",
+            "title": "Design Gates",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/gates/design/"
+          },
+          {
+            "code": "personal",
+            "title": "Personality Gates",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/gates/personal/"
+          },
+          {
+            "code": "quarter",
+            "title": "Gates by Quarters",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/gates/quarter/"
+          },
+          {
+            "code": "contours",
+            "title": "Gates by Circuits",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/gates/contours/"
+          },
+          {
+            "code": "genekeysw",
+            "title": "What are Gene Keys",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/gates/genekeysw/"
+          },
+          {
+            "code": "genekeysdesign",
+            "title": "Design Gene Keys",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/gates/genekeysdesign/"
+          },
+          {
+            "code": "genekeysperson",
+            "title": "Personality Gene Keys",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/gates/genekeysperson/"
+          },
+          {
+            "code": "fears",
+            "title": "Gates of Fears",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/gates/fears/"
+          }
+        ],
+        "childType": "1",
+        "active": false,
+        "disabled": false,
+        "icon": false
+      },
+      {
+        "code": "traumas",
+        "title": "Wounds",
+        "childs": [
+          {
+            "code": "gentrauma",
+            "title": "Genetic Wound",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/traumas/gentrauma/"
+          },
+          {
+            "code": "sextrauma",
+            "title": "Sexual Wound",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/traumas/sextrauma/"
+          }
+        ],
+        "childType": "1",
+        "active": false,
+        "disabled": false,
+        "icon": false
+      },
+      {
+        "code": "hologenetic",
+        "title": "Hologenetics",
+        "childs": [
+          {
+            "code": "profile",
+            "title": "Hologenetic Profile",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/hologenetic/profile/"
+          },
+          {
+            "code": "activew",
+            "title": "What is the AS",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/hologenetic/activew/"
+          },
+          {
+            "code": "active",
+            "title": "Your AS",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/hologenetic/active/"
+          },
+          {
+            "code": "venusw",
+            "title": "What is the VS",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/hologenetic/venusw/"
+          },
+          {
+            "code": "venus",
+            "title": "Your VS",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/hologenetic/venus/"
+          },
+          {
+            "code": "pearlw",
+            "title": "What is the PS",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/hologenetic/pearlw/"
+          },
+          {
+            "code": "pearl",
+            "title": "Your PS",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/hologenetic/pearl/"
+          }
+        ],
+        "childType": "1",
+        "active": false,
+        "disabled": false,
+        "icon": false
+      },
+      {
+        "code": "dates",
+        "title": "Planets Returns",
+        "childs": [
+          {
+            "code": "sun",
+            "title": "Solar Return",
+            "titleSmall": "Solar",
+            "date": "20.11.2025 (65 years)",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dates/sun/"
+          },
+          {
+            "code": "sunfuture",
+            "title": "Solar Return",
+            "titleSmall": "Solar",
+            "date": "20.11.2026 (66 years)",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dates/sunfuture/"
+          },
+          {
+            "code": "saturn",
+            "title": "Saturn Return I",
+            "titleSmall": "Saturn I",
+            "date": "27.12.1989 (29 years)",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dates/saturn/"
+          },
+          {
+            "code": "uranus",
+            "title": "Uranus Opposition",
+            "titleSmall": "Uranus",
+            "date": "01.03.2002 (42 years)",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dates/uranus/"
+          },
+          {
+            "code": "chiron",
+            "title": "Chiron Return",
+            "titleSmall": "Chiron",
+            "date": "07.03.2010 (50 years)",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dates/chiron/"
+          },
+          {
+            "code": "saturndouble",
+            "title": "Saturn Return II",
+            "titleSmall": "Saturn II",
+            "date": "02.02.2019 (59 years)",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dates/saturndouble/"
+          }
+        ],
+        "childType": "1",
+        "active": false,
+        "disabled": false,
+        "icon": false
+      },
+      {
+        "code": "planets",
+        "title": "Transit",
+        "childs": [
+          {
+            "code": "transit",
+            "title": "Transit Overlay",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/planets/transit/"
+          }
+        ],
+        "childType": "1",
+        "active": false,
+        "disabled": false,
+        "icon": false
+      },
+      {
+        "code": "dream",
+        "title": "Dream Rave",
+        "childs": [
+          {
+            "code": "sleepmap",
+            "title": "Dream Chart",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dream/sleepmap/"
+          },
+          {
+            "code": "light",
+            "title": "Light Field",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dream/light/"
+          },
+          {
+            "code": "earth",
+            "title": "The Earth Plane",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dream/earth/"
+          },
+          {
+            "code": "demon",
+            "title": "The Demon Realm",
+            "active": false,
+            "disabled": false,
+            "icon": false,
+            "url": "https://app.humdes.com/ravecard/8b92029f67ad279a128c4a70204b2de5/tabs/dream/demon/"
+          }
+        ],
+        "childType": "1",
+        "active": false,
+        "disabled": false,
+        "icon": false
+      }
+    ],
+    "share": {
+      "services": "facebook,twitter,whatsapp,telegram,skype,viber",
+      "title": "Cumbipuram Subramaniam Nateshan , P, 4/1, 20.11.1960, 17:15, Bengaluru, India",
+      "url": "https://www.humdes.com/en/results/P_4_1_a2210104b4/",
+      "description": "",
+      "links": {
+        "qrcode": "https://www.humdes.com/en/results/P_4_1_a2210104b4/",
+        "copy": "https://www.humdes.com/en/results/P_4_1_a2210104b4/",
+        "share": "https://www.humdes.com/en/results/P_4_1_a2210104b4/"
+      },
+      "text": {
+        "qrcode": "Cumbipuram Subramaniam Nateshan ",
+        "bottom": "Knowledge is power. Sir Francis Bacon"
+      }
+    },
+    "modals": [
+      {
+        "title": "Let's help you figure out",
+        "text": {
+          "top": "Not all the features of our service are available to you right now. We tell you what to do to get more:",
+          "bottom": "If you still have questions, please <a style=\"color:#FF7052;\" href=https://www.humdes.com/en/contacts/>contact us</a>. We are always in touch and happy to help."
+        },
+        "icons": [
+          {
+            "code": "lock",
+            "icon": "https://www.humdes.com/upload/icons/lock.png",
+            "text": "To see these sections, please <a style=\"color:#FF7052;\" href=https://www.humdes.com/en/auth/>sign in</a> or <a href=https://www.humdes.com/en/register/ style=\"color:#FF7052;\">sign up</a> and confirm your email. It is fast and free of charge."
+          },
+          {
+            "code": "clock",
+            "icon": "https://www.humdes.com/upload/icons/clock.png",
+            "text": "This section will open very soon, so you just have to wait."
+          },
+          {
+            "code": "new",
+            "icon": "https://www.humdes.com/upload/icons/new.png",
+            "text": "This is how we celebrate the latest information, so sit back and enjoy."
+          }
+        ],
+        "btn": {
+          "text": "Understood"
+        },
+        "code": "features"
+      }
+    ]
+  }
+}

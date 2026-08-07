@@ -33,24 +33,28 @@ export interface OpenAIConfig {
 const DEFAULT_OPENAI_ROUTING: ModelRoutingTable = {
   free: {
     fast: { model_id: 'gpt-4o-mini', max_tokens: 1024, temperature: 0.5 },
+    deep: { model_id: 'gpt-4o-mini', max_tokens: 4096, temperature: 0.25 },
     synthesis: { model_id: 'gpt-4o-mini', max_tokens: 2048, temperature: 0.3 },
     aletheios: { model_id: 'gpt-4o-mini', max_tokens: 2048, temperature: 0.25 },
     pichet: { model_id: 'gpt-4o-mini', max_tokens: 2048, temperature: 0.25 },
   },
   subscriber: {
     fast: { model_id: 'gpt-4o-mini', max_tokens: 1024, temperature: 0.5 },
+    deep: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.18 },
     synthesis: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.2 },
     aletheios: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.18 },
     pichet: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.18 },
   },
-  premium: {
+  initiate: {
     fast: { model_id: 'gpt-4o-mini', max_tokens: 1024, temperature: 0.5 },
+    deep: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.12 },
     synthesis: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.15 },
     aletheios: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.15 },
     pichet: { model_id: 'gpt-4o', max_tokens: 4096, temperature: 0.15 },
   },
   enterprise: {
     fast: { model_id: 'gpt-4o-mini', max_tokens: 1024, temperature: 0.5 },
+    deep: { model_id: 'gpt-4o', max_tokens: 12000, temperature: 0.1 },
     synthesis: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.12 },
     aletheios: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.12 },
     pichet: { model_id: 'gpt-4o', max_tokens: 8192, temperature: 0.12 },

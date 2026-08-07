@@ -36,3 +36,35 @@ export {
   createResearchSynthesisGraph,
   createMultiEngineWitnessGraph,
 } from './graphs/index.js';
+
+// AgentScope optional remote executor (Task 10): native remains authoritative
+// default; AgentScope is an optional remote execution backend only.
+export {
+  createAgentscopeRemoteExecutor,
+  createAgentscopeRemoteTaskExecutor,
+  createCircuitBreaker,
+  createBoundedShadowStore,
+  generateAttemptId,
+  type AgentscopeMode,
+  type AgentscopeRemoteExecutorConfig,
+  type RemoteFetch,
+  type ShadowStore,
+  type ShadowRecord,
+  type AgentscopePromptBinding,
+  type PromptBinder,
+} from './agentscope/remote-task-executor.js';
+
+export {
+  toNoesisAgentEvents,
+  projectAgentscopeStream,
+  type AgentscopeRemoteEvent,
+} from './agentscope/event-projector.js';
+
+export {
+  shouldAttemptRemote,
+  isShadowMode,
+  isCanaryMode,
+  type CircuitBreaker,
+  type CircuitBreakerOptions,
+  CircuitOpenError,
+} from './agentscope/routing.js';

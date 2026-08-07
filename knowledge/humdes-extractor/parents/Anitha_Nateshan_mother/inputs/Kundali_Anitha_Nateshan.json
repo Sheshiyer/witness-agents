@@ -1,0 +1,380 @@
+{
+  "name": "Anitha Nateshan",
+  "birth_date": "1965-06-01",
+  "birth_time": "00:35",
+  "timezone": "Asia/Kolkata",
+  "latitude": 12.9768,
+  "longitude": 77.5901,
+  "place": "Bengaluru, India",
+  "ayanamsa": "Lahiri (Chitra-paksha)",
+  "lagna": {
+    "longitude": 316.1059802396077,
+    "deg_str": "16°06'22\"",
+    "sign": "Kumbha (Aquarius)",
+    "sign_index": 10,
+    "lord": "Saturn",
+    "element": "Air",
+    "nakshatra": "Shatabhisha",
+    "pada": 3,
+    "nakshatra_lord": "Rahu",
+    "deity": "Varuna"
+  },
+  "planets": {
+    "Sun": {
+      "longitude": 46.723171028232635,
+      "longitude_in_sign": 16.723171028232635,
+      "deg_str": "16°43'23\"",
+      "sign_index": 1,
+      "sign": "Vrishabha (Taurus)",
+      "sign_lord": "Venus",
+      "element": "Earth",
+      "nakshatra_num": 4,
+      "nakshatra": "Rohini",
+      "pada": 3,
+      "nakshatra_lord": "Moon",
+      "nakshatra_deity": "Brahma/Prajapati",
+      "retrograde": false,
+      "house": 4,
+      "dignity": "—"
+    },
+    "Moon": {
+      "longitude": 59.236126424052394,
+      "longitude_in_sign": 29.236126424052394,
+      "deg_str": "29°14'10\"",
+      "sign_index": 1,
+      "sign": "Vrishabha (Taurus)",
+      "sign_lord": "Venus",
+      "element": "Earth",
+      "nakshatra_num": 5,
+      "nakshatra": "Mrigashira",
+      "pada": 2,
+      "nakshatra_lord": "Mars",
+      "nakshatra_deity": "Soma/Chandra",
+      "retrograde": false,
+      "house": 4,
+      "dignity": "Exalted"
+    },
+    "Mars": {
+      "longitude": 144.16316551511034,
+      "longitude_in_sign": 24.163165515110336,
+      "deg_str": "24°09'47\"",
+      "sign_index": 4,
+      "sign": "Simha (Leo)",
+      "sign_lord": "Sun",
+      "element": "Fire",
+      "nakshatra_num": 11,
+      "nakshatra": "Purva Phalguni",
+      "pada": 4,
+      "nakshatra_lord": "Venus",
+      "nakshatra_deity": "Bhaga",
+      "retrograde": false,
+      "house": 7,
+      "dignity": "—"
+    },
+    "Mercury": {
+      "longitude": 33.904009254828246,
+      "longitude_in_sign": 3.904009254828246,
+      "deg_str": "3°54'14\"",
+      "sign_index": 1,
+      "sign": "Vrishabha (Taurus)",
+      "sign_lord": "Venus",
+      "element": "Earth",
+      "nakshatra_num": 3,
+      "nakshatra": "Krittika",
+      "pada": 3,
+      "nakshatra_lord": "Sun",
+      "nakshatra_deity": "Agni",
+      "retrograde": false,
+      "house": 4,
+      "dignity": "—"
+    },
+    "Jupiter": {
+      "longitude": 45.638475649868624,
+      "longitude_in_sign": 15.638475649868624,
+      "deg_str": "15°38'19\"",
+      "sign_index": 1,
+      "sign": "Vrishabha (Taurus)",
+      "sign_lord": "Venus",
+      "element": "Earth",
+      "nakshatra_num": 4,
+      "nakshatra": "Rohini",
+      "pada": 2,
+      "nakshatra_lord": "Moon",
+      "nakshatra_deity": "Brahma/Prajapati",
+      "retrograde": false,
+      "house": 4,
+      "dignity": "—"
+    },
+    "Venus": {
+      "longitude": 59.81044595892,
+      "longitude_in_sign": 29.81044595892,
+      "deg_str": "29°48'38\"",
+      "sign_index": 1,
+      "sign": "Vrishabha (Taurus)",
+      "sign_lord": "Venus",
+      "element": "Earth",
+      "nakshatra_num": 5,
+      "nakshatra": "Mrigashira",
+      "pada": 2,
+      "nakshatra_lord": "Mars",
+      "nakshatra_deity": "Soma/Chandra",
+      "retrograde": false,
+      "house": 4,
+      "dignity": "Own sign"
+    },
+    "Saturn": {
+      "longitude": 323.23406954738914,
+      "longitude_in_sign": 23.23406954738914,
+      "deg_str": "23°14'03\"",
+      "sign_index": 10,
+      "sign": "Kumbha (Aquarius)",
+      "sign_lord": "Saturn",
+      "element": "Air",
+      "nakshatra_num": 25,
+      "nakshatra": "Purva Bhadrapada",
+      "pada": 1,
+      "nakshatra_lord": "Jupiter",
+      "nakshatra_deity": "Aja Ekapada",
+      "retrograde": false,
+      "house": 1,
+      "dignity": "Own sign"
+    },
+    "Rahu": {
+      "longitude": 50.620087159296766,
+      "longitude_in_sign": 20.620087159296766,
+      "deg_str": "20°37'12\"",
+      "sign_index": 1,
+      "sign": "Vrishabha (Taurus)",
+      "sign_lord": "Venus",
+      "element": "Earth",
+      "nakshatra_num": 4,
+      "nakshatra": "Rohini",
+      "pada": 4,
+      "nakshatra_lord": "Moon",
+      "nakshatra_deity": "Brahma/Prajapati",
+      "retrograde": true,
+      "house": 4,
+      "dignity": "—"
+    },
+    "Ketu": {
+      "longitude": 230.62008715929676,
+      "longitude_in_sign": 20.62008715929676,
+      "deg_str": "20°37'12\"",
+      "sign_index": 7,
+      "sign": "Vrishchika (Scorpio)",
+      "sign_lord": "Mars",
+      "element": "Water",
+      "nakshatra_num": 18,
+      "nakshatra": "Jyeshta",
+      "pada": 2,
+      "nakshatra_lord": "Mercury",
+      "nakshatra_deity": "Indra",
+      "retrograde": true,
+      "house": 10,
+      "dignity": "—"
+    }
+  },
+  "houses": {
+    "Sun": 4,
+    "Moon": 4,
+    "Mars": 7,
+    "Mercury": 4,
+    "Jupiter": 4,
+    "Venus": 4,
+    "Saturn": 1,
+    "Rahu": 4,
+    "Ketu": 10
+  },
+  "karakas": {
+    "atmakaraka": "Venus",
+    "darakaraka": "Mercury",
+    "ranked": [
+      [
+        "Venus",
+        29.81044595892
+      ],
+      [
+        "Moon",
+        29.236126424052394
+      ],
+      [
+        "Mars",
+        24.163165515110336
+      ],
+      [
+        "Saturn",
+        23.23406954738914
+      ],
+      [
+        "Sun",
+        16.723171028232635
+      ],
+      [
+        "Jupiter",
+        15.638475649868624
+      ],
+      [
+        "Mercury",
+        3.904009254828246
+      ]
+    ]
+  },
+  "yogas": [
+    {
+      "name": "Gajakesari Yoga",
+      "status": "active",
+      "effect": "Jupiter in kendra from Moon — wisdom-graced intelligence, recognition through gravitas"
+    },
+    {
+      "name": "Saraswati Yoga",
+      "status": "active",
+      "effect": "Jupiter+Venus+Mercury in kendras/trikonas — gifts of speech, learning, art"
+    },
+    {
+      "name": "Malavya Yoga",
+      "status": "active",
+      "effect": "Venus in dignity in a kendra — beauty-blessed, relational grace, aesthetic authority"
+    },
+    {
+      "name": "Sasa Yoga",
+      "status": "active",
+      "effect": "Saturn in dignity in a kendra — capacity to govern, structural patience, longevity"
+    }
+  ],
+  "pancha_bhuta": {
+    "Fire": 1,
+    "Earth": 5,
+    "Air": 1,
+    "Water": 0,
+    "Ether": "carried by Lagna + Atmakaraka (not a graha-count metric)"
+  },
+  "mahadashas": [
+    {
+      "lord": "Mars",
+      "start": "1962-04-25T21:32:38.799170+00:00",
+      "end": "1969-04-25T15:32:38.799170+00:00",
+      "duration_years": 7,
+      "is_current": false,
+      "antardashas": []
+    },
+    {
+      "lord": "Rahu",
+      "start": "1969-04-25T15:32:38.799170+00:00",
+      "end": "1987-04-26T03:32:38.799170+00:00",
+      "duration_years": 18,
+      "is_current": false,
+      "antardashas": []
+    },
+    {
+      "lord": "Jupiter",
+      "start": "1987-04-26T03:32:38.799170+00:00",
+      "end": "2003-04-26T03:32:38.799170+00:00",
+      "duration_years": 16,
+      "is_current": false,
+      "antardashas": []
+    },
+    {
+      "lord": "Saturn",
+      "start": "2003-04-26T03:32:38.799170+00:00",
+      "end": "2022-04-25T21:32:38.799170+00:00",
+      "duration_years": 19,
+      "is_current": false,
+      "antardashas": []
+    },
+    {
+      "lord": "Mercury",
+      "start": "2022-04-25T21:32:38.799170+00:00",
+      "end": "2039-04-26T03:32:38.799170+00:00",
+      "duration_years": 17,
+      "is_current": true,
+      "antardashas": [
+        {
+          "lord": "Mercury",
+          "start": "2022-04-25T21:32:38.799170+00:00",
+          "end": "2024-09-21T12:59:38.799170+00:00",
+          "duration_months": 28.9
+        },
+        {
+          "lord": "Ketu",
+          "start": "2024-09-21T12:59:38.799170+00:00",
+          "end": "2025-09-18T17:56:38.799170+00:00",
+          "duration_months": 11.9
+        },
+        {
+          "lord": "Venus",
+          "start": "2025-09-18T17:56:38.799170+00:00",
+          "end": "2028-07-19T14:56:38.799170+00:00",
+          "duration_months": 34.0
+        },
+        {
+          "lord": "Sun",
+          "start": "2028-07-19T14:56:38.799170+00:00",
+          "end": "2029-05-26T02:02:38.799170+00:00",
+          "duration_months": 10.2
+        },
+        {
+          "lord": "Moon",
+          "start": "2029-05-26T02:02:38.799170+00:00",
+          "end": "2030-10-25T12:32:38.799170+00:00",
+          "duration_months": 17.0
+        },
+        {
+          "lord": "Mars",
+          "start": "2030-10-25T12:32:38.799170+00:00",
+          "end": "2031-10-22T17:29:38.799170+00:00",
+          "duration_months": 11.9
+        },
+        {
+          "lord": "Rahu",
+          "start": "2031-10-22T17:29:38.799170+00:00",
+          "end": "2034-05-11T02:47:38.799170+00:00",
+          "duration_months": 30.6
+        },
+        {
+          "lord": "Jupiter",
+          "start": "2034-05-11T02:47:38.799170+00:00",
+          "end": "2036-08-16T00:23:38.799170+00:00",
+          "duration_months": 27.2
+        },
+        {
+          "lord": "Saturn",
+          "start": "2036-08-16T00:23:38.799170+00:00",
+          "end": "2039-04-26T03:32:38.799170+00:00",
+          "duration_months": 32.3
+        }
+      ]
+    },
+    {
+      "lord": "Ketu",
+      "start": "2039-04-26T03:32:38.799170+00:00",
+      "end": "2046-04-25T21:32:38.799170+00:00",
+      "duration_years": 7,
+      "is_current": false,
+      "antardashas": []
+    },
+    {
+      "lord": "Venus",
+      "start": "2046-04-25T21:32:38.799170+00:00",
+      "end": "2066-04-25T21:32:38.799170+00:00",
+      "duration_years": 20,
+      "is_current": false,
+      "antardashas": []
+    },
+    {
+      "lord": "Sun",
+      "start": "2066-04-25T21:32:38.799170+00:00",
+      "end": "2072-04-25T09:32:38.799170+00:00",
+      "duration_years": 6,
+      "is_current": false,
+      "antardashas": []
+    },
+    {
+      "lord": "Moon",
+      "start": "2072-04-25T09:32:38.799170+00:00",
+      "end": "2082-04-25T21:32:38.799170+00:00",
+      "duration_years": 10,
+      "is_current": false,
+      "antardashas": []
+    }
+  ]
+}

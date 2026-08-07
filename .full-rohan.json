@@ -1,0 +1,11 @@
+{
+  "subject": "Rohan Kamat",
+  "birth_date": "1999-10-16",
+  "birth_time": "23:25",
+  "birth_place": "Mangalore",
+  "latitude": 12.87,
+  "longitude": 74.84,
+  "timezone": "Asia/Kolkata",
+  "output_dir": ".batch-outputs",
+  "engine_data_path": ".batch-inputs/rohan.json"
+}

@@ -1,0 +1,2503 @@
+{
+  "_meta": {
+    "url": "https://app.humdes.com/ravecard/list/?site=1",
+    "method": "GET",
+    "status": 200,
+    "captured_at": "2026-05-16T12:52:29"
+  },
+  "data": {
+    "ravecards": [
+      {
+        "id": "6666f76a06d5bc47535eceeca4d25a39",
+        "data": "1efd87fe809ab58e11af0620a99423c7",
+        "label": "Akanksha , P, 5/1, 14.04.1992, 18:15, Bengaluru, India",
+        "labelList": {
+          "date": "14.04.1992",
+          "type": "Projector",
+          "profile": [
+            "5",
+            "1"
+          ],
+          "vars": [
+            "PLL",
+            "DRL"
+          ],
+          "authority": "Splen."
+        },
+        "name": "Akanksha ",
+        "results": "",
+        "date": "1992-04-14",
+        "time": "18:15",
+        "age": 34,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "P",
+        "profile": {
+          "num": [
+            "5",
+            "1"
+          ],
+          "text": [
+            "Heretic",
+            "Investigator"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Limitation",
+          "num": [
+            "42",
+            "32",
+            "60",
+            "56"
+          ]
+        },
+        "variables": [
+          "PLL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "27d6188e5a680933a31fecebaebc91fc",
+        "data": "a5dc9f54e896f94c0610c018bd848164",
+        "label": "Shashwat Trivedi, P, 6/2, 13.10.1992, 13:42, Dubai, United Arab Emirates",
+        "labelList": {
+          "date": "13.10.1992",
+          "type": "Projector",
+          "profile": [
+            "6",
+            "2"
+          ],
+          "vars": [
+            "PLR",
+            "DRR"
+          ],
+          "authority": "Splen."
+        },
+        "name": "Shashwat Trivedi",
+        "results": "",
+        "date": "1992-10-13",
+        "time": "13:42",
+        "age": 33,
+        "location_id": "292223",
+        "location": "Dubai, United Arab Emirates",
+        "timezone": "Asia/Dubai",
+        "sex": "M",
+        "type": "P",
+        "profile": {
+          "num": [
+            "6",
+            "2"
+          ],
+          "text": [
+            "Role Model",
+            "Hermit"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of the Clarion",
+          "num": [
+            "57",
+            "51",
+            "62",
+            "61"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "c7b9aaaa763e2a2ac016aa68de6102a9",
+        "data": "88beb70309841dd3b56ba347a3070f3c",
+        "label": "Yamuna, R, 1/3, 02.07.1993, 08:50, Bengaluru, India",
+        "labelList": {
+          "date": "02.07.1993",
+          "type": "Reflector",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PRL",
+            "DRR"
+          ],
+          "authority": "Lunar"
+        },
+        "name": "Yamuna",
+        "results": "",
+        "date": "1993-07-02",
+        "time": "08:50",
+        "age": 32,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "R",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Tension",
+          "num": [
+            "39",
+            "38",
+            "21",
+            "48"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "54d1757e91efe8652fddd859d514fb47",
+        "data": "66b2c80d042f2486ecb6338f37bf2087",
+        "label": "Manoj, MG, 6/2, 18.02.1996, 23:30, Bengaluru, India",
+        "labelList": {
+          "date": "18.02.1996",
+          "type": "M. Generator",
+          "profile": [
+            "6",
+            "2"
+          ],
+          "vars": [
+            "PLL",
+            "DRL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Manoj",
+        "results": "",
+        "date": "1996-02-18",
+        "time": "23:30",
+        "age": 30,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "6",
+            "2"
+          ],
+          "text": [
+            "Role Model",
+            "Hermit"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Industry",
+          "num": [
+            "30",
+            "29",
+            "34",
+            "20"
+          ]
+        },
+        "variables": [
+          "PLL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "1467ede17232e2d677bd3253022a9eaa",
+        "data": "2d64cca1c2af2964cf0178f04b9e0d1d",
+        "label": "Shekar , MG, 4/6, 08.12.1959, 00:00, Chennai, India",
+        "labelList": {
+          "date": "08.12.1959",
+          "type": "M. Generator",
+          "profile": [
+            "4",
+            "6"
+          ],
+          "vars": [
+            "PRR",
+            "DLR"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Shekar ",
+        "results": "",
+        "date": "1959-12-08",
+        "time": "00:00",
+        "age": 66,
+        "location_id": "1264527",
+        "location": "Chennai, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "4",
+            "6"
+          ],
+          "text": [
+            "Opportunist",
+            "Role Model"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Consciousness",
+          "num": [
+            "5",
+            "35",
+            "64",
+            "63"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DLR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "80564b53a8ddcfc2dbf51a6ad6a082dd",
+        "data": "b5dfcd0d130770115d9c04f2e04d3365",
+        "label": "Lisa, P, 1/3, 12.11.1991, 09:48, Amsterdam, Netherlands",
+        "labelList": {
+          "date": "12.11.1991",
+          "type": "Projector",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PRR",
+            "DRL"
+          ],
+          "authority": "Splen."
+        },
+        "name": "Lisa",
+        "results": "",
+        "date": "1991-11-12",
+        "time": "09:48",
+        "age": 34,
+        "location_id": "2759794",
+        "location": "Amsterdam, Netherlands",
+        "timezone": "Europe/Amsterdam",
+        "sex": "M",
+        "type": "P",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Explanation",
+          "num": [
+            "43",
+            "23",
+            "4",
+            "49"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "3b1dc2b51e6e20a2ac1ba520ec6d26a1",
+        "data": "747ed458efe7463ca1eb76a94a382306",
+        "label": "Gaurav, P, 6/3, 25.07.1990, 07:30, Chennai, India",
+        "labelList": {
+          "date": "25.07.1990",
+          "type": "Projector",
+          "profile": [
+            "6",
+            "3"
+          ],
+          "vars": [
+            "PLR",
+            "DLL"
+          ],
+          "authority": "Splen."
+        },
+        "name": "Gaurav",
+        "results": "",
+        "date": "1990-07-25",
+        "time": "07:30",
+        "age": 35,
+        "location_id": "1264527",
+        "location": "Chennai, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "P",
+        "profile": {
+          "num": [
+            "6",
+            "3"
+          ],
+          "text": [
+            "Role Model",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Distraction",
+          "num": [
+            "56",
+            "60",
+            "27",
+            "28"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "e236f1e9f2ee7d976d16113227604bb4",
+        "data": "8256a1fa23e56afac8a29a3e1f05f396",
+        "label": "Geetha C, G, 2/4, 11.05.1963, 13:40, Bengaluru, India",
+        "labelList": {
+          "date": "11.05.1963",
+          "type": "Generator",
+          "profile": [
+            "2",
+            "4"
+          ],
+          "vars": [
+            "PRL",
+            "DRL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Geetha C",
+        "results": "",
+        "date": "1963-05-11",
+        "time": "13:40",
+        "age": 63,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "G",
+        "profile": {
+          "num": [
+            "2",
+            "4"
+          ],
+          "text": [
+            "Hermit",
+            "Opportunist"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Explanation",
+          "num": [
+            "23",
+            "43",
+            "49",
+            "4"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "f2354a03219641380cf7846e1d4795d9",
+        "data": "cb3c9ead159c788d01dd0143f5258e09",
+        "label": "Shreya, M, 4/6, 25.04.1993, 11:00, Mumbai, India",
+        "labelList": {
+          "date": "25.04.1993",
+          "type": "Manifestor",
+          "profile": [
+            "4",
+            "6"
+          ],
+          "vars": [
+            "PLR",
+            "DLL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Shreya",
+        "results": "",
+        "date": "1993-04-25",
+        "time": "11:00",
+        "age": 33,
+        "location_id": "1275339",
+        "location": "Mumbai, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "M",
+        "profile": {
+          "num": [
+            "4",
+            "6"
+          ],
+          "text": [
+            "Opportunist",
+            "Role Model"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Unexpected",
+          "num": [
+            "27",
+            "28",
+            "41",
+            "31"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "57d6705a1f07c48c99f796cf2c1766e0",
+        "data": "3d15cbb44e0c71fe439cffb957fff30f",
+        "label": "Ghanshyam, MG, 5/2, 04.08.1993, 22:20, Bengaluru, India",
+        "labelList": {
+          "date": "04.08.1993",
+          "type": "M. Generator",
+          "profile": [
+            "5",
+            "2"
+          ],
+          "vars": [
+            "PRR",
+            "DRL"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Ghanshyam",
+        "results": "",
+        "date": "1993-08-04",
+        "time": "22:20",
+        "age": 32,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "5",
+            "2"
+          ],
+          "text": [
+            "Heretic",
+            "Hermit"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Refinement",
+          "num": [
+            "33",
+            "19",
+            "2",
+            "1"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "4a4d60b983db74a4c13d7ca9f8161b13",
+        "data": "3606ae74a7e6830ba735b3c892e6d607",
+        "label": "Shihab, P, 1/3, 16.09.2006, 05:36, Phayao, Thailand",
+        "labelList": {
+          "date": "16.09.2006",
+          "type": "Projector",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PLR",
+            "DRR"
+          ],
+          "authority": "SelfProj."
+        },
+        "name": "Shihab",
+        "results": "",
+        "date": "2006-09-16",
+        "time": "05:36",
+        "age": 19,
+        "location_id": "1151426",
+        "location": "Phayao, Thailand",
+        "timezone": "Asia/Bangkok",
+        "sex": "M",
+        "type": "P",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Eden",
+          "num": [
+            "6",
+            "36",
+            "12",
+            "11"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "9c09098a81f32ba64753daac2875e7a6",
+        "data": "f29c20f31946ff2d41e5dd92d6228e78",
+        "label": "Tahir syed, MG, 2/4, 18.11.1970, 21:20, Belgaum, India",
+        "labelList": {
+          "date": "18.11.1970",
+          "type": "M. Generator",
+          "profile": [
+            "2",
+            "4"
+          ],
+          "vars": [
+            "PRL",
+            "DRL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Tahir syed",
+        "results": "",
+        "date": "1970-11-18",
+        "time": "21:20",
+        "age": 55,
+        "location_id": "1276533",
+        "location": "Belgaum, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "2",
+            "4"
+          ],
+          "text": [
+            "Hermit",
+            "Opportunist"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Contagion",
+          "num": [
+            "14",
+            "8",
+            "29",
+            "30"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "a01115e2f578c37baafd2188149bbe3f",
+        "data": "739e65e8d8fdcab835d2226522e4f763",
+        "label": "Anitha Nateshan, M, 5/1, 01.06.1965, 00:35, Bengaluru, India",
+        "labelList": {
+          "date": "01.06.1965",
+          "type": "Manifestor",
+          "profile": [
+            "5",
+            "1"
+          ],
+          "vars": [
+            "PRR",
+            "DRR"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Anitha Nateshan",
+        "results": "",
+        "date": "1965-06-01",
+        "time": "00:35",
+        "age": 60,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "M",
+        "profile": {
+          "num": [
+            "5",
+            "1"
+          ],
+          "text": [
+            "Heretic",
+            "Investigator"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Identification",
+          "num": [
+            "16",
+            "9",
+            "63",
+            "64"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "df3c538d7201a43b73da415190563f49",
+        "data": "aaeb165400d99a92fef84d58141639b9",
+        "label": "Cumbipuram Subramaniam Nateshan , P, 4/1, 20.11.1960, 17:15, Bengaluru, India",
+        "labelList": {
+          "date": "20.11.1960",
+          "type": "Projector",
+          "profile": [
+            "4",
+            "1"
+          ],
+          "vars": [
+            "PLL",
+            "DLL"
+          ],
+          "authority": "Splen."
+        },
+        "name": "Cumbipuram Subramaniam Nateshan ",
+        "results": "",
+        "date": "1960-11-20",
+        "time": "17:15",
+        "age": 65,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "P",
+        "profile": {
+          "num": [
+            "4",
+            "1"
+          ],
+          "text": [
+            "Opportunist",
+            "Investigator"
+          ]
+        },
+        "cross": {
+          "name": "The Juxtaposition Cross of Empowering",
+          "num": [
+            "14",
+            "8",
+            "59",
+            "55"
+          ]
+        },
+        "variables": [
+          "PLL",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "ad81221bdf14e65d719a3ca6b5384413",
+        "data": "3d9793e6697716bf7b85b0729f628387",
+        "label": "Nikhai Jaysen, MG, 1/3, 23.11.1995, 09:44, Bengaluru, India",
+        "labelList": {
+          "date": "23.11.1995",
+          "type": "M. Generator",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PRR",
+            "DLR"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Nikhai Jaysen",
+        "results": "",
+        "date": "1995-11-23",
+        "time": "09:44",
+        "age": 30,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Sleeping Phoenix",
+          "num": [
+            "34",
+            "20",
+            "59",
+            "55"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DLR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "d362e1e376bce8da20e8e23549f62ad6",
+        "data": "f348ee121af6aa854f216af7637eb151",
+        "label": "Prashanth, P, 4/6, 07.05.1990, 18:30, Bengaluru, India",
+        "labelList": {
+          "date": "07.05.1990",
+          "type": "Projector",
+          "profile": [
+            "4",
+            "6"
+          ],
+          "vars": [
+            "PLL",
+            "DRR"
+          ],
+          "authority": "Splen."
+        },
+        "name": "Prashanth",
+        "results": "",
+        "date": "1990-05-07",
+        "time": "18:30",
+        "age": 36,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "P",
+        "profile": {
+          "num": [
+            "4",
+            "6"
+          ],
+          "text": [
+            "Opportunist",
+            "Role Model"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Sphinx",
+          "num": [
+            "2",
+            "1",
+            "13",
+            "7"
+          ]
+        },
+        "variables": [
+          "PLL",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "315a4128bc5dd11fc7d02753e10532fe",
+        "data": "b5891359bd8a215ad443a3149c335cb9",
+        "label": "Rishav Prashanth, G, 3/6, 28.06.2023, 20:28, Bengaluru, India",
+        "labelList": {
+          "date": "28.06.2023",
+          "type": "Generator",
+          "profile": [
+            "3",
+            "6"
+          ],
+          "vars": [
+            "PRL",
+            "DRL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Rishav Prashanth",
+        "results": "",
+        "date": "2023-06-28",
+        "time": "20:28",
+        "age": 2,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "3",
+            "6"
+          ],
+          "text": [
+            "Martyr",
+            "Role Model"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Service",
+          "num": [
+            "52",
+            "58",
+            "17",
+            "18"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "bd8accffd962fd710507a2b474256e99",
+        "data": "c8d9bd78b2cf1b17d5bff8f3d6771a96",
+        "label": "Triveni K, MG, 4/1, 21.08.1996, 05:30, Ganjām, India",
+        "labelList": {
+          "date": "21.08.1996",
+          "type": "M. Generator",
+          "profile": [
+            "4",
+            "1"
+          ],
+          "vars": [
+            "PRR",
+            "DRR"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Triveni K",
+        "results": "",
+        "date": "1996-08-21",
+        "time": "05:30",
+        "age": 29,
+        "location_id": "1271621",
+        "location": "Ganjām, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "4",
+            "1"
+          ],
+          "text": [
+            "Opportunist",
+            "Investigator"
+          ]
+        },
+        "cross": {
+          "name": "The Juxtaposition Cross of Commitment",
+          "num": [
+            "29",
+            "30",
+            "20",
+            "34"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "f355d2b323b9c19020ec32bcacab0ea4",
+        "data": "ad77deace7086885aa4665d09b0ef2f8",
+        "label": "Joshua, MG, 2/4, 28.09.1998, 12:40, Kannur, India",
+        "labelList": {
+          "date": "28.09.1998",
+          "type": "M. Generator",
+          "profile": [
+            "2",
+            "4"
+          ],
+          "vars": [
+            "PRR",
+            "DRR"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Joshua",
+        "results": "",
+        "date": "1998-09-28",
+        "time": "12:40",
+        "age": 27,
+        "location_id": "1274987",
+        "location": "Kannur, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "2",
+            "4"
+          ],
+          "text": [
+            "Hermit",
+            "Opportunist"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Service",
+          "num": [
+            "18",
+            "17",
+            "52",
+            "58"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "a5810cf7acd3f2a80c2fd5d75e5e1338",
+        "data": "304725963e8b52baee7c9417826bffdb",
+        "label": "Akshay, G, 3/5, 05.10.1990, 13:13, Bengaluru, India",
+        "labelList": {
+          "date": "05.10.1990",
+          "type": "Generator",
+          "profile": [
+            "3",
+            "5"
+          ],
+          "vars": [
+            "PRR",
+            "DRR"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Akshay",
+        "results": "",
+        "date": "1990-10-05",
+        "time": "13:13",
+        "age": 35,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "3",
+            "5"
+          ],
+          "text": [
+            "Martyr",
+            "Heretic"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Tension",
+          "num": [
+            "48",
+            "21",
+            "39",
+            "38"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "3e2f297385d3b6c0e95c9c408b0c45c7",
+        "data": "4d4d0bb82238efe5194925d3e0e62330",
+        "label": "Oj, MG, 5/1, 04.08.1993, 17:30, Bengaluru, India",
+        "labelList": {
+          "date": "04.08.1993",
+          "type": "M. Generator",
+          "profile": [
+            "5",
+            "1"
+          ],
+          "vars": [
+            "PRL",
+            "DRL"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Oj",
+        "results": "",
+        "date": "1993-08-04",
+        "time": "17:30",
+        "age": 32,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "5",
+            "1"
+          ],
+          "text": [
+            "Heretic",
+            "Investigator"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Refinement",
+          "num": [
+            "33",
+            "19",
+            "2",
+            "1"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "69aae4c3f0d82db937edf3d2d2cc263a",
+        "data": "8246c86cc7cf848406ea790671155833",
+        "label": "Sasithon , MG, 3/5, 25.08.2001, 18:00, Prachuap Khiri Khan, Thailand",
+        "labelList": {
+          "date": "25.08.2001",
+          "type": "M. Generator",
+          "profile": [
+            "3",
+            "5"
+          ],
+          "vars": [
+            "PRR",
+            "DRL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Sasithon ",
+        "results": "",
+        "date": "2001-08-25",
+        "time": "18:00",
+        "age": 24,
+        "location_id": "1151074",
+        "location": "Prachuap Khiri Khan, Thailand",
+        "timezone": "Asia/Bangkok",
+        "sex": "F",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "3",
+            "5"
+          ],
+          "text": [
+            "Martyr",
+            "Heretic"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Sleeping Phoenix",
+          "num": [
+            "59",
+            "55",
+            "20",
+            "34"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "e033f407c1833ad2bdb31bfbac7718c8",
+        "data": "ed90cd9623b000ada4f0d82363017730",
+        "label": "Muhammadfais YAKAT, P, 2/4, 29.04.1995, 17:32, Yala, Thailand",
+        "labelList": {
+          "date": "29.04.1995",
+          "type": "Projector",
+          "profile": [
+            "2",
+            "4"
+          ],
+          "vars": [
+            "PRL",
+            "DLR"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Muhammadfais YAKAT",
+        "results": "",
+        "date": "1995-04-29",
+        "time": "17:32",
+        "age": 31,
+        "location_id": "1604870",
+        "location": "Yala, Thailand",
+        "timezone": "Asia/Bangkok",
+        "sex": "M",
+        "type": "P",
+        "profile": {
+          "num": [
+            "2",
+            "4"
+          ],
+          "text": [
+            "Hermit",
+            "Opportunist"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Four Ways",
+          "num": [
+            "24",
+            "44",
+            "19",
+            "33"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DLR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "2c0913688e82909442b9d8897b666410",
+        "data": "c3127f96ffda6647bbc70cb716c38be9",
+        "label": "Sahil Singh Sabharwal , G, 1/4, 14.03.1992, 02:22, Bengaluru, India",
+        "labelList": {
+          "date": "14.03.1992",
+          "type": "Generator",
+          "profile": [
+            "1",
+            "4"
+          ],
+          "vars": [
+            "PRL",
+            "DRR"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Sahil Singh Sabharwal ",
+        "results": "",
+        "date": "1992-03-14",
+        "time": "02:22",
+        "age": 34,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "1",
+            "4"
+          ],
+          "text": [
+            "Investigator",
+            "Opportunist"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Eden",
+          "num": [
+            "36",
+            "6",
+            "11",
+            "12"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "8e41e4bafd350619c1f685c07251d8d8",
+        "data": "470cea3f64c351db1552dd9998db4b9c",
+        "label": "Jenya, G, 1/3, 22.01.1997, 15:00, Leningrad, Russia",
+        "labelList": {
+          "date": "22.01.1997",
+          "type": "Generator",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PLR",
+            "DLR"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Jenya",
+        "results": "",
+        "date": "1997-01-22",
+        "time": "15:00",
+        "age": 29,
+        "location_id": "498817",
+        "location": "Leningrad, Russia",
+        "timezone": "Europe/Moscow",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Unexpected",
+          "num": [
+            "41",
+            "31",
+            "28",
+            "27"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DLR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "81d698ccd2302e55ee1d4b5988b88d47",
+        "data": "1c205874683db4b5506e3bab8c42a526",
+        "label": "Paulo Alberto , MG, 6/2, 27.01.2000, 11:29, Bologna, Italy",
+        "labelList": {
+          "date": "27.01.2000",
+          "type": "M. Generator",
+          "profile": [
+            "6",
+            "2"
+          ],
+          "vars": [
+            "PRR",
+            "DLR"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Paulo Alberto ",
+        "results": "",
+        "date": "2000-01-27",
+        "time": "11:29",
+        "age": 26,
+        "location_id": "8977649",
+        "location": "Bologna, Italy",
+        "timezone": "Europe/Rome",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "6",
+            "2"
+          ],
+          "text": [
+            "Role Model",
+            "Hermit"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of the Alpha",
+          "num": [
+            "41",
+            "31",
+            "44",
+            "24"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DLR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "be40e0fb0d78fb9fae7abbb33eccb177",
+        "data": "cd9ee80c328f41526de2c97bece7dc3d",
+        "label": "Apoorva Nayak, G, 1/3, 01.11.1999, 04:55, Hubli, India",
+        "labelList": {
+          "date": "01.11.1999",
+          "type": "Generator",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PRR",
+            "DRL"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Apoorva Nayak",
+        "results": "",
+        "date": "1999-11-01",
+        "time": "04:55",
+        "age": 26,
+        "location_id": "1269920",
+        "location": "Hubli, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "G",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Four Ways",
+          "num": [
+            "44",
+            "24",
+            "33",
+            "19"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "b7873635be8aa4a7c987577e82808e1f",
+        "data": "3252746ba51053f454b20b7332e37af1",
+        "label": "Sneha Soni, MG, 5/2, 10.01.2002, 10:20, Bhopal, India",
+        "labelList": {
+          "date": "10.01.2002",
+          "type": "M. Generator",
+          "profile": [
+            "5",
+            "2"
+          ],
+          "vars": [
+            "PRR",
+            "DLL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Sneha Soni",
+        "results": "",
+        "date": "2002-01-10",
+        "time": "10:20",
+        "age": 24,
+        "location_id": "1275841",
+        "location": "Bhopal, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "5",
+            "2"
+          ],
+          "text": [
+            "Heretic",
+            "Hermit"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Cycles",
+          "num": [
+            "54",
+            "53",
+            "32",
+            "42"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "fd14c733d72c2cf7abdbe9e4d55ae1bb",
+        "data": "cc89ba6d6c97ee2a7b398d7079fbeaac",
+        "label": "Abdulmuiz, MG, 3/5, 21.02.2022, 04:30, Belgaum, India",
+        "labelList": {
+          "date": "21.02.2022",
+          "type": "M. Generator",
+          "profile": [
+            "3",
+            "5"
+          ],
+          "vars": [
+            "PRL",
+            "DRL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Abdulmuiz",
+        "results": "",
+        "date": "2022-02-21",
+        "time": "04:30",
+        "age": 4,
+        "location_id": "1276533",
+        "location": "Belgaum, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "3",
+            "5"
+          ],
+          "text": [
+            "Martyr",
+            "Heretic"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Sleeping Phoenix",
+          "num": [
+            "55",
+            "59",
+            "34",
+            "20"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "a7cb2e84e280604442558d186aea2ec8",
+        "data": "b02141cd3645451ea24525d634a85a04",
+        "label": "kevin, MG, 3/5, 18.09.1995, 13:00, Rajkot, India",
+        "labelList": {
+          "date": "18.09.1995",
+          "type": "M. Generator",
+          "profile": [
+            "3",
+            "5"
+          ],
+          "vars": [
+            "PRR",
+            "DLR"
+          ],
+          "authority": "Emot."
+        },
+        "name": "kevin",
+        "results": "",
+        "date": "1995-09-18",
+        "time": "13:00",
+        "age": 30,
+        "location_id": "1258847",
+        "location": "Rajkot, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "3",
+            "5"
+          ],
+          "text": [
+            "Martyr",
+            "Heretic"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Eden",
+          "num": [
+            "6",
+            "36",
+            "12",
+            "11"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DLR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "a297b1fe463955f7e859163836c58ae1",
+        "data": "cd036044f088b4fc12a02c38c897009f",
+        "label": "Dinesh, G, 5/2, 14.05.1996, 05:58, Tiruchirappalli, India",
+        "labelList": {
+          "date": "14.05.1996",
+          "type": "Generator",
+          "profile": [
+            "5",
+            "2"
+          ],
+          "vars": [
+            "PRR",
+            "DLL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Dinesh",
+        "results": "",
+        "date": "1996-05-14",
+        "time": "05:58",
+        "age": 30,
+        "location_id": "1254388",
+        "location": "Tiruchirappalli, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "5",
+            "2"
+          ],
+          "text": [
+            "Heretic",
+            "Hermit"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Dedication",
+          "num": [
+            "23",
+            "43",
+            "30",
+            "29"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "2b7f2e0bf5cd8195de107c540026be47",
+        "data": "a1b924ac609bd3b1a274971eb038772d",
+        "label": "Jiaojiao, P, 1/3, 25.03.1988, 08:00, Shanghai, China",
+        "labelList": {
+          "date": "25.03.1988",
+          "type": "Projector",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PLR",
+            "DLL"
+          ],
+          "authority": "Splen."
+        },
+        "name": "Jiaojiao",
+        "results": "",
+        "date": "1988-03-25",
+        "time": "08:00",
+        "age": 38,
+        "location_id": "1796236",
+        "location": "Shanghai, China",
+        "timezone": "Asia/Shanghai",
+        "sex": "F",
+        "type": "P",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Service",
+          "num": [
+            "17",
+            "18",
+            "58",
+            "52"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "8e8ceca90557a5bf4bf2bdaf526b1547",
+        "data": "3dc1a56b9b1a9f8f864fcbcb871d0f8e",
+        "label": "Johnny, G, 6/2, 01.03.1969, 07:15, Turnhout, Belgium",
+        "labelList": {
+          "date": "01.03.1969",
+          "type": "Generator",
+          "profile": [
+            "6",
+            "2"
+          ],
+          "vars": [
+            "PLR",
+            "DLL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Johnny",
+        "results": "",
+        "date": "1969-03-01",
+        "time": "07:15",
+        "age": 57,
+        "location_id": "2785141",
+        "location": "Turnhout, Belgium",
+        "timezone": "Europe/Brussels",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "6",
+            "2"
+          ],
+          "text": [
+            "Role Model",
+            "Hermit"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Migration",
+          "num": [
+            "37",
+            "40",
+            "5",
+            "35"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "f614f6f2666325aae36965a3d8bc59e3",
+        "data": "56dbf626405f3a519494fcef8d976aaf",
+        "label": "Varsha S, G, 3/5, 04.02.1993, 18:15, Hubli, India",
+        "labelList": {
+          "date": "04.02.1993",
+          "type": "Generator",
+          "profile": [
+            "3",
+            "5"
+          ],
+          "vars": [
+            "PRR",
+            "DRR"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Varsha S",
+        "results": "",
+        "date": "1993-02-04",
+        "time": "18:15",
+        "age": 33,
+        "location_id": "1269920",
+        "location": "Hubli, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "G",
+        "profile": {
+          "num": [
+            "3",
+            "5"
+          ],
+          "text": [
+            "Martyr",
+            "Heretic"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Sphinx",
+          "num": [
+            "13",
+            "7",
+            "1",
+            "2"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "b8e5658ad6081811a840ea8f6bd2ea3e",
+        "data": "ead89b3e79d9ad7106ef904c201e43e4",
+        "label": "Suraj Singh, M, 5/1, 20.04.1988, 23:55, Bengaluru, India",
+        "labelList": {
+          "date": "20.04.1988",
+          "type": "Manifestor",
+          "profile": [
+            "5",
+            "1"
+          ],
+          "vars": [
+            "PRR",
+            "DRL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Suraj Singh",
+        "results": "",
+        "date": "1988-04-20",
+        "time": "23:55",
+        "age": 38,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "M",
+        "profile": {
+          "num": [
+            "5",
+            "1"
+          ],
+          "text": [
+            "Heretic",
+            "Investigator"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Wishes",
+          "num": [
+            "3",
+            "50",
+            "41",
+            "31"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "ba76fd22395097801e8fe0d59e0412cd",
+        "data": "a686e6409e84468cf8d99d6356c77596",
+        "label": "Harshita S, P, 1/4, 15.10.1987, 17:35, Bengaluru, India",
+        "labelList": {
+          "date": "15.10.1987",
+          "type": "Projector",
+          "profile": [
+            "1",
+            "4"
+          ],
+          "vars": [
+            "PLL",
+            "DLR"
+          ],
+          "authority": "Splen."
+        },
+        "name": "Harshita S",
+        "results": "",
+        "date": "1987-10-15",
+        "time": "17:35",
+        "age": 38,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "P",
+        "profile": {
+          "num": [
+            "1",
+            "4"
+          ],
+          "text": [
+            "Investigator",
+            "Opportunist"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Maya",
+          "num": [
+            "32",
+            "42",
+            "62",
+            "61"
+          ]
+        },
+        "variables": [
+          "PLL",
+          "DLR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "e0e616c7ac4aa06e5f3a9a4c3077a141",
+        "data": "c453b97cf5423e3d7bd4ca2aabef8db6",
+        "label": "James true, MG, 1/3, 04.05.1971, 22:36, Portsmouth, United States of America",
+        "labelList": {
+          "date": "04.05.1971",
+          "type": "M. Generator",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PRL",
+            "DLR"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "James true",
+        "results": "",
+        "date": "1971-05-04",
+        "time": "22:36",
+        "age": 55,
+        "location_id": "4779999",
+        "location": "Portsmouth, United States of America",
+        "timezone": "America/New_York",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Sphinx",
+          "num": [
+            "2",
+            "1",
+            "13",
+            "7"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DLR"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "ca38d359a89425f5433eb85ade403111",
+        "data": "d306bb923a3e314aa6a1b2aa7e1a9c46",
+        "label": "Vandana, G, 4/6, 07.09.1994, 09:28, New Delhi, India",
+        "labelList": {
+          "date": "07.09.1994",
+          "type": "Generator",
+          "profile": [
+            "4",
+            "6"
+          ],
+          "vars": [
+            "PRR",
+            "DRL"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Vandana",
+        "results": "",
+        "date": "1994-09-07",
+        "time": "09:28",
+        "age": 31,
+        "location_id": "1261481",
+        "location": "New Delhi, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "G",
+        "profile": {
+          "num": [
+            "4",
+            "6"
+          ],
+          "text": [
+            "Opportunist",
+            "Role Model"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Consciousness",
+          "num": [
+            "64",
+            "63",
+            "35",
+            "5"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "af82eb7c3827f79bcaa57840787d06d9",
+        "data": "d22836d59b34d39088104fdb87423941",
+        "label": "Mohan Kumar , MG, 6/3, 17.11.1995, 11:10, Tiruchirappalli, India",
+        "labelList": {
+          "date": "17.11.1995",
+          "type": "M. Generator",
+          "profile": [
+            "6",
+            "3"
+          ],
+          "vars": [
+            "PLR",
+            "DLL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Mohan Kumar ",
+        "results": "",
+        "date": "1995-11-17",
+        "time": "11:10",
+        "age": 30,
+        "location_id": "1254388",
+        "location": "Tiruchirappalli, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "6",
+            "3"
+          ],
+          "text": [
+            "Role Model",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Dedication",
+          "num": [
+            "43",
+            "23",
+            "29",
+            "30"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "70204654aa91053d786ceeb4aab16d19",
+        "data": "3d15cbb44e0c71fe439cffb957fff30f",
+        "label": "Ghanshyam , MG, 5/2, 04.08.1993, 22:20, Bengaluru, India",
+        "labelList": {
+          "date": "04.08.1993",
+          "type": "M. Generator",
+          "profile": [
+            "5",
+            "2"
+          ],
+          "vars": [
+            "PRR",
+            "DRL"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Ghanshyam ",
+        "results": "",
+        "date": "1993-08-04",
+        "time": "22:20",
+        "age": 32,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "5",
+            "2"
+          ],
+          "text": [
+            "Heretic",
+            "Hermit"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Refinement",
+          "num": [
+            "33",
+            "19",
+            "2",
+            "1"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "7228044de7a3b78eaa8e004f83b44fc3",
+        "data": "5dd72429bf44aaadb78032ebaca7a8ce",
+        "label": "Rehman ali, G, 5/1, 30.06.2000, 03:00, Ahmedabad, India",
+        "labelList": {
+          "date": "30.06.2000",
+          "type": "Generator",
+          "profile": [
+            "5",
+            "1"
+          ],
+          "vars": [
+            "PLR",
+            "DRL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Rehman ali",
+        "results": "",
+        "date": "2000-06-30",
+        "time": "03:00",
+        "age": 25,
+        "location_id": "1279233",
+        "location": "Ahmedabad, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "5",
+            "1"
+          ],
+          "text": [
+            "Heretic",
+            "Investigator"
+          ]
+        },
+        "cross": {
+          "name": "The Left Angle Cross of Demands",
+          "num": [
+            "52",
+            "58",
+            "21",
+            "48"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "a2faf4f7ba4ee8358210ac423ed235b0",
+        "data": "430210fbc68aa5bdd25cd89d68e248be",
+        "label": "Gauri, P, 1/3, 25.07.1999, 23:15, Bengaluru, India",
+        "labelList": {
+          "date": "25.07.1999",
+          "type": "Projector",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PLL",
+            "DLL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Gauri",
+        "results": "",
+        "date": "1999-07-25",
+        "time": "23:15",
+        "age": 26,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "F",
+        "type": "P",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of the Unexpected",
+          "num": [
+            "31",
+            "41",
+            "27",
+            "28"
+          ]
+        },
+        "variables": [
+          "PLL",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "9b9c72d5b4beffe79d8cf000155ad698",
+        "data": "e7ba6288a3d356da854c062ec637d80a",
+        "label": "Manaswi Bhat, G, 3/5, 15.07.2008, 18:12, Shimoga, India",
+        "labelList": {
+          "date": "15.07.2008",
+          "type": "Generator",
+          "profile": [
+            "3",
+            "5"
+          ],
+          "vars": [
+            "PRL",
+            "DRL"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Manaswi Bhat",
+        "results": "",
+        "date": "2008-07-15",
+        "time": "18:12",
+        "age": 17,
+        "location_id": "1256515",
+        "location": "Shimoga, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "3",
+            "5"
+          ],
+          "text": [
+            "Martyr",
+            "Heretic"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Maya",
+          "num": [
+            "62",
+            "61",
+            "42",
+            "32"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "996d837fefbdebd26d2e7502c5f8c639",
+        "data": "efcaaa9935e5971c9d7c16d8f2125743",
+        "label": "Arjun Kamath, MG, 1/3, 08.03.1987, 09:24, Bengaluru, India",
+        "labelList": {
+          "date": "08.03.1987",
+          "type": "M. Generator",
+          "profile": [
+            "1",
+            "3"
+          ],
+          "vars": [
+            "PLR",
+            "DLL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Arjun Kamath",
+        "results": "",
+        "date": "1987-03-08",
+        "time": "09:24",
+        "age": 39,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "MG",
+        "profile": {
+          "num": [
+            "1",
+            "3"
+          ],
+          "text": [
+            "Investigator",
+            "Martyr"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Rulership",
+          "num": [
+            "22",
+            "47",
+            "26",
+            "45"
+          ]
+        },
+        "variables": [
+          "PLR",
+          "DLL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "36d2231e749d96fcc29c172c50050c18",
+        "data": "fbebd79399fb716a46e0c7c38da7ffef",
+        "label": "Durga Prasad, G, 4/6, 02.04.1992, 08:00, Velur, India",
+        "labelList": {
+          "date": "02.04.1992",
+          "type": "Generator",
+          "profile": [
+            "4",
+            "6"
+          ],
+          "vars": [
+            "PRR",
+            "DRL"
+          ],
+          "authority": "Emot."
+        },
+        "name": "Durga Prasad",
+        "results": "",
+        "date": "1992-04-02",
+        "time": "08:00",
+        "age": 34,
+        "location_id": "1253278",
+        "location": "Velur, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "4",
+            "6"
+          ],
+          "text": [
+            "Opportunist",
+            "Role Model"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Tension",
+          "num": [
+            "21",
+            "48",
+            "38",
+            "39"
+          ]
+        },
+        "variables": [
+          "PRR",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "9eedbd94728ecd7ea36b87a0dfdad29d",
+        "data": "8c1111fc9114739be711c4b1aae40db5",
+        "label": "Shesh, G, 2/4, 13.08.1991, 13:31, Bengaluru, India",
+        "labelList": {
+          "date": "13.08.1991",
+          "type": "Generator",
+          "profile": [
+            "2",
+            "4"
+          ],
+          "vars": [
+            "PRL",
+            "DRL"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Shesh",
+        "results": "",
+        "date": "1991-08-13",
+        "time": "13:31",
+        "age": 34,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "2",
+            "4"
+          ],
+          "text": [
+            "Hermit",
+            "Opportunist"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Explanation",
+          "num": [
+            "4",
+            "49",
+            "23",
+            "43"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      },
+      {
+        "id": "b9f6b9504dbb02338986593e02c841fa",
+        "data": "8c1111fc9114739be711c4b1aae40db5",
+        "label": "Sheshnarayan Cumbipuram Nateshan, G, 2/4, 13.08.1991, 13:31, Bengaluru, India",
+        "labelList": {
+          "date": "13.08.1991",
+          "type": "Generator",
+          "profile": [
+            "2",
+            "4"
+          ],
+          "vars": [
+            "PRL",
+            "DRL"
+          ],
+          "authority": "Sacr."
+        },
+        "name": "Sheshnarayan Cumbipuram Nateshan",
+        "results": "",
+        "date": "1991-08-13",
+        "time": "13:31",
+        "age": 34,
+        "location_id": "1277333",
+        "location": "Bengaluru, India",
+        "timezone": "Asia/Kolkata",
+        "sex": "M",
+        "type": "G",
+        "profile": {
+          "num": [
+            "2",
+            "4"
+          ],
+          "text": [
+            "Hermit",
+            "Opportunist"
+          ]
+        },
+        "cross": {
+          "name": "The Right Angle Cross of Explanation",
+          "num": [
+            "4",
+            "49",
+            "23",
+            "43"
+          ]
+        },
+        "variables": [
+          "PRL",
+          "DRL"
+        ],
+        "save": true,
+        "active": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "source_path": "/Users/sheshnarayaniyer/Downloads/humdes-extractor/parents/Anitha_Nateshan_mother/inputs/Kundali_Anitha_Nateshan.md",
+  "subject": "Anitha Nateshan",
+  "birth_date": "1965-06-01",
+  "birth_time": "00:35",
+  "birth_place": "Bengaluru, India",
+  "latitude": 12.9767936,
+  "longitude": 77.590082,
+  "timezone": "Asia/Kolkata",
+  "lagna": "kumbha",
+  "lagna_degree": "16°06'22\"",
+  "lagna_nakshatra": "Shatabhisha P3",
+  "lagna_lord": "saturn",
+  "atmakaraka": "venus",
+  "darakaraka": "mercury",
+  "birth_nakshatra": "Mrigashira P2",
+  "placements": [
+    {
+      "planet": "sun",
+      "sign": "vrishabha",
+      "sign_english": "Vrishabha (Taurus)",
+      "house": 4,
+      "degree": "16°43'23\"",
+      "nakshatra": "Rohini P3",
+      "nakshatra_lord": "Moon",
+      "condition": "H4; Rohini P3 (lord Moon)"
+    },
+    {
+      "planet": "moon",
+      "sign": "vrishabha",
+      "sign_english": "Vrishabha (Taurus)",
+      "house": 4,
+      "degree": "29°14'10\"",
+      "nakshatra": "Mrigashira P2",
+      "nakshatra_lord": "Mars",
+      "condition": "Exalted; H4; Mrigashira P2 (lord Mars)"
+    },
+    {
+      "planet": "mars",
+      "sign": "simha",
+      "sign_english": "Simha (Leo)",
+      "house": 7,
+      "degree": "24°09'47\"",
+      "nakshatra": "Purva Phalguni P4",
+      "nakshatra_lord": "Venus",
+      "condition": "H7; Purva Phalguni P4 (lord Venus)"
+    },
+    {
+      "planet": "mercury",
+      "sign": "vrishabha",
+      "sign_english": "Vrishabha (Taurus)",
+      "house": 4,
+      "degree": "3°54'14\"",
+      "nakshatra": "Krittika P3",
+      "nakshatra_lord": "Sun",
+      "condition": "H4; Krittika P3 (lord Sun)"
+    },
+    {
+      "planet": "jupiter",
+      "sign": "vrishabha",
+      "sign_english": "Vrishabha (Taurus)",
+      "house": 4,
+      "degree": "15°38'19\"",
+      "nakshatra": "Rohini P2",
+      "nakshatra_lord": "Moon",
+      "condition": "H4; Rohini P2 (lord Moon)"
+    },
+    {
+      "planet": "venus",
+      "sign": "vrishabha",
+      "sign_english": "Vrishabha (Taurus)",
+      "house": 4,
+      "degree": "29°48'38\"",
+      "nakshatra": "Mrigashira P2",
+      "nakshatra_lord": "Mars",
+      "condition": "Own sign; H4; Mrigashira P2 (lord Mars)"
+    },
+    {
+      "planet": "saturn",
+      "sign": "kumbha",
+      "sign_english": "Kumbha (Aquarius)",
+      "house": 1,
+      "degree": "23°14'03\"",
+      "nakshatra": "Purva Bhadrapada P1",
+      "nakshatra_lord": "Jupiter",
+      "condition": "Own sign; H1; Purva Bhadrapada P1 (lord Jupiter)"
+    },
+    {
+      "planet": "rahu",
+      "sign": "vrishabha",
+      "sign_english": "Vrishabha (Taurus)",
+      "house": 4,
+      "degree": "20°37'12\"",
+      "nakshatra": "Rohini P4",
+      "nakshatra_lord": "Moon",
+      "condition": "retrograde; H4; Rohini P4 (lord Moon)",
+      "retrograde": true
+    },
+    {
+      "planet": "ketu",
+      "sign": "vrishchika",
+      "sign_english": "Vrishchika (Scorpio)",
+      "house": 10,
+      "degree": "20°37'12\"",
+      "nakshatra": "Jyeshta P2",
+      "nakshatra_lord": "Mercury",
+      "condition": "retrograde; H10; Jyeshta P2 (lord Mercury)",
+      "retrograde": true
+    }
+  ],
+  "mahadasha": {
+    "current_lord": "mercury",
+    "current_started_iso": "2022-04-25T21:32:38.799170+00:00",
+    "current_ends_iso": "2039-04-26T03:32:38.799170+00:00",
+    "current_antardasha": "venus",
+    "current_antardasha_window": "2025-09-18 → 2028-07-19",
+    "next_lord": "ketu",
+    "next_starts_iso": "2039-04-26T03:32:38.799170+00:00",
+    "next_duration_years": 7,
+    "yogas": [
+      {
+        "name": "Gajakesari Yoga",
+        "status": "active",
+        "effect": "Jupiter in kendra from Moon — wisdom-graced intelligence, recognition through gravitas"
+      },
+      {
+        "name": "Saraswati Yoga",
+        "status": "active",
+        "effect": "Jupiter+Venus+Mercury in kendras/trikonas — gifts of speech, learning, art"
+      },
+      {
+        "name": "Malavya Yoga",
+        "status": "active",
+        "effect": "Venus in dignity in a kendra — beauty-blessed, relational grace, aesthetic authority"
+      },
+      {
+        "name": "Sasa Yoga",
+        "status": "active",
+        "effect": "Saturn in dignity in a kendra — capacity to govern, structural patience, longevity"
+      }
+    ]
+  },
+  "human_design": {
+    "type": "Manifestor",
+    "authority": "Emotional",
+    "profile": "5/1",
+    "definition": "Single",
+    "incarnation_cross": "The Left Angle Cross of Identification",
+    "strategy": "Inform about your intentions",
+    "not_self_theme": "Feeling angry and angry",
+    "active_channels": [
+      "64-47",
+      "43-23",
+      "8-1",
+      "12-22",
+      "37-40"
+    ],
+    "defined_centers": [
+      "Ajna",
+      "G",
+      "Head",
+      "Heart",
+      "SolarPlexus",
+      "Throat"
+    ],
+    "variables": [
+      "PRR",
+      "DRR"
+    ]
+  },
+  "pancha_bhuta": {
+    "Fire": 1,
+    "Earth": 5,
+    "Air": 1,
+    "Water": 0,
+    "Ether": "carried by Lagna + Atmakaraka (not a graha-count metric)"
+  },
+  "chart_assets": {
+    "vedic_kundali_md": "/Users/sheshnarayaniyer/Downloads/humdes-extractor/parents/Anitha_Nateshan_mother/inputs/Kundali_Anitha_Nateshan.md",
+    "_notes": "Vedic placements computed via pyswisseph Lahiri sidereal. HD data extracted from humdes.com + Selemene engine-human-design."
+  },
+  "output_dir": "/Volumes/madara/2026/twc-vault/01-Projects/723/anitha-nateshan-mother-reading"
+}

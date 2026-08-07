@@ -50,7 +50,7 @@ const MODE_BASE: Record<RelationshipMode, Omit<ModePolicy, 'register' | 'noteboo
     mode: 'solo',
     title: 'Solo Personal Reading',
     relationshipFrame: 'A single-person reflective companion. The person is not defined through another person.',
-    requiredAnchors: ['subject deterministic facts', 'natal panchanga scope', 'somatic availability scope'],
+    requiredAnchors: ['subject deterministic facts', 'natal panchanga scope', 'approved engine scope'],
     forbiddenFrames: ['compatibility scoring', 'relationship prediction', 'medical diagnosis', 'deterministic fate claims'],
     sourceRules: ['Treat engine facts as anchors.', 'Use generated prose as narrative texture only when it agrees with anchors.'],
     requiredContextFields: ['recipient_intent'],

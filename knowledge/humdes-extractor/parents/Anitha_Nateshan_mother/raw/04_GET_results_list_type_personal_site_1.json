@@ -1,0 +1,341 @@
+{
+  "_meta": {
+    "url": "https://app.humdes.com/results/list/?type=personal&site=1",
+    "method": "GET",
+    "status": 200,
+    "captured_at": "2026-05-16T12:52:17"
+  },
+  "data": {
+    "ravecards": [
+      {
+        "id": "e1381745fc6baf19340fb8193ac88549",
+        "label": "Akanksha , P, 5/1, 14.04.1992, 18:15, Bengaluru, India",
+        "name": "Akanksha ",
+        "results": "P_5_1_45065b97fc",
+        "save": true
+      },
+      {
+        "id": "2b3c1ac920013fb5105a027c6e05a941",
+        "label": "Shashwat Trivedi, P, 6/2, 13.10.1992, 13:42, Dubai, United Arab Emirates",
+        "name": "Shashwat Trivedi",
+        "results": "P_6_2_8ca7eb2157",
+        "save": true
+      },
+      {
+        "id": "ff8cdbd5a59a8b152e7df92f44862f52",
+        "label": "Yamuna, R, 1/3, 02.07.1993, 08:50, Bengaluru, India",
+        "name": "Yamuna",
+        "results": "R_1_3_69c66f4920",
+        "save": true
+      },
+      {
+        "id": "b5be157b3674210128723dc6abacf197",
+        "label": "Manoj, MG, 6/2, 18.02.1996, 23:30, Bengaluru, India",
+        "name": "Manoj",
+        "results": "MG_6_2_5a8b598bf4",
+        "save": true
+      },
+      {
+        "id": "1c65bd620d390b87a03f067735c3d990",
+        "label": "Shekar , MG, 4/6, 08.12.1959, 00:00, Chennai, India",
+        "name": "Shekar ",
+        "results": "MG_4_6_b430723802",
+        "save": true
+      },
+      {
+        "id": "b303162021a531ef84d6a48dc386b6bb",
+        "label": "Lisa, P, 1/3, 12.11.1991, 09:48, Amsterdam, Netherlands",
+        "name": "Lisa",
+        "results": "P_1_3_fa210f825e",
+        "save": true
+      },
+      {
+        "id": "7ec8d9aa61a3f3dd0a4ae30f5285e2f3",
+        "label": "Gaurav, P, 6/3, 25.07.1990, 07:30, Chennai, India",
+        "name": "Gaurav",
+        "results": "P_6_3_132f523d70",
+        "save": true
+      },
+      {
+        "id": "a754c3abdaf4812f9ad4442ac6f8dc51",
+        "label": "Geetha C, G, 2/4, 11.05.1963, 13:40, Bengaluru, India",
+        "name": "Geetha C",
+        "results": "G_2_4_401b88e3dc",
+        "save": true
+      },
+      {
+        "id": "b9b3427e4a966884d3845f5bf4df98ee",
+        "label": "Shreya, M, 4/6, 25.04.1993, 11:00, Mumbai, India",
+        "name": "Shreya",
+        "results": "M_4_6_780edaa958",
+        "save": true
+      },
+      {
+        "id": "c517b6613503abfe886f2850356ba135",
+        "label": "Ghanshyam, MG, 5/2, 04.08.1993, 22:20, Bengaluru, India",
+        "name": "Ghanshyam",
+        "results": "MG_5_2_16c2903d7c",
+        "save": true
+      },
+      {
+        "id": "9a3a634072f43f5710aa4eaad7e50cfb",
+        "label": "Shihab, P, 1/3, 16.09.2006, 05:36, Phayao, Thailand",
+        "name": "Shihab",
+        "results": "P_1_3_81d971e6f2",
+        "save": true
+      },
+      {
+        "id": "2a88b52b484ecfe5f4549bf2c1db720c",
+        "label": "Tahir syed, MG, 2/4, 18.11.1970, 21:20, Belgaum, India",
+        "name": "Tahir syed",
+        "results": "MG_2_4_7a2bafdae8",
+        "save": true
+      },
+      {
+        "id": "bc74efac1cd572f87d9e8fb356fbd81f",
+        "label": "Anitha Nateshan, M, 5/1, 01.06.1965, 00:35, Bengaluru, India",
+        "name": "Anitha Nateshan",
+        "results": "M_5_1_7c7850e94f",
+        "save": true
+      },
+      {
+        "id": "8b92029f67ad279a128c4a70204b2de5",
+        "label": "Cumbipuram Subramaniam Nateshan , P, 4/1, 20.11.1960, 17:15, Bengaluru, India",
+        "name": "Cumbipuram Subramaniam Nateshan ",
+        "results": "P_4_1_a2210104b4",
+        "save": true
+      },
+      {
+        "id": "c71353046c63f3d6a6a36abe59c5f959",
+        "label": "Nikhai Jaysen, MG, 1/3, 23.11.1995, 09:44, Bengaluru, India",
+        "name": "Nikhai Jaysen",
+        "results": "MG_1_3_014b426941",
+        "save": true
+      },
+      {
+        "id": "fe0823a708ce07f99b90ae3d8c4abe73",
+        "label": "Triveni K, MG, 4/1, 21.08.1996, 05:30, Ganjām, India",
+        "name": "Triveni K",
+        "results": "MG_4_1_06514bf4c2",
+        "save": true
+      },
+      {
+        "id": "aa9080e1b2fbe87e993fe90d27cea59b",
+        "label": "Rishav Prashanth, G, 3/6, 28.06.2023, 20:28, Bengaluru, India",
+        "name": "Rishav Prashanth",
+        "results": "G_3_6_2b82ee561f",
+        "save": true
+      },
+      {
+        "id": "7693c0b109ff745ee78acbc2af6ae989",
+        "label": "Prashanth, P, 4/6, 07.05.1990, 18:30, Bengaluru, India",
+        "name": "Prashanth",
+        "results": "P_4_6_282f2b62f5",
+        "save": true
+      },
+      {
+        "id": "cc2eee004338a2048dbd40d4684dce99",
+        "label": "Joshua, MG, 2/4, 28.09.1998, 12:40, Kannur, India",
+        "name": "Joshua",
+        "results": "MG_2_4_715e3aaadd",
+        "save": true
+      },
+      {
+        "id": "ff42b830f57d38464b110f2e985b6e42",
+        "label": "Akshay, G, 3/5, 05.10.1990, 13:13, Bengaluru, India",
+        "name": "Akshay",
+        "results": "G_3_5_3d23956f09",
+        "save": true
+      },
+      {
+        "id": "a2b9b1f2b86907daf5815145bbf22849",
+        "label": "Oj, MG, 5/1, 04.08.1993, 17:30, Bengaluru, India",
+        "name": "Oj",
+        "results": "MG_5_1_aa68970341",
+        "save": true
+      },
+      {
+        "id": "0485cf38a19b8d7bc776ab916ac1830d",
+        "label": "Sasithon , MG, 3/5, 25.08.2001, 18:00, Prachuap Khiri Khan, Thailand",
+        "name": "Sasithon ",
+        "results": "MG_3_5_35d7af70dc",
+        "save": true
+      },
+      {
+        "id": "15648b9a581a43be8cc9e2792d214317",
+        "label": "Muhammadfais YAKAT, P, 2/4, 29.04.1995, 17:32, Yala, Thailand",
+        "name": "Muhammadfais YAKAT",
+        "results": "P_2_4_9b00354b28",
+        "save": true
+      },
+      {
+        "id": "9f173bcef8e046b579773dd9fe759c87",
+        "label": "Sahil Singh Sabharwal , G, 1/4, 14.03.1992, 02:22, Bengaluru, India",
+        "name": "Sahil Singh Sabharwal ",
+        "results": "G_1_4_93acf4c079",
+        "save": true
+      },
+      {
+        "id": "b1356925afdf76c87dc0ba6db05bf53e",
+        "label": "Jenya, G, 1/3, 22.01.1997, 15:00, Leningrad, Russia",
+        "name": "Jenya",
+        "results": "G_1_3_4865e22938",
+        "save": true
+      },
+      {
+        "id": "62fed3949a1e4421f46b20e0efd829c4",
+        "label": "Paulo Alberto , MG, 6/2, 27.01.2000, 11:29, Bologna, Italy",
+        "name": "Paulo Alberto ",
+        "results": "MG_6_2_a1fa83989f",
+        "save": true
+      },
+      {
+        "id": "a6784adcd7a4151fa325bd0edf576b94",
+        "label": "Apoorva Nayak, G, 1/3, 01.11.1999, 04:55, Hubli, India",
+        "name": "Apoorva Nayak",
+        "results": "G_1_3_4655d15f4e",
+        "save": true
+      },
+      {
+        "id": "f25e1bec25a5e09a4d752be96efe6ab4",
+        "label": "Sneha Soni, MG, 5/2, 10.01.2002, 10:20, Bhopal, India",
+        "name": "Sneha Soni",
+        "results": "MG_5_2_4bbb2e3158",
+        "save": true
+      },
+      {
+        "id": "55fc710b557ecfbce172a6def1194d33",
+        "label": "Abdulmuiz, MG, 3/5, 21.02.2022, 04:30, Belgaum, India",
+        "name": "Abdulmuiz",
+        "results": "MG_3_5_ed9d6283af",
+        "save": true
+      },
+      {
+        "id": "e3b33d45f62382a7e0a992cdcbfe8e45",
+        "label": "kevin, MG, 3/5, 18.09.1995, 13:00, Rajkot, India",
+        "name": "kevin",
+        "results": "MG_3_5_d26578ba83",
+        "save": true
+      },
+      {
+        "id": "9efe5baef9ca6f8ec832bcf4408a876c",
+        "label": "Shesh, G, 2/4, 13.08.1991, 13:31, Bengaluru, India",
+        "name": "Shesh",
+        "results": "G_2_4_b6f919e895",
+        "save": true
+      },
+      {
+        "id": "363c1877def4e22b6d625271b280374c",
+        "label": "Dinesh, G, 5/2, 14.05.1996, 05:58, Tiruchirappalli, India",
+        "name": "Dinesh",
+        "results": "G_5_2_236246de17",
+        "save": true
+      },
+      {
+        "id": "d6dab6f0221fc4c2105282c034f0f749",
+        "label": "Jiaojiao, P, 1/3, 25.03.1988, 08:00, Shanghai, China",
+        "name": "Jiaojiao",
+        "results": "P_1_3_1fc1d1c04d",
+        "save": true
+      },
+      {
+        "id": "6d1b899435346dcb732f6e1c1a1a8dbd",
+        "label": "Johnny, G, 6/2, 01.03.1969, 07:15, Turnhout, Belgium",
+        "name": "Johnny",
+        "results": "G_6_2_34b85e210a",
+        "save": true
+      },
+      {
+        "id": "c3677c18406ca90db2f5eb3b2a030d57",
+        "label": "Varsha S, G, 3/5, 04.02.1993, 18:15, Hubli, India",
+        "name": "Varsha S",
+        "results": "G_5_1_7a29fc8677",
+        "save": true
+      },
+      {
+        "id": "beda8e314372260e40886b056f02221a",
+        "label": "Suraj Singh, M, 5/1, 20.04.1988, 23:55, Bengaluru, India",
+        "name": "Suraj Singh",
+        "results": "M_5_1_cba23fed0e",
+        "save": true
+      },
+      {
+        "id": "59e36618f6a48ff787aeeb46b3681541",
+        "label": "Harshita S, P, 1/4, 15.10.1987, 17:35, Bengaluru, India",
+        "name": "Harshita S",
+        "results": "P_1_4_177febac2e",
+        "save": true
+      },
+      {
+        "id": "2faaa1f87f5b5b7f6c6346532fb9f60f",
+        "label": "James true, MG, 1/3, 04.05.1971, 22:36, Portsmouth, United States of America",
+        "name": "James true",
+        "results": "MG_1_3_55e5e61a3b",
+        "save": true
+      },
+      {
+        "id": "14a4936d1f552f96111dc17b522c9864",
+        "label": "Vandana, G, 4/6, 07.09.1994, 09:28, New Delhi, India",
+        "name": "Vandana",
+        "results": "G_4_6_e4289045ad",
+        "save": true
+      },
+      {
+        "id": "f0d4019a26b4dd4b55601d528ef0c929",
+        "label": "Mohan Kumar , MG, 6/3, 17.11.1995, 11:10, Tiruchirappalli, India",
+        "name": "Mohan Kumar ",
+        "results": "MG_6_3_e0f2b3c42d",
+        "save": true
+      },
+      {
+        "id": "fd3fcad39bf03dac0d9d2e35ce273993",
+        "label": "Ghanshyam , MG, 5/2, 04.08.1993, 22:20, Bengaluru, India",
+        "name": "Ghanshyam ",
+        "results": "MG_5_2_082230ba37",
+        "save": true
+      },
+      {
+        "id": "3809d899197151b352d27d82cc19d689",
+        "label": "Rehman ali, G, 5/1, 30.06.2000, 03:00, Ahmedabad, India",
+        "name": "Rehman ali",
+        "results": "G_5_1_b06827bf12",
+        "save": true
+      },
+      {
+        "id": "cb2e0c9dc2cb52a98be9c00b4195eb1a",
+        "label": "Gauri, P, 1/3, 25.07.1999, 23:15, Bengaluru, India",
+        "name": "Gauri",
+        "results": "P_1_3_839fabf5e8",
+        "save": true
+      },
+      {
+        "id": "41f1139dd6ff9366ad665a6acdacc627",
+        "label": "Manaswi Bhat, G, 3/5, 15.07.2008, 18:12, Shimoga, India",
+        "name": "Manaswi Bhat",
+        "results": "G_3_5_e9648c5144",
+        "save": true
+      },
+      {
+        "id": "09b0d7659dcfc8aa12c85c2a7c608d8e",
+        "label": "Arjun Kamath, MG, 1/3, 08.03.1987, 09:24, Bengaluru, India",
+        "name": "Arjun Kamath",
+        "results": "MG_1_3_6e9c795145",
+        "save": true
+      },
+      {
+        "id": "25a70690a5c895e76d29134b947a879c",
+        "label": "Durga Prasad, G, 4/6, 02.04.1992, 08:00, Velur, India",
+        "name": "Durga Prasad",
+        "results": "G_4_6_cbee9cdeda",
+        "save": true
+      },
+      {
+        "id": "b7b27e7621a8bd852269346a8fcabd84",
+        "label": "Sheshnarayan Cumbipuram Nateshan, G, 2/4, 13.08.1991, 13:31, Bengaluru, India",
+        "name": "Sheshnarayan Cumbipuram Nateshan",
+        "results": "G_2_4_99467f52e5",
+        "save": true
+      }
+    ]
+  }
+}

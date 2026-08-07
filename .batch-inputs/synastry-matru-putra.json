@@ -1,0 +1,141 @@
+{
+  "kind": "synastry_partners",
+  "relationship_id": "arathi-rohan-matru-putra",
+  "relationship_name": "Arathi Pai x Rohan Kamat (Matru-Putra)",
+  "synastry_partners": [
+    {
+      "id": "arathi",
+      "name": "Arathi Pai",
+      "engines": [
+        {
+          "engine_id": "panchanga",
+          "result": {
+            "nakshatra_name": "Shatabhisha",
+            "tithi_name": "Saptami (Shukla)",
+            "vara_name": "Shukravara (Friday)",
+            "yoga_name": "Vajra",
+            "karana_name": "Gara"
+          }
+        },
+        {
+          "engine_id": "vimshottari",
+          "result": {
+            "current_period": {
+              "mahadasha": {
+                "planet": "Mercury"
+              },
+              "antardasha": {
+                "planet": "Venus"
+              },
+              "pratyantardasha": {
+                "planet": "Jupiter"
+              }
+            }
+          }
+        },
+        {
+          "engine_id": "human-design",
+          "result": {
+            "type": "Generator",
+            "authority": "Emotional",
+            "profile": "2/4",
+            "definition": "Single"
+          }
+        },
+        {
+          "engine_id": "gene-keys",
+          "result": {
+            "activation_sequence": {
+              "life_work": {
+                "gate": 11
+              },
+              "evolution": {
+                "gate": 6
+              },
+              "radiance": {
+                "gate": 11
+              },
+              "purpose": {
+                "gate": 12
+              }
+            }
+          }
+        }
+      ],
+      "birth_data": {
+        "date": "1977-12-16",
+        "time": "07:49",
+        "timezone": "Asia/Kolkata",
+        "latitude": 18.97,
+        "longitude": 72.83
+      }
+    },
+    {
+      "id": "rohan",
+      "name": "Rohan Kamat",
+      "engines": [
+        {
+          "engine_id": "panchanga",
+          "result": {
+            "nakshatra_name": "Purva Ashadha",
+            "tithi_name": "Saptami (Shukla)",
+            "vara_name": "Shanivara (Saturday)",
+            "yoga_name": "Atiganda",
+            "karana_name": "Vanija"
+          }
+        },
+        {
+          "engine_id": "vimshottari",
+          "result": {
+            "current_period": {
+              "mahadasha": {
+                "planet": "Mars"
+              },
+              "antardasha": {
+                "planet": "Mars"
+              },
+              "pratyantardasha": {
+                "planet": "Mars"
+              }
+            }
+          }
+        },
+        {
+          "engine_id": "human-design",
+          "result": {
+            "type": "Generator",
+            "authority": "Emotional",
+            "profile": "3/5",
+            "definition": "Split"
+          }
+        },
+        {
+          "engine_id": "gene-keys",
+          "result": {
+            "activation_sequence": {
+              "life_work": {
+                "gate": 32
+              },
+              "evolution": {
+                "gate": 62
+              },
+              "radiance": {
+                "gate": 32
+              },
+              "purpose": {
+                "gate": 42
+              }
+            }
+          }
+        }
+      ],
+      "birth_data": {
+        "date": "1999-10-16",
+        "time": "23:25",
+        "timezone": "Asia/Kolkata",
+        "latitude": 12.87,
+        "longitude": 74.84
+      }
+    }
+  ]
+}

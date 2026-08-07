@@ -1,0 +1,166 @@
+{
+  "source_path": "/Users/sheshnarayaniyer/Downloads/humdes-extractor/parents/Cumbipuram_Subramaniam_Nateshan_father/inputs/Kundali_Cumbipuram_Subramaniam_Nateshan.md",
+  "subject": "Cumbipuram Subramaniam Nateshan",
+  "birth_date": "1960-11-20",
+  "birth_time": "17:15",
+  "birth_place": "Bengaluru, India",
+  "latitude": 12.9767936,
+  "longitude": 77.590082,
+  "timezone": "Asia/Kolkata",
+  "lagna": "mesha",
+  "lagna_degree": "26°41'45\"",
+  "lagna_nakshatra": "Krittika P1",
+  "lagna_lord": "mars",
+  "atmakaraka": "moon",
+  "darakaraka": "sun",
+  "birth_nakshatra": "Jyeshta P3",
+  "placements": [
+    {
+      "planet": "sun",
+      "sign": "vrishchika",
+      "sign_english": "Vrishchika (Scorpio)",
+      "house": 8,
+      "degree": "4°51'25\"",
+      "nakshatra": "Anuradha P1",
+      "nakshatra_lord": "Saturn",
+      "condition": "H8; Anuradha P1 (lord Saturn)"
+    },
+    {
+      "planet": "moon",
+      "sign": "vrishchika",
+      "sign_english": "Vrishchika (Scorpio)",
+      "house": 8,
+      "degree": "25°24'06\"",
+      "nakshatra": "Jyeshta P3",
+      "nakshatra_lord": "Mercury",
+      "condition": "Debilitated; H8; Jyeshta P3 (lord Mercury)"
+    },
+    {
+      "planet": "mars",
+      "sign": "mithuna",
+      "sign_english": "Mithuna (Gemini)",
+      "house": 3,
+      "degree": "25°20'41\"",
+      "nakshatra": "Punarvasu P2",
+      "nakshatra_lord": "Jupiter",
+      "condition": "H3; Punarvasu P2 (lord Jupiter)"
+    },
+    {
+      "planet": "mercury",
+      "sign": "tula",
+      "sign_english": "Tula (Libra)",
+      "house": 7,
+      "degree": "15°51'14\"",
+      "nakshatra": "Swati P3",
+      "nakshatra_lord": "Rahu",
+      "condition": "H7; Swati P3 (lord Rahu)"
+    },
+    {
+      "planet": "jupiter",
+      "sign": "dhanu",
+      "sign_english": "Dhanu (Sagittarius)",
+      "house": 9,
+      "degree": "11°31'11\"",
+      "nakshatra": "Mula P4",
+      "nakshatra_lord": "Ketu",
+      "condition": "Own sign; H9; Mula P4 (lord Ketu)"
+    },
+    {
+      "planet": "venus",
+      "sign": "dhanu",
+      "sign_english": "Dhanu (Sagittarius)",
+      "house": 9,
+      "degree": "12°52'46\"",
+      "nakshatra": "Mula P4",
+      "nakshatra_lord": "Ketu",
+      "condition": "H9; Mula P4 (lord Ketu)"
+    },
+    {
+      "planet": "saturn",
+      "sign": "dhanu",
+      "sign_english": "Dhanu (Sagittarius)",
+      "house": 9,
+      "degree": "21°47'59\"",
+      "nakshatra": "Purva Ashadha P3",
+      "nakshatra_lord": "Venus",
+      "condition": "H9; Purva Ashadha P3 (lord Venus)"
+    },
+    {
+      "planet": "rahu",
+      "sign": "simha",
+      "sign_english": "Simha (Leo)",
+      "house": 5,
+      "degree": "18°13'56\"",
+      "nakshatra": "Purva Phalguni P2",
+      "nakshatra_lord": "Venus",
+      "condition": "retrograde; H5; Purva Phalguni P2 (lord Venus)",
+      "retrograde": true
+    },
+    {
+      "planet": "ketu",
+      "sign": "kumbha",
+      "sign_english": "Kumbha (Aquarius)",
+      "house": 11,
+      "degree": "18°13'56\"",
+      "nakshatra": "Shatabhisha P4",
+      "nakshatra_lord": "Rahu",
+      "condition": "retrograde; H11; Shatabhisha P4 (lord Rahu)",
+      "retrograde": true
+    }
+  ],
+  "mahadasha": {
+    "current_lord": "rahu",
+    "current_started_iso": "2016-10-01T08:25:01.037367+00:00",
+    "current_ends_iso": "2034-10-01T20:25:01.037367+00:00",
+    "current_antardasha": "mercury",
+    "current_antardasha_window": "2024-09-13 → 2027-04-02",
+    "next_lord": "jupiter",
+    "next_starts_iso": "2034-10-01T20:25:01.037367+00:00",
+    "next_duration_years": 16,
+    "yogas": [
+      {
+        "name": "Saraswati Yoga",
+        "status": "active",
+        "effect": "Jupiter+Venus+Mercury in kendras/trikonas — gifts of speech, learning, art"
+      }
+    ]
+  },
+  "human_design": {
+    "type": "Projector",
+    "authority": "Splenic",
+    "profile": "4/1",
+    "definition": "Split",
+    "incarnation_cross": "The Juxtaposition Cross of Empowering",
+    "strategy": "WaitForInvitation",
+    "not_self_theme": "Bitterness",
+    "active_channels": [
+      "64-47",
+      "63-4",
+      "26-44",
+      "28-38"
+    ],
+    "defined_centers": [
+      "Ajna",
+      "Head",
+      "Heart",
+      "Root",
+      "Spleen"
+    ],
+    "variables": [
+      "PLL",
+      "DLL"
+    ]
+  },
+  "pancha_bhuta": {
+    "Fire": 3,
+    "Earth": 0,
+    "Air": 2,
+    "Water": 2,
+    "Ether": "carried by Lagna + Atmakaraka (not a graha-count metric)"
+  },
+  "chart_assets": {
+    "vedic_kundali_md": "/Users/sheshnarayaniyer/Downloads/humdes-extractor/parents/Cumbipuram_Subramaniam_Nateshan_father/inputs/Kundali_Cumbipuram_Subramaniam_Nateshan.md",
+    "_notes": "Vedic placements computed via pyswisseph Lahiri sidereal. HD data extracted from humdes.com + Selemene engine-human-design."
+  },
+  "output_dir": "/Volumes/madara/2026/twc-vault/01-Projects/723/cumbipuram-subramaniam-nateshan-father-reading"
+}

@@ -1,0 +1,28 @@
+[project]
+name = "agentscope-executor-lab"
+version = "0.1.0"
+description = "Lab-only, strictly optional AgentScope-based sandboxed model-execution harness. No host authority (no FactLock, provenance, memory, routing, persistence, or provider keys)."
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "agentscope==2.0.5",
+    "fastapi>=0.115,<1.0",
+    "uvicorn>=0.30,<1.0",
+    "pydantic>=2.7,<3.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0,<9.0",
+    "pytest-asyncio>=0.24,<1.0",
+    "httpx>=0.27,<1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

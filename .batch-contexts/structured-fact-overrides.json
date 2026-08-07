@@ -1,0 +1,104 @@
+{
+  "anitha-nateshan": {
+    "facts": {
+      "vimshottari_mahadasha": "Rahu",
+      "vimshottari_mahadasha_span": "Rahu Mahadasha from 24 Oct 2015 to 24 Oct 2033.",
+      "vimshottari_antardasha": "Ketu",
+      "vimshottari_pratyantardasha": "Venus",
+      "vimshottari_sookshma_dasha": "Jupiter",
+      "vimshottari_prana_dasha": "Sun",
+      "vimshottari_current_layered_position": "Rahu Mahadasha from 24 Oct 2015 to 24 Oct 2033; Ketu Antardasha from 24 Apr 2026 to 13 May 2027; Venus Pratyantardasha from 17 May 2026 to 19 Jul 2026; Jupiter Sookshma Dasha from 18 Jun 2026 to 27 Jun 2026; Sun Prana Dasha from 24 Jun 2026 03:07 to 24 Jun 2026 13:20.",
+      "vimshottari_authority_note": "Kundli screenshot is authoritative for dasha dates and current sub-periods; Selemene returns the same sequence with date offsets.",
+      "gk_life_work": "16.3: Indifference -> Versatility -> Wisdom"
+    },
+    "sources": {
+      "vimshottari_mahadasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_mahadasha_span": "kundli-screenshot/orientation-anchors",
+      "vimshottari_antardasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_pratyantardasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_sookshma_dasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_prana_dasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_current_layered_position": "kundli-screenshot/orientation-anchors",
+      "vimshottari_authority_note": "kundli-screenshot/orientation-anchors",
+      "gk_life_work": "kundli-screenshot/orientation-anchors"
+    }
+  },
+  "cumbipuram-subramaniam-nateshan": {
+    "facts": {
+      "vimshottari_mahadasha": "Rahu",
+      "vimshottari_mahadasha_span": "Rahu Mahadasha from 1 Oct 2016 to 2 Oct 2034.",
+      "vimshottari_antardasha": "Mercury",
+      "vimshottari_pratyantardasha": "Rahu",
+      "vimshottari_sookshma_dasha": "Moon",
+      "vimshottari_prana_dasha": "Venus",
+      "vimshottari_current_layered_position": "Rahu Mahadasha from 1 Oct 2016 to 2 Oct 2034; Mercury Antardasha from 13 Sep 2024 to 2 Apr 2027; Rahu Pratyantardasha from 15 Feb 2026 to 5 Jul 2026; Moon Sookshma Dasha from 15 Jun 2026 to 26 Jun 2026; Venus Prana Dasha from 24 Jun 2026 10:12 to 26 Jun 2026 08:46.",
+      "vimshottari_authority_note": "Kundli screenshot is authoritative for dasha dates and current sub-periods; Selemene returns the same sequence with date offsets."
+    },
+    "sources": {
+      "vimshottari_mahadasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_mahadasha_span": "kundli-screenshot/orientation-anchors",
+      "vimshottari_antardasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_pratyantardasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_sookshma_dasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_prana_dasha": "kundli-screenshot/orientation-anchors",
+      "vimshottari_current_layered_position": "kundli-screenshot/orientation-anchors",
+      "vimshottari_authority_note": "kundli-screenshot/orientation-anchors"
+    }
+  },
+  "harshita": {
+    "facts": {
+      "vedic_ascendant": "Pisces (Meena Lagna)",
+      "vedic_moon_sign": "Cancer (Karka)",
+      "vedic_moon_nakshatra": "Pushya",
+      "vedic_moon_charan": "1",
+      "panchanga_nakshatra": "Pushya",
+      "panchanga_tithi": "Navami (Krishna)",
+      "panchanga_vara": "Guruvara (Thursday)",
+      "panchanga_yoga": "Siddha",
+      "panchanga_karana": "Taitila",
+      "vimshottari_mahadasha": "Ketu",
+      "vimshottari_mahadasha_span": "Ketu Mahadasha from 19 Nov 2019 00:59 to 18 Nov 2026 18:59 IST; Venus Mahadasha begins 18 Nov 2026 18:59 IST for 20 years.",
+      "vimshottari_antardasha": "Mercury",
+      "vimshottari_pratyantardasha": "Rahu",
+      "vimshottari_current_layered_position": "Ketu Mahadasha from 19 Nov 2019 00:59 to 18 Nov 2026 18:59 IST; Mercury Antardasha from 21 Nov 2025 14:21 to 18 Nov 2026 18:59 IST; Rahu Pratyantardasha from 11 Jun 2026 19:36 to 5 Aug 2026 03:32 IST.",
+      "vimshottari_authority_note": "Kundli screenshot is authoritative for dasha dates and current sub-periods; Selemene returns the same sequence with an 18-day end-date offset that is superseded by the screenshot.",
+      "hd_type": "Projector",
+      "hd_authority": "Splenic",
+      "hd_profile": "1/4",
+      "hd_definition": "Split",
+      "hd_active_channels": "62-17, 56-11, 26-44, 18-58",
+      "hd_incarnation_cross": "Right Angle Cross of Maya (32/42 | 62/61)",
+      "gk_life_work": "32.3: Failure -> Preservation -> Preservation",
+      "gk_evolution": "42.3: Expectation -> Expectancy -> Expectancy",
+      "gk_radiance": "62.3: Stagnation -> Inspiration -> Inspiration",
+      "gk_purpose": "61.3: Incompetence -> Enthusiasm -> Enthusiasm"
+    },
+    "sources": {
+      "vedic_ascendant": "kundli-screenshot",
+      "vedic_moon_sign": "kundli-screenshot",
+      "vedic_moon_nakshatra": "kundli-screenshot",
+      "vedic_moon_charan": "kundli-screenshot",
+      "panchanga_nakshatra": "kundli-screenshot/selemene-panchanga",
+      "panchanga_tithi": "kundli-screenshot/selemene-panchanga",
+      "panchanga_vara": "kundli-screenshot/selemene-panchanga",
+      "panchanga_yoga": "selemene-panchanga",
+      "panchanga_karana": "selemene-panchanga",
+      "vimshottari_mahadasha": "kundli-screenshot",
+      "vimshottari_mahadasha_span": "kundli-screenshot",
+      "vimshottari_antardasha": "kundli-screenshot",
+      "vimshottari_pratyantardasha": "kundli-screenshot",
+      "vimshottari_current_layered_position": "kundli-screenshot",
+      "vimshottari_authority_note": "kundli-screenshot-vs-selemene",
+      "hd_type": "humdes-extractor/selemene-human-design",
+      "hd_authority": "humdes-extractor/selemene-human-design",
+      "hd_profile": "humdes-extractor/selemene-human-design",
+      "hd_definition": "humdes-extractor/selemene-human-design",
+      "hd_active_channels": "humdes-extracted-reading/selemene-human-design",
+      "hd_incarnation_cross": "humdes-extractor/selemene-gene-keys",
+      "gk_life_work": "selemene-gene-keys",
+      "gk_evolution": "selemene-gene-keys",
+      "gk_radiance": "selemene-gene-keys",
+      "gk_purpose": "selemene-gene-keys"
+    }
+  }
+}

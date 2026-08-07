@@ -1,0 +1,1941 @@
+{
+  "birth_data": {
+    "date": "1991-08-13",
+    "time": "13:31:00",
+    "timezone": "Asia/Kolkata",
+    "latitude": 12.9767936,
+    "longitude": 77.590082,
+    "name": "Sheshnarayan Cumbipuram Nateshan"
+  },
+  "engines": [
+    {
+      "engine_id": "biofield",
+      "result": {
+        "areas_of_attention": [
+          "Root chakra shows right-dominant pattern",
+          "Sacral chakra shows right-dominant pattern",
+          "Solar Plexus chakra shows right-dominant pattern",
+          "Heart chakra shows right-dominant pattern",
+          "Third Eye chakra shows right-dominant pattern",
+          "Crown chakra shows right-dominant pattern",
+          "Venus in Virgo shows lower strength - related chakras may need attention"
+        ],
+        "chakra_readings": [
+          {
+            "activity_level": 0.55125,
+            "balance": 1.0,
+            "chakra": "Root",
+            "chakra_name": "Root",
+            "color_intensity": "moderate red",
+            "element": "Earth",
+            "location": "Base of spine, perineum"
+          },
+          {
+            "activity_level": 0.4312499999999999,
+            "balance": 1.0,
+            "chakra": "Sacral",
+            "chakra_name": "Sacral",
+            "color_intensity": "dim orange",
+            "element": "Water",
+            "location": "Lower abdomen, below navel"
+          },
+          {
+            "activity_level": 0.56875,
+            "balance": 1.0,
+            "chakra": "SolarPlexus",
+            "chakra_name": "Solar Plexus",
+            "color_intensity": "moderate yellow",
+            "element": "Fire",
+            "location": "Upper abdomen, stomach area"
+          },
+          {
+            "activity_level": 0.4312499999999999,
+            "balance": 1.0,
+            "chakra": "Heart",
+            "chakra_name": "Heart",
+            "color_intensity": "dim green",
+            "element": "Air",
+            "location": "Center of chest"
+          },
+          {
+            "activity_level": 0.621875,
+            "balance": 0.0,
+            "chakra": "Throat",
+            "chakra_name": "Throat",
+            "color_intensity": "moderate blue",
+            "element": "Ether/Space",
+            "location": "Throat area"
+          },
+          {
+            "activity_level": 0.6937499999999999,
+            "balance": 1.0,
+            "chakra": "ThirdEye",
+            "chakra_name": "Third Eye",
+            "color_intensity": "moderate indigo",
+            "element": "Light",
+            "location": "Between eyebrows"
+          },
+          {
+            "activity_level": 0.515625,
+            "balance": 1.0,
+            "chakra": "Crown",
+            "chakra_name": "Crown",
+            "color_intensity": "moderate violet",
+            "element": "Consciousness",
+            "location": "Top of head"
+          }
+        ],
+        "computation_mode": "vedic",
+        "interpretation": "Vitality is in a moderate range. Saturn in Aquarius provides the strongest planetary influence in your biofield. Your Ajna (Third Eye) shows the highest activity, supported by Saturn energy.",
+        "is_mock_data": false,
+        "metrics": {
+          "coherence": 0.69,
+          "entropy": 0.6748695265737605,
+          "fractal_dimension": 1.52,
+          "symmetry": 0.7147169811320755,
+          "timestamp": "2026-07-07T10:57:15.735934532Z",
+          "vitality_index": 0.6409173015411672
+        },
+        "witness_layer": {
+          "aletheios": {
+            "perspective": "What does your body already know that your mind has not yet accepted? Sit with that. No interpretation needed."
+          },
+          "pichet": {
+            "perspective": "The field is dynamic \u2014 entropy at 67%. Pichet sees this as aliveness, not chaos. What one action, even tiny, would honor the energy that is moving right now?"
+          },
+          "synthesis": "Between unconcealment and aliveness \u2014 what is the quality of this moment, exactly as it is?"
+        }
+      },
+      "witness_prompt": "What sensations do you notice in your body right now? Without trying to change anything, simply observe what is present. Your Third Eye chakra shows strong Saturn energy today. What sensations do you notice in the space between your eyebrows? Bring gentle attention to your lower belly, below your navel. What is present there? If this area could speak, what might it want to express? Taking in your body as a whole, what is the overall felt sense? If you could describe it in one word or image, what would it be?",
+      "consciousness_level": 1,
+      "metadata": {
+        "calculation_time_ms": 1.011258,
+        "backend": "vedic-ephemeris",
+        "precision_achieved": "Standard",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.737052368Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "biorhythm",
+      "result": {
+        "aesthetic": {
+          "cycle_day": 19,
+          "days_until_critical": 3,
+          "days_until_peak": 35,
+          "is_critical": false,
+          "percentage": 67.86154449006646,
+          "phase": "Falling",
+          "value": 0.35723088980132917
+        },
+        "critical_days": [
+          "2026-07-13",
+          "2026-07-14"
+        ],
+        "days_alive": 12747,
+        "emotional": {
+          "cycle_day": 7,
+          "days_until_critical": 7,
+          "days_until_peak": 28,
+          "is_critical": false,
+          "percentage": 100.0,
+          "phase": "Peak",
+          "value": 1.0
+        },
+        "forecast": [
+          {
+            "aesthetic": 60.871508779084515,
+            "date": "2026-07-08",
+            "days_alive": 12748,
+            "emotional": 98.74639560909235,
+            "intellectual": 97.25004093573735,
+            "intuitive": 58.229729514053474,
+            "overall_energy": 76.0227665902286,
+            "physical": 99.88343845952753,
+            "spiritual": 41.15548624387639
+          },
+          {
+            "aesthetic": 53.649765733048525,
+            "date": "2026-07-09",
+            "days_alive": 12749,
+            "emotional": 95.04844339511848,
+            "intellectual": 93.30127018922366,
+            "intuitive": 49.999999999992205,
+            "overall_energy": 70.75161448191197,
+            "physical": 97.11304610594267,
+            "spiritual": 35.39716146814628
+          },
+          {
+            "aesthetic": 46.35023426695411,
+            "date": "2026-07-10",
+            "days_alive": 12750,
+            "emotional": 89.09157412339113,
+            "intellectual": 87.78747871770953,
+            "intuitive": 41.77027048595358,
+            "overall_energy": 64.2819801300215,
+            "physical": 90.84849465052297,
+            "spiritual": 29.843828535597673
+          },
+          {
+            "aesthetic": 39.128491220929156,
+            "date": "2026-07-11",
+            "days_alive": 12751,
+            "emotional": 81.17449009295069,
+            "intellectual": 80.90794931103734,
+            "intuitive": 33.76502653977605,
+            "overall_energy": 56.85063307475971,
+            "physical": 81.55439721631879,
+            "spiritual": 24.57344406754621
+          },
+          {
+            "aesthetic": 32.13845550994663,
+            "date": "2026-07-12",
+            "days_alive": 12752,
+            "emotional": 71.6941869558842,
+            "intellectual": 72.91132608637089,
+            "intuitive": 26.202630348154017,
+            "overall_energy": 48.7544410169553,
+            "physical": 69.92005449230719,
+            "spiritual": 19.659992709068835
+          },
+          {
+            "aesthetic": 25.529107609445568,
+            "date": "2026-07-13",
+            "days_alive": 12753,
+            "emotional": 61.1260466978119,
+            "intellectual": 64.08662784206366,
+            "intuitive": 19.289364365521884,
+            "overall_energy": 40.335321252749374,
+            "physical": 56.808332454803676,
+            "spiritual": 15.172448546849582
+          },
+          {
+            "aesthetic": 19.441314295113482,
+            "date": "2026-07-14",
+            "days_alive": 12754,
+            "emotional": 50.00000000000788,
+            "intellectual": 54.75280216521511,
+            "intuitive": 13.213804466346545,
+            "overall_energy": 31.962232555997733,
+            "physical": 43.191667545198165,
+            "spiritual": 11.173806864105234
+          }
+        ],
+        "intellectual": {
+          "cycle_day": 9,
+          "days_until_critical": 8,
+          "days_until_peak": 33,
+          "is_critical": false,
+          "percentage": 99.49107209404957,
+          "phase": "Peak",
+          "value": 0.9898214418809913
+        },
+        "intuitive": {
+          "cycle_day": 17,
+          "days_until_critical": 2,
+          "days_until_peak": 31,
+          "is_critical": false,
+          "percentage": 66.23497346025222,
+          "phase": "Falling",
+          "value": 0.32469946920504433
+        },
+        "mastery": 99.22263823908166,
+        "overall_energy": 79.92996050563339,
+        "passion": 99.47710219205688,
+        "physical": {
+          "cycle_day": 5,
+          "days_until_critical": 7,
+          "days_until_peak": 1,
+          "is_critical": false,
+          "percentage": 98.95420438411375,
+          "phase": "Peak",
+          "value": 0.9790840876822751
+        },
+        "spiritual": {
+          "cycle_day": 27,
+          "days_until_critical": 26,
+          "days_until_peak": 40,
+          "is_critical": true,
+          "percentage": 47.037968605318305,
+          "phase": "Critical",
+          "value": -0.059240627893633935
+        },
+        "target_date": "2026-07-07",
+        "wisdom": 99.74553604702479
+      },
+      "witness_prompt": "Your emotional cycle is at 100% while spiritual is at 47%. Today holds a critical crossing \u2014 a threshold moment. What old pattern is completing, and what new rhythm wants to begin?",
+      "consciousness_level": 0,
+      "metadata": {
+        "calculation_time_ms": 0.043664,
+        "backend": "native-rust",
+        "precision_achieved": "Standard",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.833057509Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "enneagram",
+      "result": {
+        "mode": "questions",
+        "questions": []
+      },
+      "witness_prompt": "What draws you to explore the Enneagram? What are you hoping to understand about yourself?",
+      "consciousness_level": 1,
+      "metadata": {
+        "calculation_time_ms": 0.0,
+        "backend": "typescript",
+        "precision_achieved": "exact",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.770626420Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "face-reading",
+      "result": {
+        "analysis": {
+          "constitution": {
+            "body_type": "mesomorph",
+            "descriptions": {
+              "body_type": "Athletic, medium build, defined features",
+              "dosha": "Fire and water: driven, focused, transformative",
+              "element": "Stability, nurturing, grounding, balance"
+            },
+            "primary_dosha": "pitta",
+            "secondary_dosha": "vata",
+            "tcm_element": "earth"
+          },
+          "elemental_balance": {
+            "dominant": "fire",
+            "earth": 0.10084033613445377,
+            "fire": 0.3571428571428571,
+            "metal": 0.17647058823529407,
+            "water": 0.058823529411764705,
+            "wood": 0.3067226890756302
+          },
+          "health_indicators": [
+            {
+              "associated_organ": "Nervous System",
+              "observation": "Moderate tension signatures; include grounding transitions.",
+              "zone": "forehead"
+            },
+            {
+              "associated_organ": "Liver/Stress Axis",
+              "observation": "Mild activation patterns suggest pacing and rest cadence support.",
+              "zone": "eyes"
+            }
+          ],
+          "is_mock_data": false,
+          "personality_indicators": [
+            {
+              "description": "Demonstrates pattern-adaptive self-observation tendencies.",
+              "facial_indicator": "dynamic feature symmetry profile",
+              "trait_name": "Adaptive Insight"
+            },
+            {
+              "description": "Shows nuanced emotional regulation and embodied awareness signals.",
+              "facial_indicator": "micro-expression contrast map",
+              "trait_name": "Somatic Attunement"
+            }
+          ]
+        },
+        "disclaimer": "This information is for self-reflection purposes only and should not be used for medical diagnosis or treatment decisions.",
+        "future_capabilities": [
+          "Real-time facial landmark detection",
+          "Photo-based analysis",
+          "Video stream processing",
+          "Expression tracking over time",
+          "Comparative analysis (before/after)"
+        ],
+        "notice": "Heuristic analysis generated from provided image_data or birth_data fallback.",
+        "traditions": [
+          "Chinese Mian Xiang",
+          "Ayurvedic Face Analysis",
+          "Western Physiognomy"
+        ]
+      },
+      "witness_prompt": "What do you notice when you observe your forehead in the mirror? What stories might that area tell?",
+      "consciousness_level": 2,
+      "metadata": {
+        "calculation_time_ms": 0.007029,
+        "backend": "birth-physiognomy-fallback",
+        "precision_achieved": "birth-derived",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.736029933Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "gene-keys",
+      "result": {
+        "activation_sequence": {
+          "evolution": [
+            23,
+            43
+          ],
+          "lifes_work": [
+            4,
+            49
+          ],
+          "purpose": [
+            49,
+            43
+          ],
+          "radiance": [
+            4,
+            23
+          ]
+        },
+        "active_keys": [
+          {
+            "gift": "Understanding",
+            "key_number": 4,
+            "line": 3,
+            "name": "The Understanding",
+            "shadow": "Intolerance",
+            "siddhi": "Forgiveness",
+            "source": "PersonalitySun"
+          },
+          {
+            "gift": "Restraint",
+            "key_number": 49,
+            "line": 3,
+            "name": "Gene Key 49",
+            "shadow": "Reaction",
+            "siddhi": "Restraint",
+            "source": "PersonalityEarth"
+          },
+          {
+            "gift": "Simplicity",
+            "key_number": 23,
+            "line": 3,
+            "name": "Gene Key 23",
+            "shadow": "Complexity",
+            "siddhi": "Simplicity",
+            "source": "DesignSun"
+          },
+          {
+            "gift": "Insight",
+            "key_number": 43,
+            "line": 3,
+            "name": "Gene Key 43",
+            "shadow": "Interference",
+            "siddhi": "Insight",
+            "source": "DesignEarth"
+          }
+        ],
+        "frequency_assessments": [
+          {
+            "gene_key": 4,
+            "gift": "Understanding",
+            "gift_description": "Understanding brings mental clarity and the ability to see multiple perspectives, fostering tolerance and wisdom.",
+            "name": "The Understanding",
+            "recognition_prompts": {
+              "gift": [
+                "When do you experience Understanding arising naturally, without effort?",
+                "Can you notice the space between the Intolerance pattern and the emergence of Understanding?",
+                "What happens when Understanding flows through you? How does it feel different from the shadow?",
+                "When this gift is active, who are you serving? What opens?",
+                "Does this quality arise more often now than in the past?"
+              ],
+              "shadow": [
+                "Do you notice yourself reacting unconsciously through the pattern of Intolerance?",
+                "When Intolerance arises, can you feel the contraction or resistance in your body?",
+                "Do you find yourself caught in Intolerance without realizing it until later?",
+                "What triggers this pattern? When does it feel most intense?",
+                "Can you witness the pattern without trying to change or fix it?"
+              ],
+              "siddhi": [
+                "Have you had moments where Understanding dissolved into Forgiveness?",
+                "When Forgiveness is present, is there still a 'you' experiencing it?",
+                "What remains when the personal expression of Understanding falls away?",
+                "Have you touched a state beyond your individual consciousness?",
+                "Can you rest in the paradox of this frequency without needing to understand it?"
+              ]
+            },
+            "shadow": "Intolerance",
+            "shadow_description": "Intolerance creates rigid thinking patterns and the inability to accept different perspectives or approaches.",
+            "siddhi": "Forgiveness",
+            "siddhi_description": "Forgiveness transcends all judgment, seeing the perfection in every experience and being.",
+            "suggested_frequency": null
+          },
+          {
+            "gene_key": 49,
+            "gift": "Restraint",
+            "gift_description": "The gift frequency expresses the balanced state of consciousness that serves the collective good.",
+            "name": "Gene Key 49",
+            "recognition_prompts": {
+              "gift": [
+                "When do you experience Restraint arising naturally, without effort?",
+                "Can you notice the space between the Reaction pattern and the emergence of Restraint?",
+                "What happens when Restraint flows through you? How does it feel different from the shadow?",
+                "When this gift is active, who are you serving? What opens?",
+                "Does this quality arise more often now than in the past?"
+              ],
+              "shadow": [
+                "Do you notice yourself reacting unconsciously through the pattern of Reaction?",
+                "When Reaction arises, can you feel the contraction or resistance in your body?",
+                "Do you find yourself caught in Reaction without realizing it until later?",
+                "What triggers this pattern? When does it feel most intense?",
+                "Can you witness the pattern without trying to change or fix it?"
+              ],
+              "siddhi": [
+                "Have you had moments where Restraint dissolved into Restraint?",
+                "When Restraint is present, is there still a 'you' experiencing it?",
+                "What remains when the personal expression of Restraint falls away?",
+                "Have you touched a state beyond your individual consciousness?",
+                "Can you rest in the paradox of this frequency without needing to understand it?"
+              ]
+            },
+            "shadow": "Reaction",
+            "shadow_description": "The shadow frequency represents the unconscious pattern that creates limitation and suffering in this area of life.",
+            "siddhi": "Restraint",
+            "siddhi_description": "The siddhi frequency embodies the highest potential of human consciousness in this archetypal pattern.",
+            "suggested_frequency": null
+          },
+          {
+            "gene_key": 23,
+            "gift": "Simplicity",
+            "gift_description": "The gift frequency expresses the balanced state of consciousness that serves the collective good.",
+            "name": "Gene Key 23",
+            "recognition_prompts": {
+              "gift": [
+                "When do you experience Simplicity arising naturally, without effort?",
+                "Can you notice the space between the Complexity pattern and the emergence of Simplicity?",
+                "What happens when Simplicity flows through you? How does it feel different from the shadow?",
+                "When this gift is active, who are you serving? What opens?",
+                "Does this quality arise more often now than in the past?"
+              ],
+              "shadow": [
+                "Do you notice yourself reacting unconsciously through the pattern of Complexity?",
+                "When Complexity arises, can you feel the contraction or resistance in your body?",
+                "Do you find yourself caught in Complexity without realizing it until later?",
+                "What triggers this pattern? When does it feel most intense?",
+                "Can you witness the pattern without trying to change or fix it?"
+              ],
+              "siddhi": [
+                "Have you had moments where Simplicity dissolved into Simplicity?",
+                "When Simplicity is present, is there still a 'you' experiencing it?",
+                "What remains when the personal expression of Simplicity falls away?",
+                "Have you touched a state beyond your individual consciousness?",
+                "Can you rest in the paradox of this frequency without needing to understand it?"
+              ]
+            },
+            "shadow": "Complexity",
+            "shadow_description": "The shadow frequency represents the unconscious pattern that creates limitation and suffering in this area of life.",
+            "siddhi": "Simplicity",
+            "siddhi_description": "The siddhi frequency embodies the highest potential of human consciousness in this archetypal pattern.",
+            "suggested_frequency": null
+          },
+          {
+            "gene_key": 43,
+            "gift": "Insight",
+            "gift_description": "The gift frequency expresses the balanced state of consciousness that serves the collective good.",
+            "name": "Gene Key 43",
+            "recognition_prompts": {
+              "gift": [
+                "When do you experience Insight arising naturally, without effort?",
+                "Can you notice the space between the Interference pattern and the emergence of Insight?",
+                "What happens when Insight flows through you? How does it feel different from the shadow?",
+                "When this gift is active, who are you serving? What opens?",
+                "Does this quality arise more often now than in the past?"
+              ],
+              "shadow": [
+                "Do you notice yourself reacting unconsciously through the pattern of Interference?",
+                "When Interference arises, can you feel the contraction or resistance in your body?",
+                "Do you find yourself caught in Interference without realizing it until later?",
+                "What triggers this pattern? When does it feel most intense?",
+                "Can you witness the pattern without trying to change or fix it?"
+              ],
+              "siddhi": [
+                "Have you had moments where Insight dissolved into Insight?",
+                "When Insight is present, is there still a 'you' experiencing it?",
+                "What remains when the personal expression of Insight falls away?",
+                "Have you touched a state beyond your individual consciousness?",
+                "Can you rest in the paradox of this frequency without needing to understand it?"
+              ]
+            },
+            "shadow": "Interference",
+            "shadow_description": "The shadow frequency represents the unconscious pattern that creates limitation and suffering in this area of life.",
+            "siddhi": "Insight",
+            "siddhi_description": "The siddhi frequency embodies the highest potential of human consciousness in this archetypal pattern.",
+            "suggested_frequency": null
+          }
+        ]
+      },
+      "witness_prompt": "How do your conscious gifts Understanding (4) and Simplicity (23) create your core magnetism? When you're most authentic, what happens in the interplay between Restraint (49) and Insight (43) as your higher calling reveals itself? What invitation lives in the space between Intolerance becoming Understanding and Reaction becoming Restraint?",
+      "consciousness_level": 3,
+      "metadata": {
+        "calculation_time_ms": 1.080791,
+        "backend": "hd-derived",
+        "precision_achieved": "Standard",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.752290445Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "human-design",
+      "result": {
+        "active_channels": [
+          "43-23",
+          "42-53"
+        ],
+        "authority": "Sacral",
+        "defined_centers": [
+          "Throat",
+          "Root",
+          "Sacral",
+          "Ajna"
+        ],
+        "definition": "Split",
+        "design_activations": {
+          "earth": {
+            "gate": 43,
+            "line": 4,
+            "longitude": 232.09370626388028
+          },
+          "jupiter": {
+            "gate": 31,
+            "line": 5,
+            "longitude": 126.37642009301997
+          },
+          "mars": {
+            "gate": 62,
+            "line": 2,
+            "longitude": 112.36667823260056
+          },
+          "mercury": {
+            "gate": 42,
+            "line": 6,
+            "longitude": 26.091695247808033
+          },
+          "moon": {
+            "gate": 24,
+            "line": 4,
+            "longitude": 40.524889507407615
+          },
+          "neptune": {
+            "gate": 54,
+            "line": 2,
+            "longitude": 286.6072170834554
+          },
+          "northnode": {
+            "gate": 54,
+            "line": 6,
+            "longitude": 290.6320366817137
+          },
+          "pluto": {
+            "gate": 43,
+            "line": 1,
+            "longitude": 228.90052894907342
+          },
+          "saturn": {
+            "gate": 41,
+            "line": 6,
+            "longitude": 306.83023589126265
+          },
+          "southnode": {
+            "gate": 53,
+            "line": 6,
+            "longitude": 110.63203668171371
+          },
+          "sun": {
+            "gate": 23,
+            "line": 4,
+            "longitude": 52.09370626388027
+          },
+          "uranus": {
+            "gate": 38,
+            "line": 5,
+            "longitude": 283.56090683816365
+          },
+          "venus": {
+            "gate": 52,
+            "line": 1,
+            "longitude": 94.78603393783358
+          }
+        },
+        "hd_type": "Generator",
+        "personality_activations": {
+          "earth": {
+            "gate": 49,
+            "line": 2,
+            "longitude": 320.093498885852
+          },
+          "jupiter": {
+            "gate": 4,
+            "line": 5,
+            "longitude": 143.50658323067537
+          },
+          "mars": {
+            "gate": 47,
+            "line": 1,
+            "longitude": 167.93420019961374
+          },
+          "mercury": {
+            "gate": 59,
+            "line": 5,
+            "longitude": 154.6360141305333
+          },
+          "moon": {
+            "gate": 46,
+            "line": 6,
+            "longitude": 183.55074772004997
+          },
+          "neptune": {
+            "gate": 38,
+            "line": 6,
+            "longitude": 284.47639653847926
+          },
+          "northnode": {
+            "gate": 54,
+            "line": 4,
+            "longitude": 288.5628704168808
+          },
+          "pluto": {
+            "gate": 1,
+            "line": 5,
+            "longitude": 227.6305194208465
+          },
+          "saturn": {
+            "gate": 41,
+            "line": 1,
+            "longitude": 302.2517000171084
+          },
+          "southnode": {
+            "gate": 53,
+            "line": 4,
+            "longitude": 108.5628704168808
+          },
+          "sun": {
+            "gate": 4,
+            "line": 2,
+            "longitude": 140.09349888585197
+          },
+          "uranus": {
+            "gate": 38,
+            "line": 1,
+            "longitude": 280.3803765554524
+          },
+          "venus": {
+            "gate": 59,
+            "line": 5,
+            "longitude": 154.58442400399
+          }
+        },
+        "profile": "2/4"
+      },
+      "witness_prompt": "What does it feel like in your body when you wait to respond to life's invitations rather than initiating?",
+      "consciousness_level": 1,
+      "metadata": {
+        "calculation_time_ms": 1.6477110000000001,
+        "backend": "swiss-ephemeris",
+        "precision_achieved": "Standard",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.788249165Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "i-ching",
+      "result": {
+        "casting": {
+          "line_values": [
+            6,
+            8,
+            8,
+            9,
+            8,
+            9
+          ],
+          "method": "three_coins"
+        },
+        "changing_lines": [
+          1,
+          4,
+          6
+        ],
+        "primary_hexagram": {
+          "chinese_name": "\u4e7e (Qi\u00e1n)",
+          "image": "The movement of heaven is full of power. Thus the superior person makes themselves strong and untiring.",
+          "judgment": "The Creative works sublime success, furthering through perseverance.",
+          "meaning": "Pure yang energy, heaven, creative power, strong action",
+          "name": "The Creative",
+          "number": 1
+        },
+        "relating_hexagram": {
+          "chinese_name": "\u536658",
+          "image": "The image for hexagram 58.",
+          "judgment": "The judgment for hexagram 58.",
+          "meaning": "Meaning for hexagram 58 (stub data)",
+          "name": "Hexagram 58",
+          "number": 58
+        },
+        "seed": 2449095334
+      },
+      "witness_prompt": "What does The Creative illuminate about your current situation?",
+      "consciousness_level": 0,
+      "metadata": {
+        "calculation_time_ms": 0.0,
+        "backend": "typescript",
+        "precision_achieved": "exact",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.806290466Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "nadabrahman",
+      "result": {
+        "recommendations": [
+          {
+            "arohanam": [
+              "sa",
+              "ri2",
+              "ga3",
+              "ma1",
+              "pa",
+              "dha2",
+              "ni2",
+              "sa"
+            ],
+            "avarohanam": [
+              "sa",
+              "ni2",
+              "dha2",
+              "pa",
+              "ma1",
+              "ga3",
+              "ri2",
+              "sa"
+            ],
+            "mood": "joyful",
+            "raga_name": "Harikambhoji",
+            "raga_number": 28,
+            "reason": "Mixolydian equivalent, active and joyful energy for productive morning",
+            "score": 1.0,
+            "therapeutic_qualities": [
+              "happiness",
+              "celebration",
+              "vitality"
+            ]
+          },
+          {
+            "arohanam": [
+              "sa",
+              "ri2",
+              "ga3",
+              "ma2",
+              "pa",
+              "dha2",
+              "ni3",
+              "sa"
+            ],
+            "avarohanam": [
+              "sa",
+              "ni3",
+              "dha2",
+              "pa",
+              "ma2",
+              "ga3",
+              "ri2",
+              "sa"
+            ],
+            "mood": "auspicious",
+            "raga_name": "Mechakalyani",
+            "raga_number": 65,
+            "reason": "Lydian equivalent with prati madhyama, expansive and luminous",
+            "score": 0.95,
+            "therapeutic_qualities": [
+              "auspiciousness",
+              "completeness",
+              "bliss"
+            ]
+          },
+          {
+            "arohanam": [
+              "sa",
+              "ri1",
+              "ga3",
+              "ma1",
+              "pa",
+              "dha2",
+              "ni3",
+              "sa"
+            ],
+            "avarohanam": [
+              "sa",
+              "ni3",
+              "dha2",
+              "pa",
+              "ma1",
+              "ga3",
+              "ri1",
+              "sa"
+            ],
+            "mood": "radiant",
+            "raga_name": "Suryakantam",
+            "raga_number": 17,
+            "reason": "Sun-related raga, intensely bright for peak morning energy",
+            "score": 0.9,
+            "therapeutic_qualities": [
+              "energy",
+              "illumination"
+            ]
+          },
+          {
+            "arohanam": [
+              "sa",
+              "ri2",
+              "ga3",
+              "ma1",
+              "pa",
+              "dha2",
+              "ni3",
+              "sa"
+            ],
+            "avarohanam": [
+              "sa",
+              "ni3",
+              "dha2",
+              "pa",
+              "ma1",
+              "ga3",
+              "ri2",
+              "sa"
+            ],
+            "mood": "majestic",
+            "raga_name": "Dheerasankarabharanam",
+            "raga_number": 29,
+            "reason": "Secondary recommendation for this time period",
+            "score": 0.7,
+            "therapeutic_qualities": [
+              "confidence",
+              "completeness",
+              "balance"
+            ]
+          },
+          {
+            "arohanam": [
+              "sa",
+              "ri2",
+              "ga2",
+              "ma2",
+              "pa",
+              "dha2",
+              "ni3",
+              "sa"
+            ],
+            "avarohanam": [
+              "sa",
+              "ni3",
+              "dha2",
+              "pa",
+              "ma2",
+              "ga2",
+              "ri2",
+              "sa"
+            ],
+            "mood": "righteous",
+            "raga_name": "Dharmavati",
+            "raga_number": 59,
+            "reason": "Secondary recommendation for this time period",
+            "score": 0.6,
+            "therapeutic_qualities": [
+              "dharma_alignment",
+              "truth",
+              "justice"
+            ]
+          }
+        ],
+        "time_recommendation": {
+          "dosha_dominance": "kapha",
+          "energy_quality": "expansive",
+          "prahar_name": "Sangava (Forenoon)",
+          "prahar_number": 2,
+          "primary_raga": {
+            "raga_name": "Harikambhoji",
+            "raga_number": 28,
+            "reason": "Mixolydian equivalent, active and joyful energy for productive morning"
+          },
+          "time_range": "09:00-12:00"
+        }
+      },
+      "witness_prompt": "What sounds are present in your environment right now? Without judging or naming them, simply notice their presence. The raga Harikambhoji carries a particular emotional quality. If you were to hum a single note right now, what pitch would your body choose? What feeling arises with that tone? If your entire being \u2014 body, breath, and awareness \u2014 were a musical instrument, what is it playing right now? Listen without changing the melody.",
+      "consciousness_level": 0,
+      "metadata": {
+        "calculation_time_ms": 0.013213,
+        "backend": "native",
+        "precision_achieved": "standard",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.742227319Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "numerology",
+      "result": {
+        "birthday": {
+          "is_master": false,
+          "meaning": "Structure, discipline, foundation",
+          "reduction_chain": [
+            13,
+            4
+          ],
+          "value": 4
+        },
+        "chaldean_name": {
+          "is_master": false,
+          "meaning": "Structure, discipline, foundation",
+          "reduction_chain": [
+            103,
+            4
+          ],
+          "value": 4
+        },
+        "expression": {
+          "is_master": false,
+          "meaning": "Power, abundance, achievement",
+          "reduction_chain": [
+            125,
+            8
+          ],
+          "value": 8
+        },
+        "life_path": {
+          "is_master": false,
+          "meaning": "Freedom, change, adventure",
+          "reduction_chain": [
+            14,
+            5
+          ],
+          "value": 5
+        },
+        "personality": {
+          "is_master": false,
+          "meaning": "Structure, discipline, foundation",
+          "reduction_chain": [
+            94,
+            13,
+            4
+          ],
+          "value": 4
+        },
+        "soul_urge": {
+          "is_master": false,
+          "meaning": "Structure, discipline, foundation",
+          "reduction_chain": [
+            31,
+            4
+          ],
+          "value": 4
+        }
+      },
+      "witness_prompt": "Your Life Path 5 speaks of the seeker of freedom. Notice: are you running toward experience, or away from stillness?",
+      "consciousness_level": 0,
+      "metadata": {
+        "calculation_time_ms": 0.011748,
+        "backend": "native-rust",
+        "precision_achieved": "exact",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.753022184Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "panchanga",
+      "result": {
+        "julian_day": 2448481.834027778,
+        "karana_index": 6,
+        "karana_name": "Vishti",
+        "karana_value": 8.0,
+        "lunar_longitude": 159.83074772004997,
+        "nakshatra_index": 11,
+        "nakshatra_name": "Uttara Phalguni",
+        "nakshatra_value": 11.987306079003748,
+        "solar_longitude": 116.37349888585197,
+        "tithi_index": 3,
+        "tithi_name": "Chaturthi (Shukla)",
+        "tithi_value": 3.6214374028498333,
+        "vara_index": 2,
+        "vara_name": "Mangalavara (Tuesday)",
+        "yoga_index": 20,
+        "yoga_name": "Siddha",
+        "yoga_value": 20.71531849544265
+      },
+      "witness_prompt": "You were born under Tithi Chaturthi (Shukla) and Nakshatra Uttara Phalguni. The Tithi reflects the angle between Sun and Moon at your birth \u2014 a mirror of the dance between your conscious will and emotional nature. What pattern do you notice when your intentions and feelings are misaligned?",
+      "consciousness_level": 0,
+      "metadata": {
+        "calculation_time_ms": 0.12219999999999999,
+        "backend": "native-rust",
+        "precision_achieved": "Standard",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.739640955Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "sacred-geometry",
+      "result": {
+        "form": {
+          "description": "An ancient symbol composed of multiple evenly-spaced, overlapping circles arranged in a flower-like pattern with six-fold symmetry. It is considered to contain the patterns of creation.",
+          "elements": [
+            "circle",
+            "hexagon",
+            "vesica piscis"
+          ],
+          "id": "flower-of-life",
+          "name": "Flower of Life",
+          "numerology": 6,
+          "symbolism": "Unity, creation, and the interconnectedness of all life. Contains the blueprint for all existence - from the structure of atoms to galaxies."
+        },
+        "intention": null,
+        "meditation": {
+          "duration_suggestion": "5-15 minutes",
+          "prompt": "Allow your awareness to rest on the center of the Flower of Life. Notice how each circle supports and is supported by others. Let the pattern breathe."
+        },
+        "seed": 1669417586,
+        "svg_preview": {
+          "status": "absent"
+        }
+      },
+      "witness_prompt": "As you visualize Flower of Life, what patterns do you notice in your own life?",
+      "consciousness_level": 0,
+      "metadata": {
+        "calculation_time_ms": 0.0,
+        "backend": "typescript",
+        "precision_achieved": "exact",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:16.749897924Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "status": 422,
+      "error_code": "VALIDATION_ERROR",
+      "message": "Validation error: sigil-forge requires options.intention (or question/intent/intent_text)",
+      "error": "Validation error: sigil-forge requires options.intention (or question/intent/intent_text)",
+      "details": {
+        "validation_message": "sigil-forge requires options.intention (or question/intent/intent_text)"
+      },
+      "trace_id": "4bdecb48-32c8-4750-a97f-bd981b64ca9d"
+    },
+    {
+      "engine_id": "tarot",
+      "result": {
+        "positions": [
+          {
+            "card": {
+              "arcana": "major",
+              "element": "earth",
+              "id": "major-15",
+              "interpretation": {
+                "keywords": [
+                  "bondage",
+                  "materialism",
+                  "shadow",
+                  "attachment"
+                ],
+                "meaning": "Shadow self, attachment, addiction, restriction, sexuality"
+              },
+              "isReversed": false,
+              "name": "The Devil",
+              "number": 15
+            },
+            "meaning": "What has led to this moment; influences from the past",
+            "name": "Past",
+            "position": 0
+          },
+          {
+            "card": {
+              "arcana": "minor",
+              "element": "water",
+              "id": "cups-3",
+              "interpretation": {
+                "keywords": [
+                  "celebration",
+                  "friendship",
+                  "community",
+                  "joy"
+                ],
+                "meaning": "Independence, alone time, hardcore partying, three is a crowd"
+              },
+              "isReversed": true,
+              "name": "Three of Cups",
+              "number": 3,
+              "suit": "cups"
+            },
+            "meaning": "The current situation; where you stand now",
+            "name": "Present",
+            "position": 1
+          },
+          {
+            "card": {
+              "arcana": "minor",
+              "element": "fire",
+              "id": "wands-12",
+              "interpretation": {
+                "keywords": [
+                  "adventure",
+                  "passion",
+                  "impulsiveness",
+                  "energy"
+                ],
+                "meaning": "Passion project, haste, scattered energy, delays"
+              },
+              "isReversed": true,
+              "name": "Knight of Wands",
+              "number": 12,
+              "suit": "wands"
+            },
+            "meaning": "What may unfold; potential outcomes and energies ahead",
+            "name": "Future",
+            "position": 2
+          }
+        ],
+        "spread": {
+          "description": "Past, Present, and Future - a classic spread for understanding the flow of time",
+          "name": "Three Card Spread",
+          "type": "three_card"
+        }
+      },
+      "witness_prompt": "As you consider The Devil in the position of Past, what stands out?",
+      "consciousness_level": 0,
+      "metadata": {
+        "calculation_time_ms": 0.0,
+        "backend": "typescript",
+        "precision_achieved": "exact",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.770791475Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "transits",
+      "result": {
+        "aspects": [
+          {
+            "aspect_type": "Trine",
+            "is_applying": false,
+            "natal_planet": "Moon",
+            "nature": "Harmonious",
+            "orb": 0.02,
+            "transiting_planet": "Uranus"
+          },
+          {
+            "aspect_type": "Square",
+            "is_applying": false,
+            "natal_planet": "Uranus",
+            "nature": "Challenging",
+            "orb": 0.05,
+            "transiting_planet": "Moon"
+          },
+          {
+            "aspect_type": "Opposition",
+            "is_applying": true,
+            "natal_planet": "Moon",
+            "nature": "Challenging",
+            "orb": 0.38,
+            "transiting_planet": "Neptune"
+          },
+          {
+            "aspect_type": "Opposition",
+            "is_applying": false,
+            "natal_planet": "Neptune",
+            "nature": "Challenging",
+            "orb": 0.39,
+            "transiting_planet": "Sun"
+          },
+          {
+            "aspect_type": "Square",
+            "is_applying": true,
+            "natal_planet": "Neptune",
+            "nature": "Challenging",
+            "orb": 0.53,
+            "transiting_planet": "Saturn"
+          },
+          {
+            "aspect_type": "Trine",
+            "is_applying": true,
+            "natal_planet": "Moon",
+            "nature": "Harmonious",
+            "orb": 0.7,
+            "transiting_planet": "Pluto"
+          },
+          {
+            "aspect_type": "Square",
+            "is_applying": false,
+            "natal_planet": "Mercury",
+            "nature": "Challenging",
+            "orb": 1.0,
+            "transiting_planet": "Mars"
+          },
+          {
+            "aspect_type": "Square",
+            "is_applying": true,
+            "natal_planet": "Venus",
+            "nature": "Challenging",
+            "orb": 1.05,
+            "transiting_planet": "Uranus"
+          },
+          {
+            "aspect_type": "Square",
+            "is_applying": false,
+            "natal_planet": "Venus",
+            "nature": "Challenging",
+            "orb": 1.06,
+            "transiting_planet": "Mars"
+          },
+          {
+            "aspect_type": "Square",
+            "is_applying": true,
+            "natal_planet": "Mercury",
+            "nature": "Challenging",
+            "orb": 1.1,
+            "transiting_planet": "Uranus"
+          },
+          {
+            "aspect_type": "Opposition",
+            "is_applying": true,
+            "natal_planet": "Saturn",
+            "nature": "Challenging",
+            "orb": 1.18,
+            "transiting_planet": "Jupiter"
+          },
+          {
+            "aspect_type": "Trine",
+            "is_applying": false,
+            "natal_planet": "Saturn",
+            "nature": "Harmonious",
+            "orb": 1.28,
+            "transiting_planet": "Uranus"
+          },
+          {
+            "aspect_type": "Sextile",
+            "is_applying": true,
+            "natal_planet": "Saturn",
+            "nature": "Harmonious",
+            "orb": 1.68,
+            "transiting_planet": "Neptune"
+          },
+          {
+            "aspect_type": "Conjunction",
+            "is_applying": true,
+            "natal_planet": "Saturn",
+            "nature": "Neutral",
+            "orb": 2.0,
+            "transiting_planet": "Pluto"
+          },
+          {
+            "aspect_type": "Sextile",
+            "is_applying": true,
+            "natal_planet": "Moon",
+            "nature": "Harmonious",
+            "orb": 2.48,
+            "transiting_planet": "Jupiter"
+          },
+          {
+            "aspect_type": "Square",
+            "is_applying": false,
+            "natal_planet": "Uranus",
+            "nature": "Challenging",
+            "orb": 3.56,
+            "transiting_planet": "Saturn"
+          },
+          {
+            "aspect_type": "Opposition",
+            "is_applying": true,
+            "natal_planet": "Venus",
+            "nature": "Challenging",
+            "orb": 4.33,
+            "transiting_planet": "Rahu"
+          },
+          {
+            "aspect_type": "Conjunction",
+            "is_applying": false,
+            "natal_planet": "Venus",
+            "nature": "Neutral",
+            "orb": 4.33,
+            "transiting_planet": "Ketu"
+          },
+          {
+            "aspect_type": "Opposition",
+            "is_applying": true,
+            "natal_planet": "Mercury",
+            "nature": "Challenging",
+            "orb": 4.38,
+            "transiting_planet": "Rahu"
+          },
+          {
+            "aspect_type": "Conjunction",
+            "is_applying": false,
+            "natal_planet": "Mercury",
+            "nature": "Neutral",
+            "orb": 4.38,
+            "transiting_planet": "Ketu"
+          },
+          {
+            "aspect_type": "Square",
+            "is_applying": true,
+            "natal_planet": "Rahu",
+            "nature": "Challenging",
+            "orb": 4.62,
+            "transiting_planet": "Saturn"
+          },
+          {
+            "aspect_type": "Square",
+            "is_applying": true,
+            "natal_planet": "Ketu",
+            "nature": "Challenging",
+            "orb": 4.62,
+            "transiting_planet": "Saturn"
+          },
+          {
+            "aspect_type": "Opposition",
+            "is_applying": false,
+            "natal_planet": "Jupiter",
+            "nature": "Challenging",
+            "orb": 6.75,
+            "transiting_planet": "Rahu"
+          },
+          {
+            "aspect_type": "Conjunction",
+            "is_applying": true,
+            "natal_planet": "Jupiter",
+            "nature": "Neutral",
+            "orb": 6.75,
+            "transiting_planet": "Ketu"
+          }
+        ],
+        "natal_positions": [
+          {
+            "degree_in_sign": 26.35,
+            "is_retrograde": false,
+            "longitude": 116.354,
+            "planet": "Sun",
+            "sign": "Cancer"
+          },
+          {
+            "degree_in_sign": 9.81,
+            "is_retrograde": false,
+            "longitude": 159.811,
+            "planet": "Moon",
+            "sign": "Virgo"
+          },
+          {
+            "degree_in_sign": 10.9,
+            "is_retrograde": true,
+            "longitude": 130.896,
+            "planet": "Mercury",
+            "sign": "Leo"
+          },
+          {
+            "degree_in_sign": 10.84,
+            "is_retrograde": true,
+            "longitude": 130.844,
+            "planet": "Venus",
+            "sign": "Leo"
+          },
+          {
+            "degree_in_sign": 24.19,
+            "is_retrograde": false,
+            "longitude": 144.194,
+            "planet": "Mars",
+            "sign": "Leo"
+          },
+          {
+            "degree_in_sign": 29.77,
+            "is_retrograde": false,
+            "longitude": 119.767,
+            "planet": "Jupiter",
+            "sign": "Cancer"
+          },
+          {
+            "degree_in_sign": 8.51,
+            "is_retrograde": true,
+            "longitude": 278.512,
+            "planet": "Saturn",
+            "sign": "Capricorn"
+          },
+          {
+            "degree_in_sign": 16.64,
+            "is_retrograde": true,
+            "longitude": 256.64,
+            "planet": "Uranus",
+            "sign": "Sagittarius"
+          },
+          {
+            "degree_in_sign": 20.74,
+            "is_retrograde": true,
+            "longitude": 260.736,
+            "planet": "Neptune",
+            "sign": "Sagittarius"
+          },
+          {
+            "degree_in_sign": 23.89,
+            "is_retrograde": false,
+            "longitude": 203.891,
+            "planet": "Pluto",
+            "sign": "Libra"
+          },
+          {
+            "degree_in_sign": 24.82,
+            "is_retrograde": true,
+            "longitude": 264.823,
+            "planet": "Rahu",
+            "sign": "Sagittarius"
+          },
+          {
+            "degree_in_sign": 24.82,
+            "is_retrograde": false,
+            "longitude": 84.823,
+            "planet": "Ketu",
+            "sign": "Gemini"
+          }
+        ],
+        "period_quality": "Difficult",
+        "retrograde_planets": [
+          "Mercury",
+          "Neptune",
+          "Pluto",
+          "Ketu"
+        ],
+        "sade_sati": {
+          "is_active": false,
+          "moon_sign": "Virgo",
+          "phase": null,
+          "saturn_sign": "Pisces"
+        },
+        "transit_positions": [
+          {
+            "degree_in_sign": 21.13,
+            "is_retrograde": false,
+            "longitude": 81.13,
+            "planet": "Sun",
+            "sign": "Gemini",
+            "speed": 0.9535
+          },
+          {
+            "degree_in_sign": 16.69,
+            "is_retrograde": false,
+            "longitude": 346.694,
+            "planet": "Moon",
+            "sign": "Pisces",
+            "speed": 13.3668
+          },
+          {
+            "degree_in_sign": 29.88,
+            "is_retrograde": true,
+            "longitude": 89.881,
+            "planet": "Mercury",
+            "sign": "Gemini",
+            "speed": -0.52
+          },
+          {
+            "degree_in_sign": 3.24,
+            "is_retrograde": false,
+            "longitude": 123.241,
+            "planet": "Venus",
+            "sign": "Leo",
+            "speed": 1.1194
+          },
+          {
+            "degree_in_sign": 11.9,
+            "is_retrograde": false,
+            "longitude": 41.9,
+            "planet": "Mars",
+            "sign": "Taurus",
+            "speed": 0.7043
+          },
+          {
+            "degree_in_sign": 7.33,
+            "is_retrograde": false,
+            "longitude": 97.327,
+            "planet": "Jupiter",
+            "sign": "Cancer",
+            "speed": 0.2172
+          },
+          {
+            "degree_in_sign": 20.2,
+            "is_retrograde": false,
+            "longitude": 350.204,
+            "planet": "Saturn",
+            "sign": "Pisces",
+            "speed": 0.0327
+          },
+          {
+            "degree_in_sign": 9.79,
+            "is_retrograde": false,
+            "longitude": 39.794,
+            "planet": "Uranus",
+            "sign": "Taurus",
+            "speed": 0.0471
+          },
+          {
+            "degree_in_sign": 10.19,
+            "is_retrograde": true,
+            "longitude": 340.19,
+            "planet": "Neptune",
+            "sign": "Pisces",
+            "speed": -0.0
+          },
+          {
+            "degree_in_sign": 10.51,
+            "is_retrograde": true,
+            "longitude": 280.512,
+            "planet": "Pluto",
+            "sign": "Capricorn",
+            "speed": -0.0218
+          },
+          {
+            "degree_in_sign": 6.51,
+            "is_retrograde": false,
+            "longitude": 306.514,
+            "planet": "Rahu",
+            "sign": "Aquarius",
+            "speed": 0.0079
+          },
+          {
+            "degree_in_sign": 6.51,
+            "is_retrograde": true,
+            "longitude": 126.514,
+            "planet": "Ketu",
+            "sign": "Leo",
+            "speed": -0.0079
+          }
+        ]
+      },
+      "witness_prompt": "With Mercury, Neptune, Pluto, Ketu retrograde, the energy turns inward. What internal review is being called for? What did you rush past that now asks for your attention?\n\nThe Trine between transit Uranus and your natal Moon creates a channel of ease. But ease can breed complacency. How are you using this flow rather than just enjoying it?\n\nDifficult transits break the shell so the seed can sprout. What is the shell? What is the seed? Can you be both the breaking and the becoming?",
+      "consciousness_level": 1,
+      "metadata": {
+        "calculation_time_ms": 1.0108039999999998,
+        "backend": "swiss-ephemeris",
+        "precision_achieved": "Standard",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.755652295Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "vedic-clock",
+      "result": {
+        "calculated_for": "2026-07-07T10:57:15.808482312+00:00",
+        "current_dosha": {
+          "dosha": "Vata",
+          "qualities": [
+            "Movement",
+            "Communication",
+            "Flexibility",
+            "Completion energy"
+          ]
+        },
+        "current_organ": {
+          "associated_emotion": "Flow (balanced) / Fear (imbalanced)",
+          "element": "Water",
+          "organ": "Bladder",
+          "peak_energy": "Stored energy available for work",
+          "recommended_activities": [
+            "Focused work",
+            "Physical exercise",
+            "Completing projects",
+            "Hydration",
+            "Afternoon productivity"
+          ],
+          "time_window": "3 PM - 5 PM"
+        },
+        "recommendation": {
+          "activities": [
+            {
+              "activity": "Focused work",
+              "quality": "neutral",
+              "reason": "Bladder time (Water) - Stored energy available for work energy"
+            },
+            {
+              "activity": "Physical exercise",
+              "quality": "neutral",
+              "reason": "Bladder time (Water) - Stored energy available for work energy"
+            },
+            {
+              "activity": "Completing projects",
+              "quality": "neutral",
+              "reason": "Bladder time (Water) - Stored energy available for work energy"
+            },
+            {
+              "activity": "Hydration",
+              "quality": "neutral",
+              "reason": "Bladder time (Water) - Stored energy available for work energy"
+            },
+            {
+              "activity": "Afternoon productivity",
+              "quality": "neutral",
+              "reason": "Bladder time (Water) - Stored energy available for work energy"
+            }
+          ],
+          "dosha": "Vata",
+          "organ": "Bladder",
+          "panchanga_quality": null,
+          "time_window": "3 PM - 5 PM"
+        },
+        "synthesis": "Bladder (Water) time during Vata period - harmonious energy. Stored energy available for work",
+        "timezone": {
+          "local_hour": 16,
+          "offset_minutes": 330,
+          "source": "birth_data.timezone"
+        },
+        "upcoming_transitions": [
+          {
+            "description": "Kidney time begins",
+            "new_dosha": null,
+            "new_organ": "Kidney",
+            "time": "17:00"
+          },
+          {
+            "description": "Kapha period begins",
+            "new_dosha": "Kapha",
+            "new_organ": null,
+            "time": "18:00"
+          },
+          {
+            "description": "Pericardium time begins",
+            "new_dosha": null,
+            "new_organ": "Pericardium",
+            "time": "19:00"
+          },
+          {
+            "description": "Triple Warmer time begins",
+            "new_dosha": null,
+            "new_organ": "TripleWarmer",
+            "time": "21:00"
+          },
+          {
+            "description": "Pitta period begins",
+            "new_dosha": "Pitta",
+            "new_organ": null,
+            "time": "22:00"
+          }
+        ]
+      },
+      "witness_prompt": "What do you notice about your capacity for sustained effort?",
+      "consciousness_level": 2,
+      "metadata": {
+        "calculation_time_ms": 0.059373,
+        "backend": "native",
+        "precision_achieved": "Standard",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.808615662Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    },
+    {
+      "engine_id": "vimshottari",
+      "result": {
+        "birth_nakshatra": {
+          "moon_longitude": 159.83074772004997,
+          "name": "Uttara Phalguni",
+          "number": 12
+        },
+        "current_period": {
+          "antardasha": {
+            "end": "2026-09-09T21:39:58+00:00",
+            "planet": "Mars",
+            "start": "2025-08-22T09:21:58+00:00",
+            "years": 1.05
+          },
+          "mahadasha": {
+            "end": "2026-09-09T21:39:58+00:00",
+            "planet": "Rahu",
+            "start": "2008-09-09T09:39:58+00:00",
+            "years": 18.0
+          },
+          "pratyantardasha": {
+            "days": 63.918749999999996,
+            "end": "2026-07-20T18:25:34+00:00",
+            "planet": "Venus",
+            "start": "2026-05-17T20:22:34+00:00"
+          }
+        },
+        "period_enrichment": {
+          "antardasha_themes": [
+            "Action",
+            "Courage",
+            "Conflict",
+            "Energy"
+          ],
+          "challenges": [
+            "Overindulgence",
+            "Vanity",
+            "Relationship dependency",
+            "Materialism"
+          ],
+          "combined_description": "During Rahu's Mahadasha (Ambition, Innovation, Foreign connections, Obsession), within Mars's Antardasha (Action, Courage, Conflict, Energy), the current Venus Pratyantardasha brings Love, Beauty, Luxury, Relationships. Venus's period brings themes of love, beauty, pleasure, and harmonious relationships. This is a time to enjoy life's comforts, create art, deepen romantic connections, and cultivate aesthetic refinement. The heart opens and attracts. Watch for overindulgence, vanity, and excessive attachment to material comforts. Use this graceful period to honor beauty, build meaningful relationships, express creativity, and find balance between worldly pleasure and spiritual depth.",
+          "life_areas": [
+            "Romantic relationships",
+            "Marriage",
+            "Arts and creativity",
+            "Comfort and luxury",
+            "Social life"
+          ],
+          "mahadasha_themes": [
+            "Ambition",
+            "Innovation",
+            "Foreign connections",
+            "Obsession"
+          ],
+          "opportunities": [
+            "Deepen love connections",
+            "Create beauty",
+            "Enjoy life's pleasures",
+            "Cultivate harmony"
+          ],
+          "pratyantardasha_themes": [
+            "Love",
+            "Beauty",
+            "Luxury",
+            "Relationships"
+          ]
+        },
+        "timeline": {
+          "birth_date": "1991-08-13T08:01:00+00:00",
+          "mahadashas": [
+            {
+              "antardasha_count": 9,
+              "duration_years": 0.0761635278816015,
+              "end_date": "1991-09-10T03:39:58+00:00",
+              "planet": "Sun",
+              "start_date": "1991-08-13T08:01:00+00:00"
+            },
+            {
+              "antardasha_count": 9,
+              "duration_years": 10.0,
+              "end_date": "2001-09-09T15:39:58+00:00",
+              "planet": "Moon",
+              "start_date": "1991-09-10T03:39:58+00:00"
+            },
+            {
+              "antardasha_count": 9,
+              "duration_years": 7.0,
+              "end_date": "2008-09-09T09:39:58+00:00",
+              "planet": "Mars",
+              "start_date": "2001-09-09T15:39:58+00:00"
+            },
+            {
+              "antardasha_count": 9,
+              "duration_years": 18.0,
+              "end_date": "2026-09-09T21:39:58+00:00",
+              "planet": "Rahu",
+              "start_date": "2008-09-09T09:39:58+00:00"
+            },
+            {
+              "antardasha_count": 9,
+              "duration_years": 16.0,
+              "end_date": "2042-09-09T21:39:58+00:00",
+              "planet": "Jupiter",
+              "start_date": "2026-09-09T21:39:58+00:00"
+            },
+            {
+              "antardasha_count": 9,
+              "duration_years": 19.0,
+              "end_date": "2061-09-09T15:39:58+00:00",
+              "planet": "Saturn",
+              "start_date": "2042-09-09T21:39:58+00:00"
+            },
+            {
+              "antardasha_count": 9,
+              "duration_years": 17.0,
+              "end_date": "2078-09-09T21:39:58+00:00",
+              "planet": "Mercury",
+              "start_date": "2061-09-09T15:39:58+00:00"
+            },
+            {
+              "antardasha_count": 9,
+              "duration_years": 7.0,
+              "end_date": "2085-09-09T15:39:58+00:00",
+              "planet": "Ketu",
+              "start_date": "2078-09-09T21:39:58+00:00"
+            },
+            {
+              "antardasha_count": 9,
+              "duration_years": 20.0,
+              "end_date": "2105-09-10T15:39:58+00:00",
+              "planet": "Venus",
+              "start_date": "2085-09-09T15:39:58+00:00"
+            },
+            {
+              "antardasha_count": 9,
+              "duration_years": 5.923836472118396,
+              "end_date": "2111-08-14T08:00:59+00:00",
+              "planet": "Sun",
+              "start_date": "2105-09-10T15:39:58+00:00"
+            }
+          ],
+          "total_years": 120
+        },
+        "upcoming_transitions": [
+          {
+            "date": "2026-07-20T18:25:34+00:00",
+            "days_until": 13,
+            "from_planet": "Venus",
+            "to_planet": "Sun",
+            "type": "Pratyantardasha"
+          },
+          {
+            "date": "2026-08-08T22:38:28+00:00",
+            "days_until": 32,
+            "from_planet": "Sun",
+            "to_planet": "Moon",
+            "type": "Pratyantardasha"
+          },
+          {
+            "date": "2026-09-09T21:39:58+00:00",
+            "days_until": 64,
+            "from_planet": "Rahu",
+            "to_planet": "Jupiter",
+            "type": "Mahadasha"
+          },
+          {
+            "date": "2026-09-09T21:39:58+00:00",
+            "days_until": 64,
+            "from_planet": "Mars",
+            "to_planet": "Jupiter",
+            "type": "Antardasha"
+          },
+          {
+            "date": "2027-04-25T04:03:58+00:00",
+            "days_until": 291,
+            "from_planet": "Saturn",
+            "to_planet": "Mercury",
+            "type": "Pratyantardasha"
+          }
+        ]
+      },
+      "witness_prompt": "What is this Rahu-Mars-Venus period revealing about your journey? Notice how Rahu (Mahadasha) provides the backdrop, Mars (Antardasha) colors the experience, and Venus (Pratyantardasha) brings immediate focus to Love, Beauty, Luxury, Relationships. Opportunities present: Deepen love connections, Create beauty, Enjoy life's pleasures, Cultivate harmony. Challenges to navigate: Overindulgence, Vanity, Relationship dependency, Materialism. How are you meeting these themes in your life right now?",
+      "consciousness_level": 3,
+      "metadata": {
+        "calculation_time_ms": 1.124138,
+        "backend": "swiss-ephemeris-sidereal",
+        "precision_achieved": "Standard",
+        "cached": false,
+        "timestamp": "2026-07-07T10:57:15.737355644Z",
+        "engine_version": "3.1.0"
+      },
+      "envelope_version": "1"
+    }
+  ]
+}

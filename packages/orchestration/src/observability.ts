@@ -14,6 +14,9 @@ export interface OrchestrationObserver {
   // Retrieval signals (P1/P2 grounding)
   onRetrievalStart?(info: { taskId: string; perspective: string }): void;
   onRetrievalComplete?(info: { taskId: string; perspective: string; passageCount: number; avgRelevance: number; latencyMs: number }): void;
+
+  // Task 3: event replay lifecycle signal — fired once per projected stream.
+  onEventStreamProjected?(info: { runId: string; attemptId: string; taskId: string; status: string; eventCount: number }): void;
 }
 
 export const NoopObserver: OrchestrationObserver = {};

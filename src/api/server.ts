@@ -20,7 +20,7 @@ import type {
   ReadingErrorResponse,
   CallerIdentity,
 } from '../types/reading-request.js';
-import { resolveLevel } from '../../scripts/integratedreading/level-resolver.js';
+import { resolveLevel } from '../integratedreading/level-resolver.js';
 import { deriveCallerIdentity, gateConsciousnessLevelOverride } from './auth.js';
 import {
   type OnboardingState,
@@ -28,6 +28,10 @@ import {
   nextOnboardingTurn,
   buildWelcomeTurn,
 } from '../agents/onboarding-prompt.js';
+import {
+  parseAgentscopeRuntimeConfig,
+  type AgentscopeRuntimeConfig,
+} from '../wiring/agentscope/routing.js';
 
 // ═══════════════════════════════════════════════════════════════════════
 // API TYPES
@@ -440,6 +444,29 @@ export function createApiHandlers(deps: ApiDependencies) {
 export interface ServerConfig {
   port: number;
   handlers: ReturnType<typeof createApiHandlers>;
+  /**
+   * Validated executor routing configuration. This server does not activate a
+   * remote executor by itself; the orchestration adapter remains the authority
+   * that consumes this config and serves a candidate.
+   */
+  agentscopeRouting?: AgentscopeRuntimeConfig;
+  /**
+   * Optional internal model gateway (Wave B1 Task 9). Host-owned atomic
+   * model call boundary for internal callers only (e.g. the AgentScope
+   * lab executor). When omitted, the route is unavailable — fail-closed
+   * by default, no weakening of any existing public route.
+   */
+  internalModelGateway?: import('./internal-model-gateway.js').InternalModelGateway;
+}
+
+export const INTERNAL_MODEL_GATEWAY_MAX_BODY_BYTES = 131_072;
+
+class ReadBodyError extends Error {
+  readonly statusCode = 413;
+  readonly code = 'BODY_TOO_LARGE';
+  constructor(message = 'Request body too large') {
+    super(message);
+  }
 }
 
 /**
@@ -449,8 +476,15 @@ export interface ServerConfig {
 export async function createServer(config: ServerConfig): Promise<{
   close: () => void;
   port: number;
+  executorRouting: {
+    configuredMode: AgentscopeRuntimeConfig['configuredMode'];
+    valid: boolean;
+    canaryPercent: number;
+    errorCategory?: AgentscopeRuntimeConfig['errorCategory'];
+  };
 }> {
   const { createServer: createHttpServer } = await import('node:http');
+  const agentscopeRouting = config.agentscopeRouting ?? parseAgentscopeRuntimeConfig({});
 
   const server = createHttpServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -493,11 +527,53 @@ export async function createServer(config: ServerConfig): Promise<{
         const result = await config.handlers.onboard(body as OnboardRequest);
         res.writeHead(result.status);
         res.end(JSON.stringify(result.body));
+      } else if (path === '/internal/model-gateway' && req.method === 'POST') {
+        // Wave B1 Task 9 — host-owned internal model gateway. Fail-closed:
+        // without a configured gateway (no internal token), the route is
+        // unavailable to everyone, never just "unauthenticated".
+        if (!config.internalModelGateway || !config.internalModelGateway.isAvailable()) {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: 'Not found' }));
+          return;
+        }
+        const authHeader = req.headers['authorization'];
+        const presentedToken =
+          typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+            ? authHeader.slice('Bearer '.length)
+            : undefined;
+        const body = await readBody(req, { maxBytes: INTERNAL_MODEL_GATEWAY_MAX_BODY_BYTES });
+        const cancelCtl = new AbortController();
+        // Client disconnect mid-stream must abort generation, but a normal
+        // completed request also fires 'close' once we finish writing the
+        // response — guard with a flag set before we call res.end() so a
+        // completed request never spuriously cancels its own generation.
+        let responseFinished = false;
+        const onClientAbort = () => {
+          if (!responseFinished) {
+            cancelCtl.abort(new Error('Client closed connection'));
+          }
+        };
+        res.on('close', onClientAbort);
+        try {
+          res.writeHead(200, { 'Content-Type': 'application/x-ndjson' });
+          for await (const event of config.internalModelGateway.execute(presentedToken, body, { abortSignal: cancelCtl.signal })) {
+            res.write(JSON.stringify(event) + '\n');
+          }
+          responseFinished = true;
+          res.end();
+        } finally {
+          res.off('close', onClientAbort);
+        }
       } else {
         res.writeHead(404);
         res.end(JSON.stringify({ error: 'Not found', endpoints: ['/interpret', '/heartbeat', '/mirror', '/onboard'] }));
       }
     } catch (err) {
+      if (err instanceof ReadBodyError) {
+        res.writeHead(413);
+        res.end(JSON.stringify({ error: err.message }));
+        return;
+      }
       res.writeHead(500);
       res.end(JSON.stringify({ error: (err as Error).message }));
     }
@@ -505,20 +581,62 @@ export async function createServer(config: ServerConfig): Promise<{
 
   return new Promise((resolve) => {
     server.listen(config.port, () => {
-      resolve({ close: () => server.close(), port: config.port });
+      const address = server.address();
+      const boundPort = address && typeof address === 'object' ? address.port : config.port;
+      resolve({
+        close: () => server.close(),
+        port: boundPort,
+        executorRouting: {
+          configuredMode: agentscopeRouting.configuredMode,
+          valid: agentscopeRouting.valid,
+          canaryPercent: agentscopeRouting.canaryPercent,
+          ...(agentscopeRouting.errorCategory
+            ? { errorCategory: agentscopeRouting.errorCategory }
+            : {}),
+        },
+      });
     });
   });
 }
 
-function readBody(req: import('node:http').IncomingMessage): Promise<unknown> {
+function readBody(
+  req: import('node:http').IncomingMessage,
+  options: { maxBytes?: number } = {},
+): Promise<unknown> {
+  const maxBytes = options.maxBytes;
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => {
+    let totalBytes = 0;
+    let settled = false;
+
+    const onData = (chunk: Buffer) => {
+      if (settled) return;
+      totalBytes += chunk.length;
+      if (maxBytes !== undefined && totalBytes > maxBytes) {
+        settled = true;
+        req.off('data', onData);
+        req.off('end', onEnd);
+        req.off('error', onError);
+        reject(new ReadBodyError());
+        return;
+      }
+      chunks.push(chunk);
+    };
+    const onEnd = () => {
+      if (settled) return;
+      settled = true;
       try { resolve(JSON.parse(Buffer.concat(chunks).toString())); }
       catch (e) { reject(e); }
-    });
-    req.on('error', reject);
+    };
+    const onError = (err: Error) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    };
+
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
   });
 }
 

@@ -25,6 +25,7 @@ import { NvidiaEmbeddingProvider } from '../src/inference/nvidia-embedding.js';
 import { InProcessWitnessOrchestrationService } from '../packages/orchestration/src/in-process-service.js';
 import { createFactLock } from '../packages/orchestration/src/fact-lock.js';
 import { createSectionWitnessGraph } from '../src/wiring/graphs/section-witness.js';
+import { validateBatchOutputQuality } from '../src/wiring/batch-output-quality.js';
 import type { FactLock, AtomicTask, TaskResult } from '../packages/orchestration/src/types.js';
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -53,6 +54,11 @@ interface ProgressState {
   lastUpdated: string;
 }
 
+interface FactOverrideEntry {
+  facts?: Record<string, any>;
+  sources?: Record<string, string>;
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // ARGUMENT PARSING
 // ═══════════════════════════════════════════════════════════════════════
@@ -79,8 +85,13 @@ function parseArgs() {
   const outputDir = opts['output'] || './interpretations';
   const resume = opts['resume'] === 'true';
   const rpm = parseInt(opts['rpm'] || String(NVIDIA_RPM), 10);
+  const factOverridesPath = opts['fact-overrides'];
+  const timeoutMs = parseInt(opts['timeout-ms'] || '180000', 10);
+  const engineFilter = opts['engine-filter']
+    ? new Set(opts['engine-filter'].split(',').map((item) => item.trim()).filter(Boolean))
+    : undefined;
 
-  return { mode, dataDir, dataPath, outputDir, resume, rpm, subject: opts['subject'] };
+  return { mode, dataDir, dataPath, outputDir, resume, rpm, subject: opts['subject'], name: opts['name'], factOverridesPath, timeoutMs, engineFilter };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -95,7 +106,7 @@ function loadSubjects(args: ReturnType<typeof parseArgs>): SubjectEntry[] {
     }
     return [{
       id: args.subject || 'unknown',
-      name: args.subject || 'Unknown Subject',
+      name: args.name || args.subject || 'Unknown Subject',
       dataPath: args.dataPath,
     }];
   }
@@ -144,7 +155,14 @@ function saveProgress(state: ProgressState) {
 // ENGINE DATA LOADING
 // ═══════════════════════════════════════════════════════════════════════
 
-function loadEngineData(path: string): Record<string, any> {
+function filterEngineData(engineData: Record<string, any>, engineFilter?: Set<string>): Record<string, any> {
+  if (!engineFilter) return engineData;
+  return Object.fromEntries(
+    Object.entries(engineData).filter(([engineId]) => engineFilter.has(engineId)),
+  );
+}
+
+function loadEngineData(path: string, engineFilter?: Set<string>): Record<string, any> {
   const raw = JSON.parse(readFileSync(path, 'utf-8'));
 
   // Convert array format to object format
@@ -154,17 +172,30 @@ function loadEngineData(path: string): Record<string, any> {
       const id = entry.engine_id || entry.engine;
       if (id) obj[id] = entry;
     }
-    return obj;
+    return filterEngineData(obj, engineFilter);
   }
 
-  return raw;
+  return filterEngineData(raw, engineFilter);
+}
+
+function loadFactOverrides(path?: string): Record<string, FactOverrideEntry> {
+  if (!path) return {};
+  if (!existsSync(path)) {
+    console.error(`❌ Fact overrides file not found: ${path}`);
+    process.exit(1);
+  }
+  return JSON.parse(readFileSync(path, 'utf-8'));
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 // FACTLOCK BUILDER
 // ═══════════════════════════════════════════════════════════════════════
 
-function buildFactLock(subject: SubjectEntry, engineData: Record<string, any>): FactLock {
+function buildFactLock(
+  subject: SubjectEntry,
+  engineData: Record<string, any>,
+  factOverrides: FactOverrideEntry = {},
+): FactLock {
   const facts: Record<string, any> = { name: subject.name };
   const sources: Record<string, string> = { name: 'user-input' };
 
@@ -183,16 +214,33 @@ function buildFactLock(subject: SubjectEntry, engineData: Record<string, any>): 
     }
 
     if (engineId === 'gene-keys' && result) {
-      const activation = result.activation_sequence;
-      if (activation) {
-        facts.gk_life_work = activation.life_work?.gate;
-        facts.gk_evolution = activation.evolution?.gate;
-        facts.gk_radiance = activation.radiance?.gate;
-        facts.gk_purpose = activation.purpose?.gate;
-        sources.gk_life_work = 'selemene/gene-keys';
-        sources.gk_evolution = 'selemene/gene-keys';
-        sources.gk_radiance = 'selemene/gene-keys';
-        sources.gk_purpose = 'selemene/gene-keys';
+      const activeKeys = Array.isArray(result.active_keys) ? result.active_keys : [];
+      const bySource = new Map<string, any>(activeKeys.map((key: any) => [key.source, key]));
+      const formatKey = (key: any) => key
+        ? `${key.key_number}.${key.line}: ${key.shadow} -> ${key.gift} -> ${key.siddhi}`
+        : undefined;
+      const geneKeyFacts: Record<string, string | undefined> = {
+        gk_life_work: formatKey(bySource.get('PersonalitySun')),
+        gk_evolution: formatKey(bySource.get('PersonalityEarth')),
+        gk_radiance: formatKey(bySource.get('DesignSun')),
+        gk_purpose: formatKey(bySource.get('DesignEarth')),
+      };
+      for (const [key, value] of Object.entries(geneKeyFacts)) {
+        if (value) {
+          facts[key] = value;
+          sources[key] = 'selemene/gene-keys';
+        }
+      }
+    }
+
+    if (engineId === 'numerology' && result) {
+      const numerologyFields = ['life_path', 'expression', 'soul_urge', 'birthday', 'personality', 'chaldean_name'];
+      for (const field of numerologyFields) {
+        const item = result[field];
+        if (item?.value !== undefined) {
+          facts[`numerology_${field}`] = `${item.value}${item.is_master ? ' (master)' : ''}: ${item.meaning}`;
+          sources[`numerology_${field}`] = 'selemene/numerology';
+        }
       }
     }
 
@@ -220,6 +268,13 @@ function buildFactLock(subject: SubjectEntry, engineData: Record<string, any>): 
       sources.panchanga_nakshatra = 'selemene/panchanga';
       sources.panchanga_vara = 'selemene/panchanga';
     }
+  }
+
+  for (const [key, value] of Object.entries(factOverrides.facts || {})) {
+    facts[key] = value;
+  }
+  for (const [key, value] of Object.entries(factOverrides.sources || {})) {
+    sources[key] = value;
   }
 
   const lock = createFactLock({
@@ -252,10 +307,11 @@ function createRateLimitedExecutor(
     grounding?: any[]
   ): Promise<TaskResult> => {
     const { system, user } = task.buildPrompts(lock, prior, grounding);
+    const finalOnlySystem = `${system}\n\n## Output Discipline\nReturn ONLY the final reader-facing interpretation. Do not include planning notes, hidden reasoning, self-instructions, analysis of the task, or phrases like "we need", "we should", or "let's craft". Do not use these gated terms: biofield, face reading, chakra, dosha, somatic, body-layer, oracle, tarot, i-ching, sacred geometry, sigil, nadabrahman, coherence, coherent, coherently. Finish every section with a complete sentence. Begin directly with the interpretation content requested by the output format.`;
 
     const response = await provider.complete({
       messages: [
-        { role: 'system', content: system },
+        { role: 'system', content: finalOnlySystem },
         { role: 'user', content: user },
       ],
       model_role: 'synthesis',
@@ -282,16 +338,19 @@ function createRateLimitedExecutor(
 async function interpretSubject(
   subject: SubjectEntry,
   service: InProcessWitnessOrchestrationService,
-  outputDir: string
+  outputDir: string,
+  factOverrides: FactOverrideEntry = {},
+  engineFilter?: Set<string>,
 ): Promise<{ success: boolean; output?: string; error?: string }> {
   try {
     console.log(`\n🔮 [${subject.id}] Starting interpretation...`);
 
-    const engineData = loadEngineData(subject.dataPath);
-    const lock = buildFactLock(subject, engineData);
+    const engineData = loadEngineData(subject.dataPath, engineFilter);
+    const lock = buildFactLock(subject, engineData, factOverrides);
     const tasks = createSectionWitnessGraph(lock);
 
-    console.log(`   [${subject.id}] ${Object.keys(engineData).length} engines, ${tasks.length} tasks`);
+    const overrideCount = Object.keys(factOverrides.facts || {}).length;
+    console.log(`   [${subject.id}] ${Object.keys(engineData).length} engines, ${tasks.length} tasks, ${overrideCount} overrides`);
 
     const start = Date.now();
     const response = await service.orchestrate({
@@ -301,9 +360,20 @@ async function interpretSubject(
     });
     const elapsed = (Date.now() - start) / 1000;
 
+    const qualityIssues = validateBatchOutputQuality(response.output);
+    if (qualityIssues.length > 0) {
+      throw new Error(`Generated output failed quality gate: ${qualityIssues.join('; ')}`);
+    }
+
     // Save output
     const outputPath = join(outputDir, `${subject.id}.md`);
-    writeFileSync(outputPath, `# Interpretation: ${subject.name}\n\n${response.output}`);
+    const overrideMeta = overrideCount > 0
+      ? `\n<!-- fact_overrides_applied: ${overrideCount} -->\n`
+      : '\n';
+    const filterMeta = engineFilter
+      ? `<!-- engine_filter_applied: ${Array.from(engineFilter).join(',')} -->\n`
+      : '';
+    writeFileSync(outputPath, `# Interpretation: ${subject.name}\n${overrideMeta}${filterMeta}\n${response.output}`);
 
     console.log(`   [${subject.id}] ✅ Complete in ${elapsed.toFixed(1)}s | ${response.taskResults.length} tasks | ${response.output.length} chars`);
 
@@ -332,6 +402,7 @@ async function main() {
 
   // Load or init progress
   const progress = loadProgress();
+  const factOverrides = loadFactOverrides(args.factOverridesPath);
 
   if (args.resume) {
     console.log(`🔄 Resuming batch...`);
@@ -352,9 +423,10 @@ async function main() {
   console.log(`\n📊 Batch plan:`);
   console.log(`   Total subjects: ${subjects.length}`);
   console.log(`   Already done: ${progress.completed.length}`);
-  console.log(`   Remaining: ${remaining.length}`);
-  console.log(`   Rate limit: ${args.rpm} RPM`);
-  console.log(`   Output: ${args.outputDir}`);
+   console.log(`   Remaining: ${remaining.length}`);
+   console.log(`   Rate limit: ${args.rpm} RPM`);
+   console.log(`   Timeout: ${args.timeoutMs} ms`);
+   console.log(`   Output: ${args.outputDir}`);
 
   if (remaining.length === 0) {
     console.log('\n✅ All subjects already processed!');
@@ -372,6 +444,7 @@ async function main() {
 
   const llmProvider = new RateLimitedNvidiaProvider({
     api_key: nvidiaKey,
+    timeout_ms: args.timeoutMs,
     rpm_limit: args.rpm,
     retry_max: 5,
     verbose: true,
@@ -406,7 +479,7 @@ async function main() {
     progress.inProgress = subject.id;
     saveProgress(progress);
 
-    const result = await interpretSubject(subject, service, args.outputDir);
+    const result = await interpretSubject(subject, service, args.outputDir, factOverrides[subject.id], args.engineFilter);
 
     if (result.success) {
       progress.completed.push(subject.id);
@@ -439,6 +512,10 @@ async function main() {
   console.log(`   Duration: ${formatDuration(totalElapsed)}`);
   console.log(`   Output: ${args.outputDir}`);
   console.log('='.repeat(60));
+
+  if (progress.failed.length > 0) {
+    process.exit(1);
+  }
 }
 
 function formatDuration(seconds: number): string {

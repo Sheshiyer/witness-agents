@@ -1,6 +1,21 @@
 # Witness Agents — Aletheios & Pichet
 
-> **Embodied Meaning-Authoring Dyad for the Selemene Engine**
+> ⚠️ **RETIRED FOR LIVE RUNTIME USE** — 2026-07-01
+>
+> **Runtime has moved to Selemene.**  
+> This repository is no longer the live service for rich dyad interpretation or premium asset generation.
+>
+> **Live endpoints (Selemene):**
+> - Rich Aletheios + Pichet dyads: `POST https://selemene.tryambakam.space/api/v1/witness/interpret`
+> - Premium assets (source packs, integrated readings): `POST /api/v1/assets/generate` or SDK `generatePremiumAsset(...)`
+>
+> **This repo remains the long-term source of truth for:**
+> - Full agent definitions (`agents/aletheios/`, `agents/pichet/`)
+> - `.premium-assets/` historical outputs and generation history
+> - Multi-pass integrated reading modes + scripts
+> - Premium asset factory and NotebookLM pipelines (reference implementations)
+>
+> See `RETIREMENT.md` for migration guidance and current status.
 >
 > *Self-Consciousness as Technology. Body as Medium. Breath as Interface.*
 

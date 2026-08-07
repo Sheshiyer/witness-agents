@@ -13,10 +13,13 @@ export interface FactLock {
   subjectId: string;
   subject: string;
   facts: Record<string, LockedFact>;
+  engineData?: Record<string, string>;
   frozenAt: string;
   version: string;
   retrievedContext?: import('./grounding.js').GroundedPassage[];
 }
+
+export type { GroundedPassage, GroundingProvider } from './grounding.js';
 
 export interface AtomicTask<TPerspective extends string = string> {
   id: string;

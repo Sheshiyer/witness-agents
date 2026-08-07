@@ -9,6 +9,10 @@ import { createStandaloneServer } from './standalone/standalone-api.js';
 import { setDecoderStore } from './standalone/decoder-ring.js';
 import { createDecoderStore } from './standalone/decoder-store.js';
 import { getWitnessDeploymentInfo, WITNESS_VERSION } from './standalone/deployment-info.js';
+import {
+  parseAgentscopeRuntimeConfig,
+  selectAgentscopeRoute,
+} from './wiring/agentscope/routing.js';
 
 import type { StandaloneTier } from './standalone/types.js';
 
@@ -27,6 +31,12 @@ const tier = (process.env.WITNESS_TIER || 'witness-initiate') as StandaloneTier;
 const deploymentInfo = getWitnessDeploymentInfo();
 const knowledgePath = process.env.WITNESS_KNOWLEDGE_PATH
   || resolve(dirname(fileURLToPath(import.meta.url)), '../knowledge');
+const agentscopeRouting = parseAgentscopeRuntimeConfig(process.env);
+const agentscopeStartupDecision = selectAgentscopeRoute(agentscopeRouting, {
+  // Startup performs validation only. An actual host-owned request key is
+  // required before any shadow/canary attempt can be selected.
+  stableKey: '',
+});
 
 // Initialize persistence before starting server
 const store = createDecoderStore();
@@ -52,6 +62,7 @@ if (Number.isFinite(llmTimeoutMs) && llmTimeoutMs > 0) {
 console.log(`[WitnessAgents] Tier: ${tier}`);
 console.log(`[WitnessAgents] Knowledge path: ${knowledgePath}`);
 console.log(`[WitnessAgents] Deployment: ${JSON.stringify(deploymentInfo)}`);
+console.log(`[WitnessAgents] Executor routing: ${JSON.stringify(agentscopeStartupDecision)}`);
 
 createStandaloneServer({
   port,

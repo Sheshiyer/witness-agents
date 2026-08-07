@@ -1,0 +1,168 @@
+{
+  "engine_id": "human-design",
+  "result": {
+    "active_channels": [
+      "64-47",
+      "43-23",
+      "8-1",
+      "12-22",
+      "37-40"
+    ],
+    "authority": "Emotional",
+    "defined_centers": [
+      "Throat",
+      "Ajna",
+      "Head",
+      "Heart",
+      "SolarPlexus",
+      "G"
+    ],
+    "definition": "Single",
+    "design_activations": {
+      "earth": {
+        "gate": 64,
+        "line": 1,
+        "longitude": 162.09314150278635
+      },
+      "jupiter": {
+        "gate": 23,
+        "line": 2,
+        "longitude": 50.28324226335711
+      },
+      "mars": {
+        "gate": 47,
+        "line": 5,
+        "longitude": 171.29608498644694
+      },
+      "mercury": {
+        "gate": 22,
+        "line": 2,
+        "longitude": 348.10962839553093
+      },
+      "moon": {
+        "gate": 37,
+        "line": 1,
+        "longitude": 336.08407505900954
+      },
+      "neptune": {
+        "gate": 43,
+        "line": 2,
+        "longitude": 229.9755184552543
+      },
+      "northnode": {
+        "gate": 45,
+        "line": 3,
+        "longitude": 79.14423244676003
+      },
+      "pluto": {
+        "gate": 64,
+        "line": 4,
+        "longitude": 165.10803310893024
+      },
+      "saturn": {
+        "gate": 37,
+        "line": 3,
+        "longitude": 338.1390514022941
+      },
+      "southnode": {
+        "gate": 26,
+        "line": 3,
+        "longitude": 259.14423244676004
+      },
+      "sun": {
+        "gate": 63,
+        "line": 1,
+        "longitude": 342.09314150278635
+      },
+      "uranus": {
+        "gate": 64,
+        "line": 2,
+        "longitude": 162.83405372505848
+      },
+      "venus": {
+        "gate": 55,
+        "line": 2,
+        "longitude": 331.94942584007856
+      }
+    },
+    "hd_type": "Manifestor",
+    "personality_activations": {
+      "earth": {
+        "gate": 9,
+        "line": 5,
+        "longitude": 250.0923610297457
+      },
+      "jupiter": {
+        "gate": 16,
+        "line": 4,
+        "longitude": 69.00761455757745
+      },
+      "mars": {
+        "gate": 47,
+        "line": 1,
+        "longitude": 167.53237521367038
+      },
+      "mercury": {
+        "gate": 8,
+        "line": 3,
+        "longitude": 57.27320875989336
+      },
+      "moon": {
+        "gate": 45,
+        "line": 6,
+        "longitude": 82.6056469560545
+      },
+      "neptune": {
+        "gate": 1,
+        "line": 6,
+        "longitude": 228.05317485084043
+      },
+      "northnode": {
+        "gate": 35,
+        "line": 3,
+        "longitude": 73.81039617749845
+      },
+      "pluto": {
+        "gate": 64,
+        "line": 3,
+        "longitude": 163.69072392101708
+      },
+      "saturn": {
+        "gate": 63,
+        "line": 6,
+        "longitude": 346.60329593348274
+      },
+      "southnode": {
+        "gate": 5,
+        "line": 3,
+        "longitude": 253.81039617749843
+      },
+      "sun": {
+        "gate": 16,
+        "line": 5,
+        "longitude": 70.09236102974567
+      },
+      "uranus": {
+        "gate": 40,
+        "line": 6,
+        "longitude": 160.77209598891812
+      },
+      "venus": {
+        "gate": 12,
+        "line": 1,
+        "longitude": 83.17963057511496
+      }
+    },
+    "profile": "5/1"
+  },
+  "witness_prompt": "Where do you notice the urge to initiate before informing others of what's coming?",
+  "consciousness_level": 1,
+  "metadata": {
+    "calculation_time_ms": 1.54375,
+    "backend": "swiss-ephemeris",
+    "precision_achieved": "Standard",
+    "cached": false,
+    "timestamp": "2026-05-18T07:27:43.820238Z",
+    "engine_version": "3.1.0"
+  }
+}

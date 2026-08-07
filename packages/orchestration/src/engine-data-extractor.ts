@@ -8,8 +8,6 @@
  * Per research-knowledge-core: sourced-fact provenance on all extractions.
  */
 
-import type { Value } from './types.js';
-
 // ═══════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════

@@ -1,0 +1,180 @@
+{
+  "source_path": "/Volumes/madara/2026/twc-vault/01-Projects/723/witnessalchemist-reading/inputs/01_Reading_WitnessAlchemist.docx",
+  "subject": "WitnessAlchemist",
+  "birth_date": "1991-08-13",
+  "birth_time": "13:31",
+  "birth_place": "Bengaluru, India",
+  "latitude": 12.97,
+  "longitude": 77.59,
+  "timezone": "Asia/Kolkata",
+  "lagna": "vrishchika",
+  "lagna_degree": "12°06'21\"",
+  "lagna_nakshatra": "Anuradha P3",
+  "lagna_lord": "mars",
+  "atmakaraka": "jupiter",
+  "darakaraka": "saturn",
+  "birth_nakshatra": "Uttara Phalguni P4",
+  "placements": [
+    {
+      "planet": "sun",
+      "sign": "karka",
+      "sign_english": "Karka (Cancer)",
+      "house": 9,
+      "degree": "26°20'55\"",
+      "nakshatra": "Ashlesha P3",
+      "nakshatra_lord": "Mercury",
+      "condition": "H9; Ashlesha P3 (lord Mercury)"
+    },
+    {
+      "planet": "moon",
+      "sign": "kanya",
+      "sign_english": "Kanya (Virgo)",
+      "house": 11,
+      "degree": "9°48'21\"",
+      "nakshatra": "Uttara Phalguni P4",
+      "nakshatra_lord": "Sun",
+      "condition": "H11; Uttara Phalguni P4 (lord Sun)"
+    },
+    {
+      "planet": "mars",
+      "sign": "simha",
+      "sign_english": "Simha (Leo)",
+      "house": 10,
+      "degree": "24°11'22\"",
+      "nakshatra": "Purva Phalguni P4",
+      "nakshatra_lord": "Venus",
+      "condition": "H10; Purva Phalguni P4 (lord Venus)"
+    },
+    {
+      "planet": "mercury",
+      "sign": "simha",
+      "sign_english": "Simha (Leo)",
+      "house": 10,
+      "degree": "10°53'28\"",
+      "nakshatra": "Magha P4",
+      "nakshatra_lord": "Ketu",
+      "condition": "retrograde; H10; Magha P4 (lord Ketu)",
+      "retrograde": true
+    },
+    {
+      "planet": "jupiter",
+      "sign": "karka",
+      "sign_english": "Karka (Cancer)",
+      "house": 9,
+      "degree": "29°45'42\"",
+      "nakshatra": "Ashlesha P4",
+      "nakshatra_lord": "Mercury",
+      "condition": "Exalted; H9; Ashlesha P4 (lord Mercury)"
+    },
+    {
+      "planet": "venus",
+      "sign": "simha",
+      "sign_english": "Simha (Leo)",
+      "house": 10,
+      "degree": "10°50'23\"",
+      "nakshatra": "Magha P4",
+      "nakshatra_lord": "Ketu",
+      "condition": "retrograde; H10; Magha P4 (lord Ketu)",
+      "retrograde": true
+    },
+    {
+      "planet": "saturn",
+      "sign": "makara",
+      "sign_english": "Makara (Capricorn)",
+      "house": 3,
+      "degree": "8°30'25\"",
+      "nakshatra": "Uttara Ashadha P4",
+      "nakshatra_lord": "Sun",
+      "condition": "Own sign; retrograde; H3; Uttara Ashadha P4 (lord Sun)",
+      "retrograde": true
+    },
+    {
+      "planet": "rahu",
+      "sign": "dhanu",
+      "sign_english": "Dhanu (Sagittarius)",
+      "house": 2,
+      "degree": "23°30'39\"",
+      "nakshatra": "Purva Ashadha P4",
+      "nakshatra_lord": "Venus",
+      "condition": "retrograde; H2; Purva Ashadha P4 (lord Venus)",
+      "retrograde": true
+    },
+    {
+      "planet": "ketu",
+      "sign": "mithuna",
+      "sign_english": "Mithuna (Gemini)",
+      "house": 8,
+      "degree": "23°30'39\"",
+      "nakshatra": "Punarvasu P2",
+      "nakshatra_lord": "Jupiter",
+      "condition": "retrograde; H8; Punarvasu P2 (lord Jupiter)",
+      "retrograde": true
+    }
+  ],
+  "mahadasha": {
+    "current_lord": "rahu",
+    "current_started_iso": "2008-09-13T11:31:42.946708+00:00",
+    "current_ends_iso": "2026-09-13T23:31:42.946708+00:00",
+    "current_antardasha": "mars",
+    "current_antardasha_window": "2025-08-26 → 2026-09-13",
+    "next_lord": "jupiter",
+    "next_starts_iso": "2026-09-13T23:31:42.946708+00:00",
+    "next_duration_years": 16,
+    "yogas": [
+      {
+        "name": "Saraswati Yoga",
+        "status": "active",
+        "effect": "Jupiter+Venus+Mercury in kendras/trikonas — gifts of speech, learning, art"
+      }
+    ]
+  },
+  "human_design": {
+    "type": "Generator",
+    "authority": "Sacral",
+    "profile": "2/4 Hermit-Opportunist",
+    "definition": "Split",
+    "incarnation_cross": "RAC of Explanation",
+    "incarnation_cross_gates": [
+      4,
+      49,
+      23,
+      43
+    ],
+    "active_channels": [
+      "23-43 Structuring",
+      "42-53 Maturation"
+    ]
+  },
+  "gene_keys": {
+    "pearl": "4.5 — universal formulization",
+    "personality_sun_gift": "4.2 Hermit Formulizer",
+    "iq": "59 (Sexuality/Intimacy)",
+    "sq": "52 (Stillness)"
+  },
+  "pancha_bhuta": {
+    "Fire": 3,
+    "Earth": 2,
+    "Air": 0,
+    "Water": 2,
+    "Ether": "carried by Lagna + Atmakaraka (not a graha-count metric)"
+  },
+  "yogas_from_existing_reading": [
+    "Saraswati (Me-Ve-Ju in K/T)",
+    "Dharma-Karma Adhipati Raj (5L+10L in 9th)",
+    "Atmakaraka Jupiter exalted 9th"
+  ],
+  "chart_assets": {
+    "vedic_kundali_md": "/Users/sheshnarayaniyer/Downloads/humdes-extractor/parents/Sheshnarayan_witnessalchemist/inputs/Kundali_Sheshnarayan_Cumbipuram_Nateshan_(WitnessAlchemist).md",
+    "source_docx": "/Volumes/madara/2026/twc-vault/01-Projects/723/witnessalchemist-reading/inputs/01_Reading_WitnessAlchemist.docx",
+    "_notes": "Vedic via pyswisseph Lahiri sidereal; HD + Gene Keys from existing 723/integratedreading.config.json (chart already curated)."
+  },
+  "relationship": {
+    "role": "child",
+    "relations": {
+      "mother": "anitha",
+      "father": "nateshan"
+    },
+    "notes": "Son of Anitha Nateshan (mother, file 01_anitha) and Cumbipuram Subramaniam Nateshan (father, file 03_nateshan). Read parent-child dyads as Putra-karaka inheritance, NEVER as Vivaha. Not a sibling to either parent."
+  },
+  "output_dir": "/Volumes/madara/2026/twc-vault/01-Projects/723/witnessalchemist-reading"
+}

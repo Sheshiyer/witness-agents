@@ -18,13 +18,15 @@
 import type {
   AtomicTask,
   FactLock,
-  TaskResult,
   GroundingProvider,
   GroundedPassage,
-} from '../../packages/orchestration/src/types.js';
-import { InProcessWitnessOrchestrationService } from '../../packages/orchestration/src/in-process-service.js';
-import { createFactLock } from '../../packages/orchestration/src/fact-lock.js';
-import { VectorizeGroundingProvider } from '../../packages/orchestration/src/vectorize-grounding.js';
+  TaskResult,
+} from '@witness/orchestration';
+import {
+  InProcessWitnessOrchestrationService,
+  VectorizeGroundingProvider,
+  createFactLock,
+} from '@witness/orchestration';
 import { createSectionWitnessGraph } from './graphs/section-witness.js';
 import { NvidiaEmbeddingProvider } from '../inference/nvidia-embedding.js';
 import { createWitnessInferenceExecutor } from './inference-adapter.js';
@@ -263,16 +265,33 @@ export class SectionInterpretationService {
       }
 
       if (engineId === 'gene-keys' && result) {
-        const activation = result.activation_sequence;
-        if (activation) {
-          facts.gk_life_work = activation.life_work?.gate;
-          facts.gk_evolution = activation.evolution?.gate;
-          facts.gk_radiance = activation.radiance?.gate;
-          facts.gk_purpose = activation.purpose?.gate;
-          sources.gk_life_work = 'selemene/gene-keys';
-          sources.gk_evolution = 'selemene/gene-keys';
-          sources.gk_radiance = 'selemene/gene-keys';
-          sources.gk_purpose = 'selemene/gene-keys';
+        const activeKeys = Array.isArray(result.active_keys) ? result.active_keys : [];
+        const bySource = new Map<string, any>(activeKeys.map((key: any) => [key.source, key]));
+        const formatKey = (key: any) => key
+          ? `${key.key_number}.${key.line}: ${key.shadow} -> ${key.gift} -> ${key.siddhi}`
+          : undefined;
+        const geneKeyFacts: Record<string, string | undefined> = {
+          gk_life_work: formatKey(bySource.get('PersonalitySun')),
+          gk_evolution: formatKey(bySource.get('PersonalityEarth')),
+          gk_radiance: formatKey(bySource.get('DesignSun')),
+          gk_purpose: formatKey(bySource.get('DesignEarth')),
+        };
+        for (const [key, value] of Object.entries(geneKeyFacts)) {
+          if (value) {
+            facts[key] = value;
+            sources[key] = 'selemene/gene-keys';
+          }
+        }
+      }
+
+      if (engineId === 'numerology' && result) {
+        const numerologyFields = ['life_path', 'expression', 'soul_urge', 'birthday', 'personality', 'chaldean_name'];
+        for (const field of numerologyFields) {
+          const item = result[field];
+          if (item?.value !== undefined) {
+            facts[`numerology_${field}`] = `${item.value}${item.is_master ? ' (master)' : ''}: ${item.meaning}`;
+            sources[`numerology_${field}`] = 'selemene/numerology';
+          }
         }
       }
 
@@ -340,8 +359,9 @@ export class SectionInterpretationService {
         const subjectName = factLock.facts?.name || 'the subject';
 
         let engineContext = '\n## Engine Outputs\n';
-        for (const [engineId, data] of Object.entries((factLock as any).engineData || {})) {
-          const truncated = data.length > 2000 ? data.slice(0, 2000) + '...' : data;
+        for (const [engineId, data] of Object.entries(factLock.engineData || {})) {
+          const serialized = String(data);
+          const truncated = serialized.length > 2000 ? serialized.slice(0, 2000) + '...' : serialized;
           engineContext += `\n### ${engineId}\n\`\`\`json\n${truncated}\n\`\`\`\n`;
         }
 

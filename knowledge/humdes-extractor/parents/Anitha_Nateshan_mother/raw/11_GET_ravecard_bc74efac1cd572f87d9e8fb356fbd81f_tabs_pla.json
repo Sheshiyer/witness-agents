@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "url": "https://app.humdes.com/ravecard/bc74efac1cd572f87d9e8fb356fbd81f/tabs/planets/transit/?site=1",
+    "method": "GET",
+    "status": 200,
+    "captured_at": "2026-05-16T12:52:17"
+  },
+  "data": {
+    "date": "2026-05-16",
+    "time": "12:52",
+    "location": 1277333,
+    "cityName": "Bengaluru",
+    "countryName": "India",
+    "locationName": "Bengaluru, India",
+    "timezone": "Asia/Kolkata",
+    "images": {
+      "left": "https://www.humdes.com/en/tools/svg/739e65e8d8fdcab835d2226522e4f763/bodygraph/female/",
+      "leftZoom": "https://www.humdes.com/en/tools/zoom/739e65e8d8fdcab835d2226522e4f763/bodygraph/female/",
+      "leftView": "https://www.humdes.com/en/tools/view/739e65e8d8fdcab835d2226522e4f763/bodygraph/female/",
+      "center": "https://www.humdes.com/en/tools/svg/739e65e8d8fdcab835d2226522e4f763/transit/female/80dda18a16180168f30ea7fbf8b09dc6/",
+      "centerZoom": "https://www.humdes.com/en/tools/zoom/739e65e8d8fdcab835d2226522e4f763/transit/female/80dda18a16180168f30ea7fbf8b09dc6/",
+      "centerView": "https://www.humdes.com/en/tools/view/739e65e8d8fdcab835d2226522e4f763/transit/female/80dda18a16180168f30ea7fbf8b09dc6/",
+      "right": "https://www.humdes.com/en/tools/svg/80dda18a16180168f30ea7fbf8b09dc6/bodygraph/none/person/",
+      "rightZoom": "https://www.humdes.com/en/tools/zoom/80dda18a16180168f30ea7fbf8b09dc6/bodygraph/none/person/",
+      "rightView": "https://www.humdes.com/en/tools/view/80dda18a16180168f30ea7fbf8b09dc6/bodygraph/none/person/"
+    },
+    "imageName": {
+      "left": "anitha_nateshan_01_06_1965_00_35_humdes.com.png",
+      "center": "anitha_nateshan_transit_composite_01_06_1965_00_35_humdes.com.png",
+      "right": "anitha_nateshan_transit_01_06_1965_00_35_humdes.com.png"
+    },
+    "imageTitle": {
+      "left": "Your Rave Chart",
+      "center": "Your Rave Chart + Current Transits",
+      "right": "Current Transit Chart"
+    },
+    "localization": {
+      "button": "Refresh",
+      "placeholder_location": "Place of Birth",
+      "text": "The changeable Transit \"weather\" of all the 13 celestial bodies determine the collective patterns of behaviour and emotional background for all humanity. The current transit has a direct energy impact only on your Personality. By connecting to opposite Gates in the Open Centres, current transit activations can create Channels in your chart, as well as make some of your Centres Defined (Closed) for a while. This does not change your innate mechanics!",
+      "title": "Transit Date"
+    }
+  }
+}
