@@ -343,7 +343,9 @@ function extractFacts(engineData: Record<string, any>): Record<string, unknown> 
       facts.current_panchanga_karana = result.karana_name;
     }
 
-    if (engineId === 'biofield') {
+    // Somatic engines are gated by SOMATIC_LAYER_APPROVED. When false, do not
+    // extract biofield/face-reading facts so premium assets stay clean.
+    if (SOMATIC_LAYER_APPROVED && engineId === 'biofield') {
       facts.biofield_available = true;
       facts.biofield_dominant_element = result.dominant_element || result.element || result.primary_element;
       facts.biofield_coherence = result.coherence || result.overall_coherence || result.biofield_coherence || result.metrics?.coherence;
@@ -351,7 +353,7 @@ function extractFacts(engineData: Record<string, any>): Record<string, unknown> 
       facts.biofield_interpretation = result.interpretation;
     }
 
-    if (engineId === 'face-reading') {
+    if (SOMATIC_LAYER_APPROVED && engineId === 'face-reading') {
       facts.face_reading_available = true;
       const constitution = result.analysis?.constitution || result.constitution || {};
       const balance = result.analysis?.elemental_balance || result.elemental_balance || {};
@@ -406,10 +408,12 @@ function gateSourcePack(personId: string, reading: string, sourceText: string, f
     }
   }
 
-  const hasSomaticData = hasEngine(engineData, 'biofield')
+  const hasSomaticData = SOMATIC_LAYER_APPROVED && (
+    hasEngine(engineData, 'biofield')
     || hasEngine(engineData, 'face-reading')
     || hasEngine(engineData, 'biofield-capture')
-    || hasEngine(engineData, 'nadabrahman');
+    || hasEngine(engineData, 'nadabrahman')
+  );
   if (hasSomaticData) {
     if (!SOMATIC_LAYER_APPROVED) {
       findings.push({
@@ -481,22 +485,66 @@ function extractVimshottariTimeline(engineData: Record<string, any>): Array<Reco
     .filter(period => period.planet);
 }
 
+/**
+ * The Selemene engine uses mean-node Rahu, which shifts Vimshottari current-layer
+ * dates by ~15 days relative to the Kundli tool. The corrected reading markdown is
+ * rebuilt from Kundli-authoritative values. Parse it so the Locked Fact Snapshot,
+ * timeline brief, and reflection questions match the narrative body.
+ */
+function extractCorrectedVimshottariLayers(reading: string): { mahadasha?: string; antardasha?: string; pratyantardasha?: string } {
+  // Markdown may wrap the label in bold and add punctuation after the date.
+  // Example: **Current position (June 2026):** Rahu Mahadasha, Ketu Antardasha, Venus Pratyantardasha.
+  const match = reading.match(/Current position[^(]*\([^)]*\)[^\w]*([\w]+)\s*Mahadasha[^\w]*([\w]+)\s*Antardasha[^\w]*([\w]+)\s*Pratyantardasha/i);
+  if (!match) return {};
+  return {
+    mahadasha: match[1].trim(),
+    antardasha: match[2].trim(),
+    pratyantardasha: match[3].trim(),
+  };
+}
+
+function applyCorrectedVimshottariLayers(facts: Record<string, unknown>, reading: string): Record<string, unknown> {
+  const corrected = extractCorrectedVimshottariLayers(reading);
+  const next = { ...facts };
+  if (corrected.mahadasha) next.vimshottari_mahadasha = corrected.mahadasha;
+  if (corrected.antardasha) next.vimshottari_antardasha = corrected.antardasha;
+  if (corrected.pratyantardasha) next.vimshottari_pratyantardasha = corrected.pratyantardasha;
+  return next;
+}
+
 function summarizeEngines(engineData: Record<string, any>): string {
-  const rows = Object.entries(engineData).map(([engineId, output]) => {
+  const gatedBodyEngines = new Set(['biofield', 'face-reading', 'biofield-capture', 'nadabrahman', 'dinacharya', 'biorhythm', 'vedic-clock']);
+  const rows = Object.entries(engineData).filter(([engineId]) => {
+    return SOMATIC_LAYER_APPROVED || !gatedBodyEngines.has(engineId);
+  }).map(([engineId, output]) => {
     const result = (output as any).result || output;
     const keys = result && typeof result === 'object' ? Object.keys(result).slice(0, 8).join(', ') : 'no structured result';
     const prompt = (output as any).witness_prompt ? `\n  Witness prompt: ${(output as any).witness_prompt}` : '';
     return `## ${engineId}\n\nAvailable fields: ${keys}.${prompt}`;
   });
-  return rows.join('\n\n');
+  return rows.join('\n\n') || 'No approved engine inventory entries available for this register.';
+}
+
+function resetNotebookArtifactDirs(packDir: string) {
+  for (const dirName of ['audio', 'video', 'reports', 'slide-decks', 'quiz', 'flashcards', 'mind-map']) {
+    const dir = join(packDir, dirName);
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(dir, { recursive: true });
+  }
+}
+
+function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function extractSection(reading: string, sectionId: string): string {
-  const marker = `## ${sectionId}:${sectionId}`;
-  const start = reading.indexOf(marker);
-  if (start === -1) return '';
+  const escaped = escapeRegex(sectionId);
+  const heading = new RegExp(`^##\\s+${escaped}(?::${escaped})?(?:\\s+.*)?$`, 'm');
+  const match = heading.exec(reading);
+  if (!match) return '';
+  const start = match.index + match[0].length;
   const next = reading.indexOf('\n---', start);
-  return reading.slice(start + marker.length, next === -1 ? undefined : next).trim();
+  return reading.slice(start, next === -1 ? undefined : next).trim();
 }
 
 function cleanReadingForNotebook(reading: string): string {
@@ -572,7 +620,7 @@ function buildNarrativeDossier(personaName: string, reading: string, facts: Reco
     ? `\n\n## Creative Oracle Thread\n\n${oracle || 'No creative oracle narrative section is available.'}\n`
     : '';
 
-  return `# Personal Companion Dossier: ${personaName}\n\nThis dossier is written for ${personaName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n${formatModePolicy(policy)}\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Panchanga Scope\n\nNatal Panchanga describes the birth moment. Current Panchanga, when present, describes the current-day five-limb Panchanga. Do not treat natal Panchanga as current-day timing.\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Temporal Foundation Thread\n\n${temporal || 'No temporal foundation narrative section is available.'}\n\n## Structural Identity Thread\n\n${structural || 'No structural identity narrative section is available.'}${somaticThread}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and embodied. Do not recite system data. Turn the reading into a usable personal artifact: something ${personaName} can listen to, revisit, study, and practice with.\n${oracleThread}`;
+  return `# Personal Companion Dossier: ${personaName}\n\nThis dossier is written for ${personaName}. It is a polished companion to their reading, intended to become audio, video, study, and reflection assets they can return to.\n\n${formatModePolicy(policy)}\n\n## Orientation Anchors\n\n${factLines || '- No structured anchors extracted.'}\n\n## Panchanga Scope\n\nNatal Panchanga describes the birth moment. Current Panchanga, when present, describes the current-day five-limb Panchanga. Do not treat natal Panchanga as current-day timing.\n\n## Core Story\n\n${synthesis || cleanReadingForNotebook(safeReading)}\n\n## Temporal Foundation Thread\n\n${temporal || 'No temporal foundation narrative section is available.'}\n\n## Structural Identity Thread\n\n${structural || 'No structural identity narrative section is available.'}${somaticThread}\n\n## How This Should Feel\n\nThis should feel intimate, clear, and grounded. Do not recite system data. Turn the reading into a usable personal artifact: something ${personaName} can listen to, revisit, study, and practice with.\n${oracleThread}`;
 }
 
 function buildSynastryNarrativeDossier(personName: string, reading: string, engineData: Record<string, any>, policy: ModePolicy): string {
@@ -773,7 +821,19 @@ function reflectionQuestions(personaName: string, facts: Record<string, unknown>
   const dasha = facts.vimshottari_mahadasha ? `Your current Vimshottari mahadasha is ${facts.vimshottari_mahadasha}.` : '';
   const nakshatra = facts.natal_panchanga_nakshatra ? `Your natal Panchanga nakshatra signal is ${facts.natal_panchanga_nakshatra}.` : '';
 
-  return `# Reflection Questions for ${personaName}\n\nThese questions are generated from the locked facts and reading outputs. They are prompts for self-observation, not prescriptions.\n\n${[authority, dasha, nakshatra].filter(Boolean).join(' ')}\n\n## Decision\n\n1. What decision currently asks for more time before action?\n2. What changes when you wait for the emotional signal to stabilize?\n3. Which choice feels clear in the body after a full day of distance?\n\n## Relationship\n\n4. Where are you seeking completion through another person instead of noticing your own pattern?\n5. Which collaborations genuinely bridge your split, and which ones only distract from it?\n6. What kind of support helps you become more honest rather than more dependent?\n\n## Body\n\n7. Where does urgency show up first: throat, chest, gut, jaw, breath, or posture?\n8. What physical cue tells you a yes is becoming clear?\n9. What physical cue tells you a no is being overridden?\n\n## Timing\n\n10. What cycle is asking to complete before the next commitment begins?\n11. What is the difference between pressure from timing and clarity from timing?\n12. What would become easier if you treated this period as observation rather than verdict?\n\n## Practice\n\n13. What is one small experiment you can run this week without over-identifying with the result?\n14. What lesson from a recent mistake is now mature enough to share?\n15. What daily ritual would help you remember the reading without becoming dependent on it?\n`;
+  const authorityDecisionQuestions: Record<string, string> = {
+    Emotional: `2. What changes when you wait for the emotional signal to stabilize?`,
+    Splenic: `2. What is the very first bodily yes or no that arrives before the mind argues?`,
+    Sacral: `2. What does your gut response sound like when you trust it before the mind edits it?`,
+    Ego: `2. What commitment can you make and stand behind without proving anything?`,
+    'Self-Projected': `2. What truth emerges when you speak your decision out loud to yourself?`,
+    Mental: `2. What perspective, when you talk it through, finally lets the noise settle?`,
+    Lunar: `2. What becomes clear when you observe yourself across a full lunar cycle?`,
+    None: `2. What would it mean to let strategy and outer authority guide this decision?`,
+  };
+  const decisionQ2 = authorityDecisionQuestions[String(facts.human_design_authority)] || authorityDecisionQuestions.Emotional;
+
+  return `# Reflection Questions for ${personaName}\n\nThese questions are generated from the locked facts and reading outputs. They are prompts for self-observation, not prescriptions.\n\n${[authority, dasha, nakshatra].filter(Boolean).join(' ')}\n\n## Decision\n\n1. What decision currently asks for more time before action?\n${decisionQ2}\n3. Which choice feels clear in the body after a full day of distance?\n\n## Relationship\n\n4. Where are you seeking completion through another person instead of noticing your own pattern?\n5. Which collaborations genuinely bridge your split, and which ones only distract from it?\n6. What kind of support helps you become more honest rather than more dependent?\n\n## Body\n\n7. Where does urgency show up first: throat, chest, gut, jaw, breath, or posture?\n8. What physical cue tells you a yes is becoming clear?\n9. What physical cue tells you a no is being overridden?\n\n## Timing\n\n10. What cycle is asking to complete before the next commitment begins?\n11. What is the difference between pressure from timing and clarity from timing?\n12. What would become easier if you treated this period as observation rather than verdict?\n\n## Practice\n\n13. What is one small experiment you can run this week without over-identifying with the result?\n14. What lesson from a recent mistake is now mature enough to share?\n15. What daily ritual would help you remember the reading without becoming dependent on it?\n`;
 }
 
 function qualityChecks(reading: string, facts: Record<string, unknown>): QualityCheck[] {
@@ -905,12 +965,12 @@ function runNotebookLM(personName: string, personaName: string, packDir: string,
     throw new Error('--generate-only requires --notebook-id');
   }
 
-  const notebookTitle = `Witness Premium Pack - ${personName}`;
+  const notebookTitle = `Witness Premium Pack v2 Deep Approved-Layers - ${personName}`;
   const notebookPayload = args.notebookId ? undefined : notebooklmJson(['create', notebookTitle]);
   const notebookId = args.notebookId || pickId(notebookPayload);
   if (!notebookId) throw new Error(`NotebookLM create did not return an id: ${JSON.stringify(notebookPayload).slice(0, 300)}`);
 
-  const sourceIds: Record<string, string> = {};
+  const sourceIds: Record<string, string> = args.generateOnly ? { ...manifest.notebooklm.sources } : {};
   if (!args.generateOnly) {
     for (const file of readdirSync(sourcePackDir).filter(name => name.endsWith('.md')).sort()) {
       const source = notebooklmJson(['source', 'add', join(sourcePackDir, file), '--notebook', notebookId, '--title', file.replace(/\.md$/, '')]);
@@ -943,11 +1003,13 @@ function runNotebookLM(personName: string, personaName: string, packDir: string,
 
   const generate = (key: string, args: string[], downloadArgs: (artifactId?: string) => string[], outputPath: string, opts?: { wait?: boolean; retry?: boolean; timeoutMs?: number; artifactType?: string }) => {
     try {
-      const artifactArgs = [...args, '--notebook', notebookId];
-      if (opts?.wait !== false) artifactArgs.push('--wait');
+      const artifactArgs = [...args, '--notebook', notebookId, '--no-wait'];
       if (opts?.retry !== false) artifactArgs.push('--retry', '5');
-      const artifact = notebooklmJson(artifactArgs, opts?.timeoutMs ?? 600_000);
-      const artifactId = pickId(artifact) || (opts?.artifactType ? artifactByType(notebookId, opts.artifactType) : undefined);
+      const generatePayload = notebooklmJson(artifactArgs, 120_000);
+      const taskId = pickId(generatePayload) || generatePayload?.task_id;
+      if (!taskId) throw new Error(`NotebookLM generate did not return a task_id: ${JSON.stringify(generatePayload).slice(0, 300)}`);
+      const waitPayload = notebooklmJson(['artifact', 'wait', taskId, '--notebook', notebookId, '--timeout', '600'], opts?.timeoutMs ?? 900_000);
+      const artifactId = pickId(waitPayload) || waitPayload?.artifact_id || taskId;
       execFileSync('notebooklm', downloadArgs(artifactId), { stdio: 'pipe', timeout: 240_000 });
       artifacts[key] = { status: existsSync(outputPath) ? 'ready' : 'pending', artifactId, outputPath };
     } catch (err: any) {
@@ -1069,7 +1131,7 @@ function writeSourcePack(personName: string, personaName: string, personId: stri
   // Somatic anchor is only written when the somatic layer is roadmap-approved.
   const somaticAnchor = SOMATIC_LAYER_APPROVED ? buildSomaticAnchor(facts) : '';
   if (somaticAnchor) writeFileSync(join(sourcePackDir, '08-somatic-anchor.md'), somaticAnchor);
-  writeFileSync(join(sourcePackDir, '09-boundaries-and-style.md'), `# Boundaries and Style\n\n## Make It Deliverable\n\nTurn the reading into a polished product: audio, video, slide decks, study guide, quiz, flashcards, and mind map. The audience should feel they received a personal companion, not a structured engine output.\n\n## Consistent Visual Theme\n\nUse warm parchment, soft gold, night indigo, refined typography, subtle orbit lines, calm spacing, and editorial restraint across PDFs and slide decks.\n\n## Boundaries\n\n- Do not invent missing engine data.\n- Do not make medical, financial, or deterministic life predictions.\n- Treat all content as reflective witnessing, not diagnosis or instruction.\n- If a system lacks data, name the absence rather than filling the gap.\n- Preserve the Euclidean-runtime vs non-Euclidean-Noesis distinction: outputs are mirrors for inquiry, not commands.\n\n## Voice\n\nWarm, exact, human, reflective, premium, embodied. Avoid generic mystical language. Avoid raw JSON/schema phrasing.\n`);
+  writeFileSync(join(sourcePackDir, '09-boundaries-and-style.md'), `# Boundaries and Style\n\n## Make It Deliverable\n\nTurn the reading into a polished product: audio, video, slide decks, study guide, quiz, flashcards, and mind map. The audience should feel they received a personal companion, not a structured engine output.\n\n## Consistent Visual Theme\n\nUse warm parchment, soft gold, night indigo, refined typography, subtle orbit lines, calm spacing, and editorial restraint across PDFs and slide decks.\n\n## Boundaries\n\n- Do not invent missing engine data.\n- Do not make medical, financial, or deterministic life predictions.\n- Treat all content as reflective witnessing, not diagnosis or instruction.\n- If a system lacks data, name the absence rather than filling the gap.\n- Preserve the Euclidean-runtime vs non-Euclidean-Noesis distinction: outputs are mirrors for inquiry, not commands.\n- Do not introduce unapproved body-layer systems, constitutional labels, or field-balance metrics.\n\n## Voice\n\nWarm, exact, human, reflective, premium, grounded. Avoid generic mystical language. Avoid raw JSON/schema phrasing.\n`);
 
   return sourcePackDir;
 }
@@ -1093,6 +1155,11 @@ function processPerson(personId: string, args: CliArgs): Manifest {
   const packDir = resolve(args.outputDir, personId);
   const localDir = join(packDir, 'local');
   mkdirSync(localDir, { recursive: true });
+  if (!args.notebooklm && !args.downloadOnly) resetNotebookArtifactDirs(packDir);
+  const previousManifestPath = join(packDir, 'manifest.json');
+  const previousNotebooklm = existsSync(previousManifestPath)
+    ? (JSON.parse(readFileSync(previousManifestPath, 'utf-8')) as Partial<Manifest>).notebooklm
+    : undefined;
 
   const engineData = loadEngineData(inputPath);
   const birthData = Array.isArray(JSON.parse(readFileSync(inputPath, 'utf-8')))
@@ -1100,8 +1167,9 @@ function processPerson(personId: string, args: CliArgs): Manifest {
     : undefined;
   const currentPanchanga = fetchCurrentPanchangaSync(birthData);
   if (currentPanchanga) engineData['current-panchanga'] = currentPanchanga;
-  const facts = extractFacts(engineData);
+  const rawFacts = extractFacts(engineData);
   const reading = readFileSync(readingPath, 'utf-8');
+  const facts = applyCorrectedVimshottariLayers(rawFacts, reading);
   const sourcePackDir = writeSourcePack(personName, personaName, personId, packDir, reading, engineData, facts, policy, modeContext);
   const sourceText = readdirSync(sourcePackDir)
     .filter(file => file.endsWith('.md'))
@@ -1141,9 +1209,10 @@ function processPerson(personId: string, args: CliArgs): Manifest {
       findings: gateFindings,
     },
     notebooklm: {
-      enabled: false,
-      sources: {},
-      artifacts: {},
+      enabled: previousNotebooklm?.enabled || false,
+      notebookId: previousNotebooklm?.notebookId,
+      sources: previousNotebooklm?.sources || {},
+      artifacts: previousNotebooklm?.artifacts || {},
     },
   };
 

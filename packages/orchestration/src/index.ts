@@ -35,7 +35,6 @@ export {
   ingestWitnessCorpus,
   type ExtractionProvider,
   NoopPrivateIndexManager,
-  createInMemoryPrivateIndexManager,
   type PrivateIndexManager,
   type IndexScope,
 } from './grounding.js';
@@ -57,3 +56,14 @@ export {
   type AtomicEngineData,
   type EngineOutputs,
 } from './engine-data-extractor.js';
+
+// Task 1: context packet, execution envelope, provenance, events
+export * from './context-packet.js';
+export * from './execution-envelope.js';
+export * from './provenance.js';
+export * from './events.js';
+export * from './executor-v2.js';
+export * from './executor-validation.js';
+
+// Task 3: event replay lifecycle
+export * from './event-projector.js';

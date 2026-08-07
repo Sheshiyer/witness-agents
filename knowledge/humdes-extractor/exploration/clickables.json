@@ -1,0 +1,947 @@
+[
+  {
+    "strategy": "anchor-hash",
+    "href": "#/personal",
+    "text": "Personal\n47",
+    "tag": "a",
+    "classes": "nav-bar__link nav-bar__link_is-active",
+    "dataset": {},
+    "index": 0
+  },
+  {
+    "strategy": "anchor-hash",
+    "href": "#/hologenetic",
+    "text": "Hologonetics\n2",
+    "tag": "a",
+    "classes": "nav-bar__link",
+    "dataset": {},
+    "index": 1
+  },
+  {
+    "strategy": "anchor-hash",
+    "href": "#/compatibility",
+    "text": "Compatibility\n9",
+    "tag": "a",
+    "classes": "nav-bar__link",
+    "dataset": {},
+    "index": 2
+  },
+  {
+    "strategy": "anchor-hash",
+    "href": "#/business",
+    "text": "Business Penta\n4",
+    "tag": "a",
+    "classes": "nav-bar__link",
+    "dataset": {},
+    "index": 3
+  },
+  {
+    "strategy": "anchor-hash",
+    "href": "#/family",
+    "text": "Family Penta\n3",
+    "tag": "a",
+    "classes": "nav-bar__link",
+    "dataset": {},
+    "index": 4
+  },
+  {
+    "strategy": "clickable",
+    "tag": "div",
+    "classes": "header-language-list__item",
+    "text": "Русский",
+    "dataset": {},
+    "index": 0
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-premenu__item",
+    "text": "Human Design",
+    "dataset": {},
+    "index": 3
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-premenu__item",
+    "text": "Gene Keys",
+    "dataset": {},
+    "index": 4
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-premenu__item",
+    "text": "Reports",
+    "dataset": {},
+    "index": 5
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-premenu__item",
+    "text": "Blog",
+    "dataset": {},
+    "index": 6
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-premenu__item",
+    "text": "Reviews",
+    "dataset": {},
+    "index": 7
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-premenu__item",
+    "text": "About Project",
+    "dataset": {},
+    "index": 8
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-premenu__item",
+    "text": "Contacts",
+    "dataset": {},
+    "index": 9
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-menu-item",
+    "text": "Create new Chart",
+    "dataset": {},
+    "index": 10
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "header-menu-button icon-plus-circle",
+    "text": "Create new Chart",
+    "dataset": {
+      "toggle": "header-dropdown-calculation",
+      "isFocus": "false",
+      "yetiBox": "header-dropdown-calculation"
+    },
+    "index": 11
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-menu-item",
+    "text": "Buy Report",
+    "dataset": {},
+    "index": 12
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "header-menu-button icon-cart header-menu-point",
+    "text": "Buy Report",
+    "dataset": {
+      "toggle": "header-dropdown-buy",
+      "isFocus": "false",
+      "yetiBox": "header-dropdown-buy"
+    },
+    "index": 13
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-menu-item",
+    "text": "Transits",
+    "dataset": {},
+    "index": 14
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "header-menu-button icon-transit",
+    "text": "Transits",
+    "dataset": {
+      "toggle": "header-dropdown-tools",
+      "isFocus": "false",
+      "yetiBox": "header-dropdown-tools"
+    },
+    "index": 15
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-menu-item",
+    "text": "Knowledge Base",
+    "dataset": {},
+    "index": 16
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "header-menu-button icon-book",
+    "text": "Knowledge Base",
+    "dataset": {
+      "toggle": "header-dropdown-base",
+      "isFocus": "false",
+      "yetiBox": "header-dropdown-base"
+    },
+    "index": 17
+  },
+  {
+    "strategy": "clickable",
+    "tag": "div",
+    "classes": "header-second-grid-profile",
+    "text": "Shesh",
+    "dataset": {},
+    "index": 18
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "header-profile",
+    "text": "Shesh",
+    "dataset": {
+      "toggle": "header-dropdown-personal",
+      "isFocus": "false",
+      "yetiBox": "header-dropdown-personal"
+    },
+    "index": 19
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Personal Rave Chart",
+    "dataset": {},
+    "index": 20
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Hologenetic Profile",
+    "dataset": {},
+    "index": 21
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Love Compatibility",
+    "dataset": {},
+    "index": 22
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Family Penta Chart",
+    "dataset": {},
+    "index": 23
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "BG-5 Penta Chart",
+    "dataset": {},
+    "index": 24
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Current Transit",
+    "dataset": {},
+    "index": 25
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Transit Descriptions",
+    "dataset": {},
+    "index": 26
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Gates",
+    "dataset": {},
+    "index": 27
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Channels",
+    "dataset": {},
+    "index": 28
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Centers",
+    "dataset": {},
+    "index": 29
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Types",
+    "dataset": {},
+    "index": 30
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Profiles",
+    "dataset": {},
+    "index": 31
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Authoritys",
+    "dataset": {},
+    "index": 32
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Planets",
+    "dataset": {},
+    "index": 33
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Line positions",
+    "dataset": {},
+    "index": 34
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Circuitry",
+    "dataset": {},
+    "index": 35
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Glossary of terms",
+    "dataset": {},
+    "index": 36
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Cabinet",
+    "dataset": {},
+    "index": 37
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Calculations",
+    "dataset": {},
+    "index": 38
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Reports",
+    "dataset": {},
+    "index": 39
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Purchases",
+    "dataset": {},
+    "index": 40
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "header-dropdown-menu-exit",
+    "text": "Sign out",
+    "dataset": {},
+    "index": 41
+  },
+  {
+    "strategy": "clickable",
+    "tag": "a",
+    "classes": "dropdown-input-pane__item",
+    "text": "Delete Selected",
+    "dataset": {},
+    "index": 42
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Reports",
+    "dataset": {},
+    "index": 46
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "About the project",
+    "dataset": {},
+    "index": 47
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "About Human Design",
+    "dataset": {},
+    "index": 48
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "About Gene Keys",
+    "dataset": {},
+    "index": 49
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Reviews",
+    "dataset": {},
+    "index": 50
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Legal",
+    "dataset": {},
+    "index": 51
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Contacts",
+    "dataset": {},
+    "index": 52
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Blog",
+    "dataset": {},
+    "index": 53
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Gates",
+    "dataset": {},
+    "index": 54
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Channels",
+    "dataset": {},
+    "index": 55
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Centers",
+    "dataset": {},
+    "index": 56
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Types",
+    "dataset": {},
+    "index": 57
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Profiles",
+    "dataset": {},
+    "index": 58
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Authoritys",
+    "dataset": {},
+    "index": 59
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Planets",
+    "dataset": {},
+    "index": 60
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "More",
+    "dataset": {},
+    "index": 61
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "Payment",
+    "dataset": {},
+    "index": 62
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-menu__item",
+    "text": "FAQ",
+    "dataset": {},
+    "index": 63
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-links__item",
+    "text": "Privacy Policy",
+    "dataset": {},
+    "index": 65
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-links__item",
+    "text": "Terms & Conditions",
+    "dataset": {},
+    "index": 66
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "footer-links__item",
+    "text": "Affiliate program",
+    "dataset": {},
+    "index": 67
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-dropdown-menu-title",
+    "text": "Knowledge Base",
+    "dataset": {},
+    "index": 79
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-dropdown-menu-title",
+    "text": "Hello, Shesh",
+    "dataset": {},
+    "index": 88
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-dropdown-menu-exit",
+    "text": "Sign out",
+    "dataset": {},
+    "index": 93
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-dropdown-menu-title",
+    "text": "Menu",
+    "dataset": {},
+    "index": 95
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "About",
+    "dataset": {},
+    "index": 96
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "About Human Design",
+    "dataset": {},
+    "index": 97
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "About Gene Keys",
+    "dataset": {},
+    "index": 98
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Our Reports",
+    "dataset": {},
+    "index": 99
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "js-drilldown-back",
+    "text": "Back",
+    "dataset": {},
+    "index": 101
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-dropdown-menu-title is-submenu-item is-drilldown-submenu-item",
+    "text": "Knowledge Base",
+    "dataset": {},
+    "index": 102
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Gates",
+    "dataset": {},
+    "index": 103
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Channels",
+    "dataset": {},
+    "index": 104
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Centers",
+    "dataset": {},
+    "index": 105
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Types",
+    "dataset": {},
+    "index": 106
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Profiles",
+    "dataset": {},
+    "index": 107
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Authoritys",
+    "dataset": {},
+    "index": 108
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Planets",
+    "dataset": {},
+    "index": 109
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Line positions",
+    "dataset": {},
+    "index": 110
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Circuitry",
+    "dataset": {},
+    "index": 111
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Glossary of terms",
+    "dataset": {},
+    "index": 112
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Blog",
+    "dataset": {},
+    "index": 113
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-dropdown-menu-title is-submenu-item is-drilldown-submenu-item",
+    "text": "Help",
+    "dataset": {},
+    "index": 116
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Payment",
+    "dataset": {},
+    "index": 117
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "FAQ",
+    "dataset": {},
+    "index": 118
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Project Reviews",
+    "dataset": {},
+    "index": 119
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-dropdown-menu-title is-submenu-item is-drilldown-submenu-item",
+    "text": "Humdes",
+    "dataset": {},
+    "index": 122
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Affiliate program",
+    "dataset": {},
+    "index": 123
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Offer",
+    "dataset": {},
+    "index": 124
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Terms & Conditions",
+    "dataset": {},
+    "index": 125
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "is-submenu-item is-drilldown-submenu-item",
+    "text": "Privacy Policy",
+    "dataset": {},
+    "index": 126
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "",
+    "text": "Online Support",
+    "dataset": {},
+    "index": 127
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-dropdown-menu-title",
+    "text": "Transits",
+    "dataset": {},
+    "index": 129
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-menu__item",
+    "text": "Menu",
+    "dataset": {},
+    "index": 133
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "tabbar-menu__button tabbar-menu__button_icon icon-menu",
+    "text": "Menu",
+    "dataset": {
+      "toggle": "tabbar-dropdown-menu",
+      "isFocus": "false",
+      "yetiBox": "tabbar-dropdown-menu"
+    },
+    "index": 134
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-menu__item show-for-medium",
+    "text": "Knowledge Base",
+    "dataset": {},
+    "index": 135
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "tabbar-menu__button tabbar-menu__button_icon icon-book",
+    "text": "Knowledge Base",
+    "dataset": {
+      "toggle": "tabbar-dropdown-base",
+      "isFocus": "false",
+      "yetiBox": "tabbar-dropdown-base"
+    },
+    "index": 136
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-menu__item",
+    "text": "Transits",
+    "dataset": {},
+    "index": 137
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "tabbar-menu__button tabbar-menu__button_icon icon-transit",
+    "text": "Transits",
+    "dataset": {
+      "toggle": "tabbar-dropdown-transit",
+      "isFocus": "false",
+      "yetiBox": "tabbar-dropdown-transit"
+    },
+    "index": 138
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-menu__item",
+    "text": "Calculation",
+    "dataset": {},
+    "index": 139
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "tabbar-menu__button tabbar-menu__button_icon icon-plus-circle",
+    "text": "Calculation",
+    "dataset": {
+      "toggle": "tabbar-dropdown-calculation",
+      "isFocus": "false",
+      "yetiBox": "tabbar-dropdown-calculation"
+    },
+    "index": 140
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-menu__item",
+    "text": "Buy",
+    "dataset": {},
+    "index": 141
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "tabbar-menu__button tabbar-menu__button_icon icon-cart tabbar-menu__button_point",
+    "text": "Buy",
+    "dataset": {
+      "toggle": "tabbar-dropdown-buy",
+      "isFocus": "false",
+      "yetiBox": "tabbar-dropdown-buy"
+    },
+    "index": 142
+  },
+  {
+    "strategy": "clickable",
+    "tag": "li",
+    "classes": "tabbar-menu__item",
+    "text": "Cabinet",
+    "dataset": {},
+    "index": 143
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "tabbar-menu__button tabbar-menu__button_icon icon-user",
+    "text": "Cabinet",
+    "dataset": {
+      "toggle": "tabbar-dropdown-personal",
+      "isFocus": "false",
+      "yetiBox": "tabbar-dropdown-personal"
+    },
+    "index": 144
+  },
+  {
+    "strategy": "clickable",
+    "tag": "button",
+    "classes": "button button_large reveal-calculation-tags__button button_disabled",
+    "text": "Apply",
+    "dataset": {},
+    "index": 146
+  }
+]

@@ -6,8 +6,9 @@
  * 2. Adding passages to a per-subject private index via PrivateIndexManager
  * 3. Retrieving from the private index during orchestration
  *
- * The demo uses the built-in in-memory private index. Swap in a durable vector
- * store or NeMo Retriever index without changing consumer code.
+ * All components are currently skeleton/noop implementations.
+ * When real adapters are wired (vector store, NeMo extraction NIM), the same
+ * consumer code works without modification (ports-and-adapters).
  *
  * Run with:
  *   npx tsx examples/private-index-ingestion.ts
@@ -23,7 +24,6 @@ import {
   type RetrievalQuery,
   NoopExtractionProvider,
   NoopPrivateIndexManager,
-  createInMemoryPrivateIndexManager,
 } from '../src/wiring/index.js';
 
 // --- Mock adapters (replace with real implementations later) ---
@@ -57,6 +57,55 @@ const mockExtractionProvider: ExtractionProvider = {
     ];
   },
 };
+
+/**
+ * Mock PrivateIndexManager that simulates a per-subject vector store.
+ * In real usage: local vector DB (e.g. Chroma, Qdrant) or NeMo Retriever index.
+ */
+class MockPrivateIndexManager implements PrivateIndexManager {
+  private store: Map<string, GroundedPassage[]> = new Map();
+  private globalCorpus: GroundedPassage[] = [];
+
+  async addPassages(subjectId: string, passages: GroundedPassage[], scope?: IndexScope): Promise<void> {
+    console.log(`[MockIndex] Adding ${passages.length} passages for subject ${subjectId}`);
+
+    // Add to subject's private index
+    const existing = this.store.get(subjectId) || [];
+    this.store.set(subjectId, [...existing, ...passages]);
+
+    // Optionally add to global corpus
+    if (scope?.includeGlobalCorpus) {
+      console.log(`[MockIndex] Also adding to global corpus`);
+      this.globalCorpus.push(...passages);
+    }
+  }
+
+  async retrieve(query: RetrievalQuery & { scope?: IndexScope }): Promise<GroundedPassage[]> {
+    console.log(`[MockIndex] Retrieving for subject ${query.subjectId}, perspective=${query.perspective}`);
+
+    const results: GroundedPassage[] = [];
+
+    // Retrieve from subject's private index
+    const subjectPassages = this.store.get(query.subjectId) || [];
+    results.push(...subjectPassages);
+
+    // Optionally include global corpus
+    if (query.scope?.includeGlobalCorpus) {
+      console.log(`[MockIndex] Including global corpus`);
+      results.push(...this.globalCorpus);
+    }
+
+    // Simulate reranking (in real usage: call reranker model)
+    const reranked = results.map((p, i) => ({
+      ...p,
+      score: 0.95 - i * 0.05, // Decreasing scores for demo
+    }));
+
+    // Limit to maxPassages
+    const limit = query.maxPassages ?? 5;
+    return reranked.slice(0, limit);
+  }
+}
 
 // --- Example usage ---
 
@@ -95,13 +144,12 @@ async function demonstratePrivateIndexIngestion() {
 
   // 3. Add to private index
   console.log('--- Indexing Phase ---');
-  const indexManager = createInMemoryPrivateIndexManager();
+  const indexManager = new MockPrivateIndexManager();
 
   await indexManager.addPassages(lock.subjectId, passages, {
     subjectId: lock.subjectId,
     includeGlobalCorpus: false, // Private to this subject only
   });
-  console.log(`[InMemoryIndex] Added ${passages.length} passages for subject ${lock.subjectId}`);
   console.log();
 
   // 4. Retrieve during orchestration

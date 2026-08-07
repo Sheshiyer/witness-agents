@@ -340,11 +340,13 @@ function createSectionTask(
 
 function buildSectionSystemPrompt(config: SectionConfig, lock: FactLock): string {
   const subjectName = lock.facts?.name || 'the subject';
+  const activeFocusAreas = config.focusAreas.filter((_, index) => hasAnySystem(lock, [config.systems[index]]));
+  const activeSystems = config.systems.filter((system) => hasAnySystem(lock, [system]));
 
   return `You are a witness interpreter specializing in ${config.name}.
 
 ## Consciousness Layer
-${config.layerDescription}
+Active systems in this layer: ${activeSystems.join(', ')}.
 Kosha alignment: ${config.kosha}
 
 ## Your Role
@@ -352,12 +354,12 @@ Interpret the engine data for ${subjectName} through the lens of ${config.name}.
 Focus ONLY on the systems in this layer.  Do not reference other layers.
 
 ## Systems in This Layer
-${config.focusAreas.map((f) => `- ${f}`).join('\n')}
+${activeFocusAreas.map((f) => `- ${f}`).join('\n')}
 
 ## Interpretation Guidelines
 1. Start with the most significant patterns in THIS layer
 2. Reference specific data points from the FactLock
-3. Use retrieved wisdom passages only as resonance mirrors; they never override locked facts
+3. Use retrieved wisdom passages to ground your interpretation
 4. Avoid speculation — only interpret what's present in the data
 5. Write in second person ("You have...", "Your design shows...")
 6. Be specific about numbers, gates, types, periods — cite them
@@ -385,18 +387,23 @@ function buildSectionUserPrompt(
   parts.push('## Engine Data Available');
 
   // List which engines have data
-  const availableEngines = config.systems.filter((sys) => {
-    const engineData = (lock.facts as any)?.[sys] || (lock.facts as any)?.engines?.[sys];
-    return engineData !== undefined;
-  });
+  const availableEngines = config.systems.filter((sys) => hasAnySystem(lock, [sys]));
 
   parts.push(availableEngines.map((e) => `- ${e}`).join('\n') || '(no engine data in this layer)');
+
+  const factLines = formatFactLockFacts(lock);
+  if (factLines.length > 0) {
+    parts.push('');
+    parts.push('## Authoritative FactLock Facts');
+    parts.push('Use these facts as binding. Do not replace them with retrieved wisdom or prior model assumptions.');
+    parts.push(factLines.join('\n'));
+  }
 
   // Add grounding context if available
   if (grounding && grounding.length > 0) {
     parts.push('');
     parts.push('## Retrieved Wisdom Context');
-    parts.push('Use these passages as resonance mirrors only; never treat them as authority over the FactLock:');
+    parts.push('Use these passages to ground your interpretation:');
     for (const passage of grounding.slice(0, 5)) {
       parts.push(`[${passage.source}] ${passage.excerpt}`);
     }
@@ -406,6 +413,20 @@ function buildSectionUserPrompt(
   parts.push('Provide your interpretation of this layer now.');
 
   return parts.join('\n');
+}
+
+function formatFactLockFacts(lock: FactLock): string[] {
+  const facts = lock.facts as Record<string, unknown> | undefined;
+  const sources = (lock as unknown as { sources?: Record<string, string> }).sources;
+  if (!facts) return [];
+
+  return Object.entries(facts)
+    .filter(([key, value]) => key !== 'name' && value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => {
+      const renderedValue = typeof value === 'string' ? value : JSON.stringify(value);
+      const source = sources?.[key] ? ` (source: ${sources[key]})` : '';
+      return `- ${key}: ${renderedValue}${source}`;
+    });
 }
 
 function buildSynthesisSystemPrompt(sectionDeps: string[]): string {
@@ -425,7 +446,7 @@ Synthesize the layer interpretations (${layerNames}) into a unified witness repo
 4. Surface contradictions or paradoxes as inquiry points
 5. End with 3-5 witness questions that span multiple layers
 6. Write in second person, flowing prose
-7. Respect the stack order: Temporal → Structural → Somatic → Oracle
+7. Respect the active stack order: ${layerNames}
 
 ## Output Format
 1. **Opening**: One paragraph capturing the essence of this moment

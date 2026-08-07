@@ -12,7 +12,7 @@ import type {
   ConsciousnessLevel,
   LevelSource,
   RegisterBand,
-} from './level-resolver.js';
+} from '../integratedreading/level-resolver.js';
 
 export type RelationshipMode =
   | 'solo'

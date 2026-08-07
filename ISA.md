@@ -1,12 +1,12 @@
 ---
-task: "Review Witness Agents premium tooling and run the proper L1-L3 mother-son chart pipeline instead of one-shot analysis"
+task: "Review Witness Agents premium tooling and run the proper L1-L3 mother-son chart pipeline instead of one-shot analysis; extend pipeline to Harshita with screenshot source truth; enable NotebookLM audio/video/slide assets for Harshita"
 slug: 20260622-witness-agents-tooling-review-arathi-rohan
 effort: deep
-phase: observe
-progress: 128/128
+phase: complete
+progress: 24/24
 mode: interactive
 started: 2026-06-22T06:30:00Z
-updated: 2026-06-22T06:30:00Z
+updated: 2026-06-26T00:00:00Z
 ---
 
 ## Problem
@@ -27,7 +27,7 @@ The user sees a clean, reproducible pipeline: birth data → Selemene engine cal
 ## Out of Scope
 
 - We are not creating a new, permanent Witness Agents mode file in this run. We may recommend or prototype one, but canonical mode-authorship belongs to a separate design pass.
-- We are not running NotebookLM generation in this run unless the user explicitly enables it and funds/credentials are confirmed. We will verify the local asset pipeline end-to-end instead.
+- We are running NotebookLM generation for Harshita only, after confirming credentials and source-pack gate pass.
 - We are not modifying the core Aletheios/Pichet agent architecture, the Clifford/Kosha framework, or the revenue-tier gating.
 - We are not producing a father-inclusive family-triad reading unless the father’s chart is supplied.
 - We are not making medical, financial, or deterministic life predictions.
@@ -54,16 +54,31 @@ Review the Witness Agents premium tooling pipeline, identify the correct executi
 
 ## Criteria
 
-- [ ] ISC-1: The full premium pipeline from Selemene inputs through asset factory outputs is documented and understood.
-- [ ] ISC-2: Selemene engine data is fetched for both Arathi and Rohan and saved as `.batch-inputs/arathi.json` and `.batch-inputs/rohan.json`.
-- [ ] ISC-3: A deterministic-anchor reading markdown is produced for each person and for the mother-son synastry, saved under `.batch-outputs/`.
-- [ ] ISC-4: The mother-son relationship is framed as Matru–Putra (not Vivaha) in every generated artifact.
-- [ ] ISC-5: `premium-asset-factory.ts` runs successfully for both solo packs and the synastry pack, producing source packs, HTML, PDF, and reflection questions.
-- [ ] ISC-6: `audit-asset-chain.ts` passes with zero blockers for the synastry pack.
-- [ ] ISC-7: Manifest files record inputs, outputs, quality checks, and gate status for each pack.
-- [ ] ISC-8: Anti: No 7th-house romantic/compatibility framing appears in mother-son outputs.
-- [ ] ISC-9: Anti: No fabricated Selemene engine data is used; every engine result comes from real API calls or is honestly marked as absent.
-- [ ] ISC-10: Anti: No NotebookLM artifacts are claimed as generated unless the user explicitly enables NotebookLM and the pipeline actually produces them.
+- [x] ISC-1: The full premium pipeline from Selemene inputs through asset factory outputs is documented and understood.
+- [x] ISC-2: Selemene engine data is fetched for both Arathi and Rohan and saved as `.batch-inputs/arathi.json` and `.batch-inputs/rohan.json`.
+- [x] ISC-3: A deterministic-anchor reading markdown is produced for each person and for the mother-son synastry, saved under `.batch-outputs/`.
+- [x] ISC-4: The mother-son relationship is framed as Matru–Putra (not Vivaha) in every generated artifact.
+- [x] ISC-5: `premium-asset-factory.ts` runs successfully for both solo packs and the synastry pack, producing source packs, HTML, PDF, and reflection questions.
+- [x] ISC-6: `audit-asset-chain.ts` passes with zero blockers for the synastry pack.
+- [x] ISC-7: Manifest files record inputs, outputs, quality checks, and gate status for each pack.
+- [x] ISC-8: Anti: No 7th-house romantic/compatibility framing appears in mother-son outputs.
+- [x] ISC-9: Anti: No fabricated Selemene engine data is used; every engine result comes from real API calls or is honestly marked as absent.
+- [x] ISC-10: Anti: No false NotebookLM claims are made; NotebookLM is disabled unless explicitly enabled.
+- [x] ISC-11: Harshita Vedic screenshot facts are captured as FactLock overrides (ascendant Pisces, Moon Cancer/Pushya Charan 1, Ketu→Venus date 18 Nov 2026).
+- [x] ISC-12: Harshita `.batch-inputs/harshita.json` contains only approved deterministic engines (panchanga, vimshottari, human-design, gene-keys, numerology).
+- [x] ISC-13: Structured NVIDIA reading for Harshita is generated and saved under `.batch-outputs/harshita.md`.
+- [x] ISC-14: Generated Harshita reading passes quality gates: no gated vocabulary, no planning leakage, dasha anchors present, complete final sentences.
+- [x] ISC-15: Harshita premium asset pack is generated with manifest and source pack.
+- [x] ISC-16: Anti: No unapproved somatic/oracle engine data enters Harshita inputs or outputs.
+- [x] ISC-17: NotebookLM CLI authentication is active and can create a notebook.
+- [x] ISC-18: Harshita source pack is uploaded to a fresh NotebookLM notebook (not reusing an old notebook without clearing sources).
+- [x] ISC-19: NotebookLM audio deep-dive artifact is generated and downloaded for Harshita.
+- [x] ISC-20: NotebookLM video brief artifact is generated and downloaded for Harshita.
+- [x] ISC-21: NotebookLM study guide and briefing report artifacts are generated and downloaded for Harshita.
+- [x] ISC-22: NotebookLM detailed, preview, and Vimshottari timeline slide-deck PDFs are generated and downloaded for Harshita.
+- [x] ISC-23: NotebookLM quiz, flashcards, and mind-map artifacts are generated and downloaded for Harshita.
+- [x] ISC-24: Harshita manifest is updated to record the NotebookLM notebook ID, source IDs, and artifact statuses.
+
 
 ## Test Strategy
 
@@ -79,6 +94,21 @@ Review the Witness Agents premium tooling pipeline, identify the correct executi
 | ISC-8 | content | 7th-house/Kalatra/Vivaha absent in synastry source | grep returns 0 matches | Grep |
 | ISC-9 | data | Selemene results have metadata.backend and timestamp | no `_error` on panchanga/vimshottari | Read |
 | ISC-10 | build | NotebookLM enabled flag matches reality | no artifacts claimed unless generated | Read |
+| ISC-11 | data | FactLock overrides include Harshita screenshot anchors | overrides file contains Harshita key | Read |
+| ISC-12 | data | Harshita input JSON uses approved engine subset | 5 engines, no biofield/oracle | Read / Bash |
+| ISC-13 | build | `batch-interpret.ts` produces Harshita markdown | output file exists with structured markers | Bash / Read |
+| ISC-14 | build | Quality gates pass on Harshita reading | validator returns empty issues | Bash |
+| ISC-15 | build | Premium asset pack generated for Harshita | manifest.json + source pack exist | Bash / Read |
+| ISC-16 | content | No unapproved engine data in Harshita artifacts | grep returns 0 matches for forbidden engine ids | Grep |
+| ISC-17 | auth | `notebooklm` CLI can create notebooks | `notebooklm create` returns a notebookId | Bash |
+| ISC-18 | build | Harshita source pack uploaded to fresh notebook | source IDs recorded in manifest | Read |
+| ISC-19 | build | Audio deep-dive MP3 exists | `audio/deep-dive-long.mp3` file size > 0 | Bash |
+| ISC-20 | build | Video brief MP4 exists | `video/video-brief.mp4` file size > 0 | Bash |
+| ISC-21 | build | Study guide and briefing reports exist | `.md` files in `reports/` | Bash |
+| ISC-22 | build | Three slide-deck PDFs exist | `.pdf` files in `slide-decks/` | Bash |
+| ISC-23 | build | Quiz, flashcards, mind map exist | files in respective dirs | Bash |
+| ISC-24 | data | Manifest records NotebookLM metadata | notebookId, sources, artifacts fields populated | Read |
+
 
 ## Features
 
@@ -90,22 +120,69 @@ Review the Witness Agents premium tooling pipeline, identify the correct executi
 | F4: Asset factory run | Run `premium-asset-factory.ts` for solo and synastry IDs | ISC-5 | F2, F3 | no |
 | F5: Chain audit | Run `audit-asset-chain.ts` and resolve any blockers | ISC-6 | F4 | no |
 | F6: Documentation | Record pipeline decisions, blockers, and next steps in ISA.md | ISC-1, all | — | no |
+| F7: Harshita source truth | Apply screenshot Vedic anchors and HumDes-validated HD/GK facts as Harshita overrides | ISC-11, ISC-12 | — | no |
+| F8: Harshita generation | Run structured NVIDIA batch for Harshita with approved engines | ISC-13 | F7 | no |
+| F9: Harshita verification | Run quality gates and spot checks on Harshita output | ISC-14 | F8 | no |
+| F10: Harshita assets | Generate premium asset pack for Harshita | ISC-15 | F9 | no |
+| F11: NotebookLM auth check | Confirm notebooklm CLI can create notebooks | ISC-17 | — | no |
+| F12: Harshita notebook create | Create a fresh NotebookLM notebook and upload Harshita source pack | ISC-18 | F10, F11 | no |
+| F13: Harshita audio/video | Generate and download audio deep-dive and video brief | ISC-19, ISC-20 | F12 | yes |
+| F14: Harshita reports | Generate and download study guide and briefing | ISC-21 | F12 | yes |
+| F15: Harshita slide decks | Generate and download detailed, preview, and Vimshottari timeline slide decks | ISC-22 | F12 | yes |
+| F16: Harshita micro assets | Generate and download quiz, flashcards, and mind map | ISC-23 | F12 | yes |
+| F17: Manifest update | Update Harshita manifest with NotebookLM notebook ID, source IDs, and artifact statuses | ISC-24 | F12-F16 | no |
+
 
 ## Decisions
 
 - 2026-06-22 06:30Z — Started ISA for tooling review + proper pipeline execution. One-shot markdown file `Arathi-Rohan-L1-L3-5-System-Analysis.md` exists as prior manual artifact but is not the target of this run.
+- 2026-06-22 06:42Z — Selected `composite-dyad` mode for mother-son synastry because `family-triad` requires exactly 3 subjects and no father chart exists; added explicit Matru–Putra context override to prevent Vivaha framing.
+- 2026-06-22 06:49Z — Re-ran synastry after first output contained marriage/spousal language; confirmed second output reframes 7th house as familial dharma and passes content check.
+- 2026-06-22 06:54Z — Removed oracle/somatic engines from active `.batch-inputs/arathi.json` and `.batch-inputs/rohan.json` to satisfy the deterministic source gate, preserving original 16-engine responses in sidecar files.
+- 2026-06-22 06:55Z — Verified all three premium packs pass `audit-asset-chain.ts` with 0 blockers / 0 warnings.
+- 2026-06-26 — Extended pipeline to Harshita. Used screenshot as authoritative Vedic source; HumDes extractor validated HD/GK facts against Selemene. Added 25 FactLock overrides and generated structured reading + premium pack.
+- 2026-06-26 — Enabled NotebookLM for Harshita. Created fresh notebook `6e6dc44c-63cc-485b-9ac5-8649e28ddc22` (distinct from old `a9eb3dc2...` notebook). Generated audio deep-dive, video brief, reports, slide decks, quiz, flashcards, and mind map.
+- 2026-06-26 — Patched `premium-asset-factory.ts` to use new NotebookLM CLI pattern: `generate --no-wait` to obtain task_id, then `artifact wait --timeout 600` to poll completion, then download by artifact_id. This avoids server-side 300s timeouts that caused false "failed" statuses for audio, video, and slide decks.
 
 ## Changelog
 
 - 2026-06-22 06:30Z — conjectured: The existing `family-triad` mode can be reused for a mother-son dyad by supplying a placeholder or by creating a custom two-person family mode. — to be tested against `subject_count` validation in `integratedreading-mode.ts`.
+- 2026-06-22 06:42Z — invalidated: `family-triad` requires exactly 3 subjects; switched to `composite-dyad` with Matru–Putra override.
+- 2026-06-22 06:49Z — confirmed: second synastry run removes Vivaha/marriage language and reframes 7th house as familial dharma.
+- 2026-06-22 06:54Z — decision: oracle/somatic engines moved to sidecar files; deterministic-only inputs used to pass audit gate.
+- 2026-06-22 06:55Z — verified: all three asset packs pass chain audit.
+- 2026-06-26 — extended: Harshita pipeline completed with screenshot-authoritative Vedic anchors and HumDes-validated HD/GK facts.
+- 2026-06-26 — learned: NotebookLM `generate --wait` times out server-side after 300s for long audio/video/slide artifacts, but artifacts continue in background; CLI now provides `artifact wait --timeout 600` for agent-friendly polling. Patched factory to use `--no-wait` + `artifact wait` + download-by-id.
 
 ## Verification
 
-- (Pending)
+### Harshita Pipeline Verification
 
-## Verification
+| ISC | Probe | Evidence |
+|-----|-------|----------|
+| ISC-11 | Read `.batch-contexts/structured-fact-overrides.json` | `harshita` key contains 25 facts including Pisces ascendant, Pushya Charan 1, Ketu→Venus 18 Nov 2026 18:59 IST |
+| ISC-12 | Read `.batch-inputs/harshita.json` | Contains exactly 5 engines: panchanga, vimshottari, human-design, gene-keys, numerology |
+| ISC-13 | Read `.batch-outputs/harshita.md` | File exists, 9527 chars, structured markers present |
+| ISC-14 | Run `validateBatchOutputQuality` + spot checks | Validator returns `issues: []`; no gated terms; no planning leakage; dasha anchors present; final questions complete |
+| ISC-15 | Read `.premium-assets/harshita/manifest.json` | Manifest shows `gate.status: pass`, reading.pdf and source-pack generated |
+| ISC-16 | Grep source pack for forbidden engine IDs | No matches for biofield, face-reading, oracle, tarot, i-ching, etc. |
 
-### Pipeline Outputs (all local — NotebookLM disabled)
+### NotebookLM Harshita Verification
+
+| ISC | Probe | Evidence |
+|-----|-------|----------|
+| ISC-17 | `notebooklm status` | Auth active; current context shows valid notebook |
+| ISC-18 | Read manifest `notebooklm.notebookId` | Fresh notebook ID `6e6dc44c-63cc-485b-9ac5-8649e28ddc22`; not the old `a9eb3dc2-8460-41ae-a2a4-17e6ecdb899b`; 10 sources uploaded |
+| ISC-19 | Bash file check | `audio/deep-dive-long.mp3` exists, 66,317,730 bytes |
+| ISC-20 | Bash file check | `video/video-brief.mp4` exists, 12,141,997 bytes |
+| ISC-21 | Bash file check | `reports/study-guide.md` (7,846 bytes) and `reports/briefing.md` (6,164 bytes) exist |
+| ISC-22 | Bash file check | `slide-decks/detailed.pdf` (14.7 MB), `preview.pdf` (4.3 MB), `vimshottari-timeline.pdf` (11.5 MB) exist |
+| ISC-23 | Bash file check | `quiz/quiz.md`, `flashcards/flashcards.md`, `mind-map/*.json` exist |
+| ISC-24 | Read manifest | `notebooklm.enabled: true`, notebookId, sources, and artifact statuses recorded; all artifacts `ready` |
+
+### Arathi–Rohan Pipeline Verification
+
+#### Pipeline Outputs (all local — NotebookLM disabled)
 
 | Artifact | Path | Status |
 |----------|------|--------|
@@ -145,19 +222,4 @@ Review the Witness Agents premium tooling pipeline, identify the correct executi
 - The `sigil-forge` engine returned errors in both original Selemene fetches; it is excluded from the deterministic inputs and does not affect the final packs.
 - NotebookLM audio/video/slide generation was not enabled. The source packs are NotebookLM-ready if the user later opts in and confirms credentials.
 
-## Decisions
-
-- 2026-06-22 06:30Z — Started ISA for tooling review + proper pipeline execution. One-shot markdown file `Arathi-Rohan-L1-L3-5-System-Analysis.md` exists as prior manual artifact but is not the target of this run.
-- 2026-06-22 06:42Z — Selected `composite-dyad` mode for mother-son synastry because `family-triad` requires exactly 3 subjects and no father chart exists; added explicit Matru–Putra context override to prevent Vivaha framing.
-- 2026-06-22 06:49Z — Re-ran synastry after first output contained marriage/spousal language; confirmed second output reframes 7th house as familial dharma and passes content check.
-- 2026-06-22 06:54Z — Removed oracle/somatic engines from active `.batch-inputs/arathi.json` and `.batch-inputs/rohan.json` to satisfy the deterministic source gate, preserving original 16-engine responses in sidecar files.
-- 2026-06-22 06:55Z — Verified all three premium packs pass `audit-asset-chain.ts` with 0 blockers / 0 warnings.
-
-## Changelog
-
-- 2026-06-22 06:30Z — conjectured: The existing `family-triad` mode can be reused for a mother-son dyad by supplying a placeholder or by creating a custom two-person family mode. — to be tested against `subject_count` validation in `integratedreading-mode.ts`.
-- 2026-06-22 06:42Z — invalidated: `family-triad` requires exactly 3 subjects; switched to `composite-dyad` with Matru–Putra override.
-- 2026-06-22 06:49Z — confirmed: second synastry run removes Vivaha/marriage language and reframes 7th house as familial dharma.
-- 2026-06-22 06:54Z — decision: oracle/somatic engines moved to sidecar files; deterministic-only inputs used to pass audit gate.
-- 2026-06-22 06:55Z — verified: all three asset packs pass chain audit.
-
+(End of ISA)

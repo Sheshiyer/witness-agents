@@ -1,0 +1,22 @@
+[
+  {
+    "url": "https://www.humdes.com/en/personal/results/",
+    "method": "GET",
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "is_json": false,
+    "size": 152042,
+    "post_data": null,
+    "json_preview": "<!doctype html><html class=\"no-js\" lang=\"en\"><head><title>My calculations</title><meta http-equiv=\"Content-Type\" content"
+  },
+  {
+    "url": "https://app.humdes.com/personal/results/?type=personal&page=&site=1",
+    "method": "GET",
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "is_json": true,
+    "size": 15684,
+    "post_data": null,
+    "json_preview": "{\"types\": {\"personal\": {\"code\": \"personal\", \"name\": \"Personal\", \"active\": true, \"count\": 47}, \"hologenetic\": {\"code\": \"hologenetic\", \"name\": \"Hologonetics\", \"active\": false, \"count\": 2}, \"compatibility\": {\"code\": \"compatibility\", \"name\": \"Compatibility\", \"active\": false, \"count\": 9}, \"business\": {\"c"
+  }
+]

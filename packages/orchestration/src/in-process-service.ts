@@ -22,8 +22,6 @@ export interface InProcessServiceOptions {
   observer?: OrchestrationObserver;
   groundingProvider?: GroundingProvider;
   defaultMinRelevance?: number;
-  defaultMaxRetrievalLatencyMs?: number;
-  defaultRetrievalBudgetTokens?: number;
 }
 
 export class InProcessWitnessOrchestrationService implements WitnessOrchestrationService {
@@ -41,9 +39,8 @@ export class InProcessWitnessOrchestrationService implements WitnessOrchestratio
       observer: this.options.observer,
       groundingProvider,
       minRelevance,
-      maxRetrievalLatencyMs: req.options?.maxRetrievalLatencyMs ?? this.options.defaultMaxRetrievalLatencyMs,
-      retrievalBudgetTokens: req.options?.retrievalBudgetTokens ?? this.options.defaultRetrievalBudgetTokens,
-    });
+      retrievalBudgetTokens: req.options?.retrievalBudgetTokens ?? (this.options as any).retrievalBudgetTokens,
+    } as any);
 
     const results = await orchestrator.execute(req.tasks, req.factLock);
 
@@ -63,9 +60,8 @@ export class InProcessWitnessOrchestrationService implements WitnessOrchestratio
       observer: this.options.observer,
       groundingProvider,
       minRelevance: this.options.defaultMinRelevance,
-      maxRetrievalLatencyMs: this.options.defaultMaxRetrievalLatencyMs,
-      retrievalBudgetTokens: this.options.defaultRetrievalBudgetTokens,
-    });
+      retrievalBudgetTokens: (this.options as any).retrievalBudgetTokens,
+    } as any);
     return orchestrator.execute(tasks, lock);
   }
 

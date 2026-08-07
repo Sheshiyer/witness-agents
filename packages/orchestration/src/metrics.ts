@@ -13,6 +13,8 @@ export interface AtomicRunMetrics {
   contradictions: number;
   repairIterations: number;
   byPerspective: Record<string, { count: number; latencyMs: number; tokens: number }>;
+  // Task 3: event replay stream outcomes, keyed by projection status
+  eventStreams?: Record<string, number>;
   // Retrieval (grounding) signals — present when GroundingProvider is wired
   retrieval?: {
     calls: number;
@@ -99,6 +101,12 @@ export function createMetricsCollector(): {
       // global running average
       const totalCalls = r.calls || 1;
       r.avgRelevance = ((r.avgRelevance * (totalCalls - 1)) + (info.avgRelevance || 0)) / totalCalls;
+    },
+    onEventStreamProjected(info) {
+      if (!metrics.eventStreams) {
+        metrics.eventStreams = {};
+      }
+      metrics.eventStreams[info.status] = (metrics.eventStreams[info.status] || 0) + 1;
     },
   };
 

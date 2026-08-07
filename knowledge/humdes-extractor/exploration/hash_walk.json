@@ -1,0 +1,64 @@
+[
+  {
+    "href": "#/personal",
+    "text": "Personal\n47",
+    "url_after": "https://www.humdes.com/en/personal/results/#/personal",
+    "xhrs": [],
+    "xhr_count": 0,
+    "json_xhr_count": 0
+  },
+  {
+    "href": "#/hologenetic",
+    "text": "Hologonetics\n2",
+    "url_after": "https://www.humdes.com/en/personal/results/#/hologenetic",
+    "xhrs": [],
+    "xhr_count": 0,
+    "json_xhr_count": 0
+  },
+  {
+    "href": "#/compatibility",
+    "text": "Compatibility\n9",
+    "url_after": "https://www.humdes.com/en/personal/results/#/compatibility",
+    "xhrs": [
+      {
+        "url": "https://app.humdes.com/personal/results/?type=hologenetic&page=&site=1",
+        "method": "GET",
+        "status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "is_json": true,
+        "size": 2420,
+        "post_data": null,
+        "json_preview": "{\"types\": {\"personal\": {\"code\": \"personal\", \"name\": \"Personal\", \"active\": false, \"count\": 47}, \"hologenetic\": {\"code\": \"hologenetic\", \"name\": \"Hologonetics\", \"active\": true, \"count\": 2}, \"compatibility\": {\"code\": \"compatibility\", \"name\": \"Compatibility\", \"active\": false, \"count\": 9}, \"business\": {\"c"
+      }
+    ],
+    "xhr_count": 0,
+    "json_xhr_count": 0
+  },
+  {
+    "href": "#/business",
+    "text": "Business Penta\n4",
+    "url_after": "https://www.humdes.com/en/personal/results/#/business",
+    "xhrs": [
+      {
+        "url": "https://app.humdes.com/personal/results/?type=compatibility&page=&site=1",
+        "method": "GET",
+        "status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "is_json": true,
+        "size": 3682,
+        "post_data": null,
+        "json_preview": "{\"types\": {\"personal\": {\"code\": \"personal\", \"name\": \"Personal\", \"active\": false, \"count\": 47}, \"hologenetic\": {\"code\": \"hologenetic\", \"name\": \"Hologonetics\", \"active\": false, \"count\": 2}, \"compatibility\": {\"code\": \"compatibility\", \"name\": \"Compatibility\", \"active\": true, \"count\": 9}, \"business\": {\"c"
+      }
+    ],
+    "xhr_count": 0,
+    "json_xhr_count": 0
+  },
+  {
+    "href": "#/family",
+    "text": "Family Penta\n3",
+    "url_after": "https://www.humdes.com/en/personal/results/#/family",
+    "xhrs": [],
+    "xhr_count": 0,
+    "json_xhr_count": 0
+  }
+]
